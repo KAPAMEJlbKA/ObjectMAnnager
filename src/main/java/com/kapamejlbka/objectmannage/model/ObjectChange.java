@@ -21,8 +21,8 @@ public class ObjectChange {
     @GeneratedValue
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "object_id")
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "object_id", nullable = true)
     private ManagedObject managedObject;
 
     @ManyToOne(fetch = FetchType.LAZY)
