@@ -48,22 +48,33 @@
             <button type="submit">Загрузить</button>
         </form>
         <p th:if="${#lists.isEmpty(object.files)}">Файлы ещё не загружены.</p>
-        <table class="data-table" th:if="${!#lists.isEmpty(object.files)}">
-            <thead>
-            <tr>
-                <th>Имя файла</th>
-                <th>Размер</th>
-                <th>Загружен</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="file : ${object.files}">
-                <td th:text="${file.originalFilename}"></td>
-                <td th:text="${#numbers.formatDecimal(file.size / 1024.0, 1, 2)} + ' КБ'"></td>
-                <td th:text="${file.uploadedAt}"></td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="file-gallery" th:if="${!#lists.isEmpty(object.files)}">
+            <div class="file-card" th:each="file : ${object.files}">
+                <div class="file-preview">
+                    <img th:if="${file.contentType != null and file.contentType.startsWith('image/') }"
+                         th:src="@{|/objects/${object.id}/files/${file.id}|}"
+                         th:alt="${file.originalFilename}">
+                    <iframe th:if="${file.contentType == 'application/pdf'}"
+                            th:src="@{|/objects/${object.id}/files/${file.id}|}"
+                            loading="lazy"></iframe>
+                    <div class="file-icon" th:if="${file.contentType == null or (!file.contentType.startsWith('image/') and file.contentType != 'application/pdf')}">
+                        <span class="file-ext"
+                              th:text="${#strings.isEmpty(#strings.substringAfterLast(file.originalFilename,'.')) ? 'FILE' : #strings.toUpperCase(#strings.substringAfterLast(file.originalFilename,'.'))}">
+                            DOC
+                        </span>
+                    </div>
+                </div>
+                <div class="file-details">
+                    <p class="file-name" th:text="${file.originalFilename}"></p>
+                    <p class="file-meta">Размер: <span th:text="${#numbers.formatDecimal(file.size / 1024.0, 1, 2)} + ' КБ'"></span></p>
+                    <p class="file-meta">Загружен: <span th:text="${file.uploadedAt}"></span></p>
+                    <div class="file-actions">
+                        <a th:href="@{|/objects/${object.id}/files/${file.id}|}" class="button secondary" target="_blank">Открыть</a>
+                        <a th:href="@{|/objects/${object.id}/files/${file.id}?download=true|}" class="button">Скачать</a>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 
     <section class="card">

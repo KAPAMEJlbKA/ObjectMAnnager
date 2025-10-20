@@ -4,12 +4,15 @@ import com.kapamejlbka.objectmannage.model.DatabaseConnectionSettings;
 import com.kapamejlbka.objectmannage.model.DatabaseType;
 import com.kapamejlbka.objectmannage.repository.DatabaseConnectionSettingsRepository;
 import jakarta.transaction.Transactional;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -42,20 +45,35 @@ public class DatabaseSettingsService {
 
     @Transactional
     public DatabaseConnectionSettings createLocalH2Store(String name) {
-        DatabaseConnectionSettings settings = new DatabaseConnectionSettings();
+        Optional<DatabaseConnectionSettings> existing = repository.findByDatabaseTypeAndName(DatabaseType.H2, name);
+        DatabaseConnectionSettings settings = existing.orElseGet(DatabaseConnectionSettings::new);
         settings.setName(name);
         settings.setDatabaseType(DatabaseType.H2);
-        String url = "jdbc:h2:file:./data/" + name + ";AUTO_SERVER=TRUE";
+
+        Path dataDirectory = Path.of("./data").toAbsolutePath().normalize();
+        try {
+            Files.createDirectories(dataDirectory);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Не удалось создать каталог для H2 базы", ex);
+        }
+
+        Path dbFile = dataDirectory.resolve(name + ".mv.db");
+        Path legacyFile = dataDirectory.resolve(name + ".h2.db");
+        boolean existedBefore = Files.exists(dbFile) || Files.exists(legacyFile);
+
+        String url = "jdbc:h2:file:" + dataDirectory.resolve(name).toString() + ";AUTO_SERVER=TRUE";
         settings.setDatabaseName(url);
         settings.setUsername("sa");
         settings.setPassword("");
         try (Connection connection = DriverManager.getConnection(url, settings.getUsername(), settings.getPassword())) {
             initializeSchema(connection);
             settings.setInitialized(true);
-            settings.setStatusMessage("Файловая H2 база создана");
+            settings.setStatusMessage(existedBefore
+                    ? "Подключено к существующей H2 базе"
+                    : "Файловая H2 база создана");
         } catch (SQLException ex) {
             settings.setInitialized(false);
-            settings.setStatusMessage("Ошибка создания H2: " + ex.getMessage());
+            settings.setStatusMessage("Ошибка подключения к H2: " + ex.getMessage());
         }
         settings.setLastVerifiedAt(LocalDateTime.now());
         return repository.save(settings);
@@ -108,8 +126,12 @@ public class DatabaseSettingsService {
                         stored_filename VARCHAR(512),
                         size BIGINT,
                         uploaded_at TIMESTAMP,
+                        content_type VARCHAR(255),
                         object_id UUID REFERENCES managed_objects(id)
                     )
+                    """);
+            statement.executeUpdate("""
+                    ALTER TABLE stored_files ADD COLUMN IF NOT EXISTS content_type VARCHAR(255)
                     """);
             statement.executeUpdate("""
                     CREATE TABLE IF NOT EXISTS user_accounts (

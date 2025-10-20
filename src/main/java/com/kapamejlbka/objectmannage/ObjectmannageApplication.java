@@ -1,7 +1,5 @@
 package com.kapamejlbka.objectmannage;
 
-import com.kapamejlbka.objectmannage.model.ProjectCustomer;
-import com.kapamejlbka.objectmannage.repository.ProjectCustomerRepository;
 import com.kapamejlbka.objectmannage.service.UserService;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
@@ -25,13 +23,9 @@ public class ObjectmannageApplication {
     }
 
     @Bean
-    CommandLineRunner bootstrap(UserService userService, ProjectCustomerRepository customerRepository) {
+    CommandLineRunner bootstrap(UserService userService) {
         return args -> {
             userService.ensureDefaultUsers();
-            if (customerRepository.count() == 0) {
-                customerRepository.save(new ProjectCustomer("Заказчик А", "client-a@example.com", "+7 999 123-45-67"));
-                customerRepository.save(new ProjectCustomer("Заказчик Б", "client-b@example.com", "+7 999 987-65-43"));
-            }
         };
     }
 }

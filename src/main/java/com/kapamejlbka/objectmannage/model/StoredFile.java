@@ -27,6 +27,9 @@ public class StoredFile {
 
     private LocalDateTime uploadedAt;
 
+    @Column(name = "content_type")
+    private String contentType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "object_id")
     private ManagedObject managedObject;
@@ -34,11 +37,12 @@ public class StoredFile {
     public StoredFile() {
     }
 
-    public StoredFile(String originalFilename, String storedFilename, long size, LocalDateTime uploadedAt) {
+    public StoredFile(String originalFilename, String storedFilename, long size, LocalDateTime uploadedAt, String contentType) {
         this.originalFilename = originalFilename;
         this.storedFilename = storedFilename;
         this.size = size;
         this.uploadedAt = uploadedAt;
+        this.contentType = contentType;
     }
 
     public UUID getId() {
@@ -75,6 +79,14 @@ public class StoredFile {
 
     public void setUploadedAt(LocalDateTime uploadedAt) {
         this.uploadedAt = uploadedAt;
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
     }
 
     public ManagedObject getManagedObject() {
