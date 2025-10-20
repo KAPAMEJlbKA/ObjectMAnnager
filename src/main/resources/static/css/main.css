@@ -199,6 +199,88 @@ button:hover {
     padding: 0;
 }
 
+.file-gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.file-card {
+    display: flex;
+    flex-direction: column;
+    background: #f9fafb;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px #e5e7eb;
+}
+
+.file-preview {
+    position: relative;
+    padding-top: 56%;
+    background: #eef2ff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.file-preview img,
+.file-preview iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: none;
+}
+
+.file-icon {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #e0e7ff, #f5f7ff);
+}
+
+.file-ext {
+    font-weight: 700;
+    font-size: 1.5rem;
+    color: #1e3a8a;
+}
+
+.file-details {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.file-details .file-name {
+    margin: 0;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+.file-details .file-meta {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.file-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.file-actions .button {
+    padding: 0.5rem 1rem;
+}
+
 .link-button:hover {
     color: #fff;
 }

@@ -5,11 +5,14 @@ import com.kapamejlbka.objectmannage.model.ManagedObject;
 import com.kapamejlbka.objectmannage.model.StoredFile;
 import com.kapamejlbka.objectmannage.repository.StoredFileRepository;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.UUID;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -53,7 +56,11 @@ public class FileStorageService {
             Files.createDirectories(destinationDirectory);
             Path destinationFile = destinationDirectory.resolve(storedFilename);
             Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
-            StoredFile storedFile = new StoredFile(originalFilename, storedFilename, file.getSize(), LocalDateTime.now());
+            String contentType = file.getContentType();
+            if (contentType == null || contentType.isBlank()) {
+                contentType = Files.probeContentType(destinationFile);
+            }
+            StoredFile storedFile = new StoredFile(originalFilename, storedFilename, file.getSize(), LocalDateTime.now(), contentType);
             storedFile.setManagedObject(managedObject);
             return storedFileRepository.save(storedFile);
         } catch (IOException ex) {
@@ -63,6 +70,19 @@ public class FileStorageService {
 
     public Path load(ManagedObject managedObject, String storedFilename) {
         return rootLocation.resolve(managedObject.getId().toString()).resolve(storedFilename).normalize();
+    }
+
+    public Resource loadAsResource(StoredFile storedFile) {
+        Path filePath = load(storedFile.getManagedObject(), storedFile.getStoredFilename());
+        try {
+            Resource resource = new UrlResource(filePath.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                return resource;
+            }
+        } catch (MalformedURLException ex) {
+            throw new IllegalStateException("Failed to read stored file", ex);
+        }
+        throw new IllegalStateException("Stored file not found: " + storedFile.getStoredFilename());
     }
 
     public void deleteFile(StoredFile storedFile) {

@@ -9,11 +9,13 @@ import com.kapamejlbka.objectmannage.model.UserAccount;
 import com.kapamejlbka.objectmannage.repository.ManagedObjectRepository;
 import com.kapamejlbka.objectmannage.repository.ObjectChangeRepository;
 import com.kapamejlbka.objectmannage.repository.ProjectCustomerRepository;
+import com.kapamejlbka.objectmannage.repository.StoredFileRepository;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,16 +26,19 @@ public class ManagedObjectService {
     private final ProjectCustomerRepository customerRepository;
     private final ObjectChangeRepository objectChangeRepository;
     private final FileStorageService storageService;
+    private final StoredFileRepository storedFileRepository;
 
     public ManagedObjectService(
             ManagedObjectRepository managedObjectRepository,
             ProjectCustomerRepository customerRepository,
             ObjectChangeRepository objectChangeRepository,
-            FileStorageService storageService) {
+            FileStorageService storageService,
+            StoredFileRepository storedFileRepository) {
         this.managedObjectRepository = managedObjectRepository;
         this.customerRepository = customerRepository;
         this.objectChangeRepository = objectChangeRepository;
         this.storageService = storageService;
+        this.storedFileRepository = storedFileRepository;
     }
 
     public List<ManagedObject> listVisibleObjects() {
@@ -101,6 +106,16 @@ public class ManagedObjectService {
         recordChange(managedObject, uploader, ObjectChangeType.FILE_ATTACHED,
                 "file", null, storedFile.getOriginalFilename());
         return storedFile;
+    }
+
+    public StoredFile getFile(UUID objectId, UUID fileId) {
+        return storedFileRepository.findByIdAndManagedObjectId(fileId, objectId)
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Файл " + fileId + " не найден для объекта " + objectId));
+    }
+
+    public Resource loadFileResource(StoredFile storedFile) {
+        return storageService.loadAsResource(storedFile);
     }
 
     @Transactional

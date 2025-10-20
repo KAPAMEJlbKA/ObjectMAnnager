@@ -3,6 +3,7 @@ package com.kapamejlbka.objectmannage.web;
 import com.kapamejlbka.objectmannage.model.ManagedObject;
 import com.kapamejlbka.objectmannage.model.ObjectChange;
 import com.kapamejlbka.objectmannage.model.ProjectCustomer;
+import com.kapamejlbka.objectmannage.model.StoredFile;
 import com.kapamejlbka.objectmannage.model.UserAccount;
 import com.kapamejlbka.objectmannage.repository.ObjectChangeRepository;
 import com.kapamejlbka.objectmannage.repository.ProjectCustomerRepository;
@@ -13,6 +14,13 @@ import jakarta.validation.constraints.NotNull;
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
+import java.nio.charset.StandardCharsets;
+import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
@@ -92,6 +100,37 @@ public class ObjectController {
             }
         }
         return "redirect:/objects/" + id;
+    }
+
+    @GetMapping("/{objectId}/files/{fileId}")
+    public ResponseEntity<Resource> downloadFile(@PathVariable UUID objectId,
+                                                 @PathVariable UUID fileId,
+                                                 @RequestParam(value = "download", defaultValue = "false") boolean download) {
+        StoredFile file = managedObjectService.getFile(objectId, fileId);
+        Resource resource = managedObjectService.loadFileResource(file);
+        MediaType mediaType = MediaType.APPLICATION_OCTET_STREAM;
+        if (StringUtils.hasText(file.getContentType())) {
+            try {
+                mediaType = MediaType.parseMediaType(file.getContentType());
+            } catch (IllegalArgumentException ignored) {
+                mediaType = MediaType.APPLICATION_OCTET_STREAM;
+            }
+        }
+
+        ContentDisposition disposition = (download ? ContentDisposition.attachment() : ContentDisposition.inline())
+                .filename(file.getOriginalFilename(), StandardCharsets.UTF_8)
+                .build();
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(mediaType);
+        headers.setContentDisposition(disposition);
+        if (file.getSize() > 0) {
+            headers.setContentLength(file.getSize());
+        }
+
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(resource);
     }
 
     @PostMapping("/{id}/request-delete")
