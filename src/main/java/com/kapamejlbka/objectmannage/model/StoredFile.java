@@ -1,18 +1,40 @@
 package com.kapamejlbka.objectmannage.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Entity
+@Table(name = "stored_files")
 public class StoredFile {
 
-    private final UUID id;
-    private final String originalFilename;
-    private final String storedFilename;
-    private final long size;
-    private final LocalDateTime uploadedAt;
+    @Id
+    @GeneratedValue
+    private UUID id;
 
-    public StoredFile(UUID id, String originalFilename, String storedFilename, long size, LocalDateTime uploadedAt) {
-        this.id = id;
+    private String originalFilename;
+
+    private String storedFilename;
+
+    private long size;
+
+    private LocalDateTime uploadedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "object_id")
+    private ManagedObject managedObject;
+
+    public StoredFile() {
+    }
+
+    public StoredFile(String originalFilename, String storedFilename, long size, LocalDateTime uploadedAt) {
         this.originalFilename = originalFilename;
         this.storedFilename = storedFilename;
         this.size = size;
@@ -27,15 +49,39 @@ public class StoredFile {
         return originalFilename;
     }
 
+    public void setOriginalFilename(String originalFilename) {
+        this.originalFilename = originalFilename;
+    }
+
     public String getStoredFilename() {
         return storedFilename;
+    }
+
+    public void setStoredFilename(String storedFilename) {
+        this.storedFilename = storedFilename;
     }
 
     public long getSize() {
         return size;
     }
 
+    public void setSize(long size) {
+        this.size = size;
+    }
+
     public LocalDateTime getUploadedAt() {
         return uploadedAt;
+    }
+
+    public void setUploadedAt(LocalDateTime uploadedAt) {
+        this.uploadedAt = uploadedAt;
+    }
+
+    public ManagedObject getManagedObject() {
+        return managedObject;
+    }
+
+    public void setManagedObject(ManagedObject managedObject) {
+        this.managedObject = managedObject;
     }
 }

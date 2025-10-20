@@ -9,7 +9,8 @@
 <header class="topbar">
     <h1>Object Manager</h1>
     <nav>
-        <a href="/objects">Объекты</a>
+        <a href="/objects" class="active">Объекты</a>
+        <a href="/customers">Заказчики</a>
         <a href="/admin">Администрирование</a>
         <form method="post" action="/logout">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
@@ -19,12 +20,23 @@
 </header>
 <main class="content">
     <section class="card">
-        <h2 th:text="${object.name}"></h2>
+        <div class="card-header">
+            <h2 th:text="${object.name}"></h2>
+            <form th:if="${!object.deletionRequested}" method="post" th:action="@{'/objects/' + ${object.id} + '/request-delete'}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <button type="submit" class="button danger">Запросить удаление</button>
+            </form>
+            <div class="badge warning" th:if="${object.deletionRequested}">
+                Запрошено удаление <span th:text="${object.deletionRequestedAt}"></span>
+            </div>
+        </div>
+        <p class="meta">Заказчик: <strong th:text="${object.customer.name}"></strong></p>
         <p><strong>Описание:</strong> <span th:text="${object.description}"></span></p>
         <p><strong>Первичные данные:</strong></p>
         <p class="muted" th:if="${#strings.isEmpty(object.primaryData)}">Данные не заполнены.</p>
         <pre class="primary-data" th:if="${!#strings.isEmpty(object.primaryData)}" th:text="${object.primaryData}"></pre>
         <p class="meta">Создан: <span th:text="${object.createdAt}"></span></p>
+        <p class="meta">Обновлён: <span th:text="${object.updatedAt}"></span></p>
     </section>
 
     <section class="card">
@@ -32,7 +44,7 @@
         <form method="post" th:action="@{'/objects/' + ${object.id} + '/files'}" enctype="multipart/form-data" class="upload-form">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <label for="file">Загрузить файл схемы или документа</label>
-            <input type="file" id="file" name="file" required>
+            <input type="file" id="file" name="file" multiple>
             <button type="submit">Загрузить</button>
         </form>
         <p th:if="${#lists.isEmpty(object.files)}">Файлы ещё не загружены.</p>
@@ -49,6 +61,33 @@
                 <td th:text="${file.originalFilename}"></td>
                 <td th:text="${#numbers.formatDecimal(file.size / 1024.0, 1, 2)} + ' КБ'"></td>
                 <td th:text="${file.uploadedAt}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="card">
+        <h3>История изменений</h3>
+        <p th:if="${#lists.isEmpty(history)}" class="muted">Изменений пока не было.</p>
+        <table class="data-table" th:if="${!#lists.isEmpty(history)}">
+            <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Пользователь</th>
+                <th>Событие</th>
+                <th>Поле</th>
+                <th>Старое значение</th>
+                <th>Новое значение</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="change : ${history}">
+                <td th:text="${change.changedAt}"></td>
+                <td th:text="${change.user != null ? change.user.username : 'Система'}"></td>
+                <td th:text="${change.summary}"></td>
+                <td th:text="${change.fieldName}"></td>
+                <td th:text="${change.oldValue}"></td>
+                <td th:text="${change.newValue}"></td>
             </tr>
             </tbody>
         </table>

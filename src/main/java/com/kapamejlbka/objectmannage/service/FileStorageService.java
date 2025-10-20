@@ -1,7 +1,9 @@
 package com.kapamejlbka.objectmannage.service;
 
 import com.kapamejlbka.objectmannage.config.FileStorageProperties;
+import com.kapamejlbka.objectmannage.model.ManagedObject;
 import com.kapamejlbka.objectmannage.model.StoredFile;
+import com.kapamejlbka.objectmannage.repository.StoredFileRepository;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,9 +18,11 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileStorageService {
 
     private final Path rootLocation;
+    private final StoredFileRepository storedFileRepository;
 
-    public FileStorageService(FileStorageProperties properties) {
+    public FileStorageService(FileStorageProperties properties, StoredFileRepository storedFileRepository) {
         this.rootLocation = Path.of(properties.getUploadDir()).toAbsolutePath().normalize();
+        this.storedFileRepository = storedFileRepository;
         init();
     }
 
@@ -30,7 +34,7 @@ public class FileStorageService {
         }
     }
 
-    public StoredFile store(UUID objectId, MultipartFile file) {
+    public StoredFile store(ManagedObject managedObject, MultipartFile file) {
         if (file.isEmpty()) {
             throw new IllegalArgumentException("Cannot store empty file");
         }
@@ -44,24 +48,30 @@ public class FileStorageService {
         UUID fileId = UUID.randomUUID();
         String storedFilename = fileId + extension;
 
-        Path destinationDirectory = rootLocation.resolve(objectId.toString());
+        Path destinationDirectory = rootLocation.resolve(managedObject.getId().toString());
         try {
             Files.createDirectories(destinationDirectory);
             Path destinationFile = destinationDirectory.resolve(storedFilename);
             Files.copy(file.getInputStream(), destinationFile, StandardCopyOption.REPLACE_EXISTING);
-            return new StoredFile(
-                    fileId,
-                    originalFilename,
-                    storedFilename,
-                    file.getSize(),
-                    LocalDateTime.now()
-            );
+            StoredFile storedFile = new StoredFile(originalFilename, storedFilename, file.getSize(), LocalDateTime.now());
+            storedFile.setManagedObject(managedObject);
+            return storedFileRepository.save(storedFile);
         } catch (IOException ex) {
             throw new IllegalStateException("Failed to store file", ex);
         }
     }
 
-    public Path load(UUID objectId, String storedFilename) {
-        return rootLocation.resolve(objectId.toString()).resolve(storedFilename).normalize();
+    public Path load(ManagedObject managedObject, String storedFilename) {
+        return rootLocation.resolve(managedObject.getId().toString()).resolve(storedFilename).normalize();
+    }
+
+    public void deleteFile(StoredFile storedFile) {
+        Path filePath = load(storedFile.getManagedObject(), storedFile.getStoredFilename());
+        try {
+            Files.deleteIfExists(filePath);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to delete file", ex);
+        }
+        storedFileRepository.delete(storedFile);
     }
 }
