@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Объекты</title>
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<header class="topbar">
+    <h1>Object Manager</h1>
+    <nav>
+        <a href="/objects">Объекты</a>
+        <a href="/admin">Администрирование</a>
+        <form method="post" action="/logout">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit" class="link-button">Выход</button>
+        </form>
+    </nav>
+</header>
+<main class="content">
+    <section class="card">
+        <h2>Создать новый объект</h2>
+        <form method="post" action="/objects" class="grid-form">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <div>
+                <label for="name">Название</label>
+                <input type="text" id="name" name="name" required th:value="${form.name}">
+            </div>
+            <div>
+                <label for="description">Описание</label>
+                <textarea id="description" name="description" rows="3" th:text="${form.description}"></textarea>
+            </div>
+            <div>
+                <label for="primaryData">Первичные данные</label>
+                <textarea id="primaryData" name="primaryData" rows="4" placeholder="Структура данных будет уточнена позже" th:text="${form.primaryData}"></textarea>
+            </div>
+            <div class="form-row">
+                <button type="submit">Создать</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="card">
+        <h2>Существующие объекты</h2>
+        <p th:if="${#lists.isEmpty(objects)}">Объекты ещё не созданы.</p>
+        <ul class="object-list" th:if="${!#lists.isEmpty(objects)}">
+            <li th:each="object : ${objects}">
+                <h3><a th:href="@{'/objects/' + ${object.id}}" th:text="${object.name}"></a></h3>
+                <p th:text="${object.description}"></p>
+                <span class="meta">Создан: <span th:text="${object.createdAt}"></span></span>
+            </li>
+        </ul>
+    </section>
+</main>
+<footer class="footer">
+    <p>Object Manager &copy; 2025</p>
+</footer>
+</body>
+</html>
