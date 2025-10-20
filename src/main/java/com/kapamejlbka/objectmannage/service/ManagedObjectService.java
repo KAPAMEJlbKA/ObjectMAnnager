@@ -129,7 +129,7 @@ public class ManagedObjectService {
         ManagedObject managedObject = getById(objectId);
         managedObject.getFiles().forEach(storageService::deleteFile);
         recordChange(managedObject, admin, ObjectChangeType.DELETED, null, null,
-                "Объект удалён администратором " + admin.getUsername());
+                "Объект \"" + managedObject.getName() + "\" удалён администратором " + admin.getUsername());
         managedObjectRepository.delete(managedObject);
     }
 
@@ -149,8 +149,20 @@ public class ManagedObjectService {
         } else {
             summary = "Поле " + field + " изменено";
         }
-        ObjectChange change = new ObjectChange(type, field, oldValue, newValue, summary);
-        change.setManagedObject(managedObject);
+        String effectiveField = field;
+        String effectiveOldValue = oldValue;
+        String effectiveNewValue = newValue;
+
+        if (type == ObjectChangeType.DELETED) {
+            effectiveField = effectiveField == null ? "objectId" : effectiveField;
+            effectiveOldValue = managedObject.getId() != null ? managedObject.getId().toString() : null;
+            effectiveNewValue = managedObject.getName();
+        }
+
+        ObjectChange change = new ObjectChange(type, effectiveField, effectiveOldValue, effectiveNewValue, summary);
+        if (type != ObjectChangeType.DELETED) {
+            change.setManagedObject(managedObject);
+        }
         change.setUser(user);
         objectChangeRepository.save(change);
     }
