@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Создание объекта</title>
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<header class="topbar">
+    <h1>Object Manager</h1>
+    <nav>
+        <a href="/objects" class="active">Объекты</a>
+        <a href="/customers">Заказчики</a>
+        <a href="/admin">Администрирование</a>
+        <form method="post" action="/logout">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit" class="link-button">Выход</button>
+        </form>
+    </nav>
+</header>
+<main class="content">
+    <section class="card">
+        <h2>Создать новый объект</h2>
+        <form method="post" action="/objects" class="grid-form" th:object="${form}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <div>
+                <label for="name">Название</label>
+                <input type="text" id="name" th:field="*{name}" required>
+            </div>
+            <div>
+                <label for="description">Описание</label>
+                <textarea id="description" th:field="*{description}" rows="3"></textarea>
+            </div>
+            <div>
+                <label for="primaryData">Первичные данные</label>
+                <textarea id="primaryData" th:field="*{primaryData}" rows="4" placeholder="JSON или свободная форма"></textarea>
+            </div>
+            <div>
+                <label for="customer">Заказчик</label>
+                <select id="customer" th:field="*{customerId}" required>
+                    <option value="" disabled selected>Выберите заказчика</option>
+                    <option th:each="customer : ${customers}" th:value="${customer.id}" th:text="${customer.name}"></option>
+                </select>
+            </div>
+            <div class="form-row">
+                <button type="submit">Создать</button>
+                <a class="button secondary" href="/objects">Отмена</a>
+            </div>
+        </form>
+    </section>
+</main>
+<footer class="footer">
+    <p>Object Manager &copy; 2025</p>
+</footer>
+</body>
+</html>

@@ -9,7 +9,8 @@
 <header class="topbar">
     <h1>Object Manager</h1>
     <nav>
-        <a href="/objects">Объекты</a>
+        <a href="/objects" class="active">Объекты</a>
+        <a href="/customers">Заказчики</a>
         <a href="/admin">Администрирование</a>
         <form method="post" action="/logout">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
@@ -19,34 +20,17 @@
 </header>
 <main class="content">
     <section class="card">
-        <h2>Создать новый объект</h2>
-        <form method="post" action="/objects" class="grid-form">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <div>
-                <label for="name">Название</label>
-                <input type="text" id="name" name="name" required th:value="${form.name}">
-            </div>
-            <div>
-                <label for="description">Описание</label>
-                <textarea id="description" name="description" rows="3" th:text="${form.description}"></textarea>
-            </div>
-            <div>
-                <label for="primaryData">Первичные данные</label>
-                <textarea id="primaryData" name="primaryData" rows="4" placeholder="Структура данных будет уточнена позже" th:text="${form.primaryData}"></textarea>
-            </div>
-            <div class="form-row">
-                <button type="submit">Создать</button>
-            </div>
-        </form>
-    </section>
-
-    <section class="card">
-        <h2>Существующие объекты</h2>
+        <div class="card-header">
+            <h2>Список объектов</h2>
+            <a class="button" href="/objects/create">Создать объект</a>
+        </div>
+        <p class="muted">Отображаются только активные объекты без запросов на удаление.</p>
         <p th:if="${#lists.isEmpty(objects)}">Объекты ещё не созданы.</p>
         <ul class="object-list" th:if="${!#lists.isEmpty(objects)}">
             <li th:each="object : ${objects}">
                 <h3><a th:href="@{'/objects/' + ${object.id}}" th:text="${object.name}"></a></h3>
                 <p th:text="${object.description}"></p>
+                <p class="meta">Заказчик: <strong th:text="${object.customer.name}"></strong></p>
                 <span class="meta">Создан: <span th:text="${object.createdAt}"></span></span>
             </li>
         </ul>

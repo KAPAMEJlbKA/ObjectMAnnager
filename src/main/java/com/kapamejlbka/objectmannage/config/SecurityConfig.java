@@ -1,13 +1,16 @@
 package com.kapamejlbka.objectmannage.config;
 
+import com.kapamejlbka.objectmannage.model.UserAccount;
+import com.kapamejlbka.objectmannage.repository.UserAccountRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -19,6 +22,7 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/login").permitAll()
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .formLogin(form -> form
                         .loginPage("/login")
@@ -28,21 +32,29 @@ public class SecurityConfig {
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")
                         .permitAll())
-                .csrf(Customizer.withDefaults());
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
+        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
         return http.build();
     }
 
     @Bean
-    public UserDetailsService userDetailsService() {
-        return new InMemoryUserDetailsManager(
-                User.withUsername("admin")
-                        .password("{noop}admin")
-                        .roles("ADMIN", "USER")
-                        .build(),
-                User.withUsername("user")
-                        .password("{noop}user")
-                        .roles("USER")
-                        .build()
-        );
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public UserDetailsService userDetailsService(UserAccountRepository repository) {
+        return username -> {
+            UserAccount account = repository.findByUsernameIgnoreCase(username)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
+            String[] roles = account.getRoles().stream()
+                    .map(role -> role.replace("ROLE_", ""))
+                    .toArray(String[]::new);
+            return User.withUsername(account.getUsername())
+                    .password(account.getPassword())
+                    .roles(roles)
+                    .accountLocked(!account.isEnabled())
+                    .build();
+        };
     }
 }

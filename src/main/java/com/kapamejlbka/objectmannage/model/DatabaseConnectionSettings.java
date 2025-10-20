@@ -1,24 +1,45 @@
 package com.kapamejlbka.objectmannage.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Entity
+@Table(name = "database_connections")
 public class DatabaseConnectionSettings {
 
-    private final UUID id;
+    @Id
+    @GeneratedValue
+    private UUID id;
+
+    @Column(nullable = false)
     private String name;
+
     private String host;
+
     private int port;
+
     private String databaseName;
+
     private String username;
 
-    public DatabaseConnectionSettings(UUID id, String name, String host, int port, String databaseName, String username) {
-        this.id = id;
-        this.name = name;
-        this.host = host;
-        this.port = port;
-        this.databaseName = databaseName;
-        this.username = username;
-    }
+    private String password;
+
+    @Enumerated(EnumType.STRING)
+    private DatabaseType databaseType = DatabaseType.POSTGRESQL;
+
+    private boolean initialized;
+
+    private LocalDateTime lastVerifiedAt;
+
+    @Column(length = 1024)
+    private String statusMessage;
 
     public UUID getId() {
         return id;
@@ -62,5 +83,45 @@ public class DatabaseConnectionSettings {
 
     public void setUsername(String username) {
         this.username = username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public DatabaseType getDatabaseType() {
+        return databaseType;
+    }
+
+    public void setDatabaseType(DatabaseType databaseType) {
+        this.databaseType = databaseType;
+    }
+
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    public void setInitialized(boolean initialized) {
+        this.initialized = initialized;
+    }
+
+    public LocalDateTime getLastVerifiedAt() {
+        return lastVerifiedAt;
+    }
+
+    public void setLastVerifiedAt(LocalDateTime lastVerifiedAt) {
+        this.lastVerifiedAt = lastVerifiedAt;
+    }
+
+    public String getStatusMessage() {
+        return statusMessage;
+    }
+
+    public void setStatusMessage(String statusMessage) {
+        this.statusMessage = statusMessage;
     }
 }
