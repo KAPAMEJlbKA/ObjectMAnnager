@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <title>Администрирование</title>
@@ -11,7 +11,7 @@
     <nav>
         <a href="/objects">Объекты</a>
         <a href="/customers">Заказчики</a>
-        <a href="/admin" class="active">Администрирование</a>
+        <a href="/admin" class="active" sec:authorize="hasRole('ADMIN')">Администрирование</a>
         <form method="post" action="/logout">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <button type="submit" class="link-button">Выход</button>
