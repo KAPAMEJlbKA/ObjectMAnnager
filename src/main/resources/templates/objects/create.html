@@ -46,8 +46,8 @@
             </div>
             <div>
                 <label for="customer">Заказчик</label>
-                <select id="customer" th:field="*{customerId}" th:attr="disabled=${form.createNewCustomer} ? 'disabled' : null">
-                    <option value="" disabled>Выберите заказчика</option>
+                <select id="customer" th:field="*{customerId}" th:disabled="${form.createNewCustomer}">
+                    <option value="" disabled th:selected="${form.customerId} == null">Выберите заказчика</option>
                     <option th:each="customer : ${customers}" th:value="${customer.id}" th:text="${customer.name}" th:selected="${customer.id == form.customerId}"></option>
                 </select>
                 <label class="checkbox">
@@ -117,11 +117,9 @@
                 section.classList.toggle('is-hidden', !creating);
             }
             if (customerSelect) {
+                customerSelect.disabled = Boolean(creating);
                 if (creating) {
-                    customerSelect.setAttribute('disabled', 'disabled');
                     customerSelect.value = '';
-                } else {
-                    customerSelect.removeAttribute('disabled');
                 }
             }
         }
