@@ -34,10 +34,6 @@
                 <label for="description">Описание</label>
                 <textarea id="description" th:field="*{description}" rows="3"></textarea>
             </div>
-            <div>
-                <label for="primaryData">Первичные данные</label>
-                <textarea id="primaryData" th:field="*{primaryData}" rows="4" placeholder="JSON или свободная форма"></textarea>
-            </div>
             <div class="grid">
                 <div>
                     <label for="latitude">Широта</label>
@@ -50,8 +46,8 @@
             </div>
             <div>
                 <label for="customer">Заказчик</label>
-                <select id="customer" th:field="*{customerId}" th:attr="disabled=${form.createNewCustomer} ? 'disabled' : null">
-                    <option value="" disabled>Выберите заказчика</option>
+                <select id="customer" th:field="*{customerId}" th:disabled="${form.createNewCustomer}">
+                    <option value="" disabled th:selected="${form.customerId} == null">Выберите заказчика</option>
                     <option th:each="customer : ${customers}" th:value="${customer.id}" th:text="${customer.name}" th:selected="${customer.id == form.customerId}"></option>
                 </select>
                 <label class="checkbox">
@@ -121,11 +117,9 @@
                 section.classList.toggle('is-hidden', !creating);
             }
             if (customerSelect) {
+                customerSelect.disabled = Boolean(creating);
                 if (creating) {
-                    customerSelect.setAttribute('disabled', 'disabled');
                     customerSelect.value = '';
-                } else {
-                    customerSelect.removeAttribute('disabled');
                 }
             }
         }

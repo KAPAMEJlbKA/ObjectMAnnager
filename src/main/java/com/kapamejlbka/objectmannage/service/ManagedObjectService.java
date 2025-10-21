@@ -55,12 +55,12 @@ public class ManagedObjectService {
     }
 
     @Transactional
-    public ManagedObject create(String name, String description, String primaryData,
+    public ManagedObject create(String name, String description,
                                UUID customerId, Double latitude, Double longitude,
                                UserAccount creator) {
         ProjectCustomer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
-        ManagedObject managedObject = new ManagedObject(name, description, primaryData, customer, latitude, longitude);
+        ManagedObject managedObject = new ManagedObject(name, description, null, customer, latitude, longitude);
         managedObject.setCreatedAt(LocalDateTime.now());
         managedObject.setUpdatedAt(LocalDateTime.now());
         ManagedObject saved = managedObjectRepository.save(managedObject);
