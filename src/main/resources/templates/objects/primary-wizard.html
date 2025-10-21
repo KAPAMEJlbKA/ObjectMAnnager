@@ -37,55 +37,57 @@
                     <div class="grid">
                         <div>
                             <label>Тип устройства</label>
-                            <select th:field="*{deviceGroups[__${iter.index}__].deviceTypeId}">
+                            <select th:field="*{deviceGroups[__${iter.index}__].deviceTypeId}" data-field="deviceTypeId">
                                 <option value="">Не выбрано</option>
                                 <option th:each="type : ${deviceTypes}" th:value="${type.id}" th:text="${type.name}"></option>
                             </select>
                         </div>
                         <div>
                             <label>Количество</label>
-                            <input type="number" min="0" step="1" th:field="*{deviceGroups[__${iter.index}__].deviceCount}" class="device-count">
+                            <input type="number" min="0" step="1" th:field="*{deviceGroups[__${iter.index}__].deviceCount}" class="device-count" data-field="deviceCount">
                         </div>
                     </div>
                     <div class="grid">
                         <div>
                             <label>Точка установки</label>
-                            <input type="text" th:field="*{deviceGroups[__${iter.index}__].installLocation}" placeholder="Крыша, подъезд...">
+                            <input type="text" th:field="*{deviceGroups[__${iter.index}__].installLocation}" placeholder="Крыша, подъезд..." data-field="installLocation">
                         </div>
                         <div>
                             <label>Точка подключения</label>
-                            <input type="text" th:field="*{deviceGroups[__${iter.index}__].connectionPoint}" placeholder="Распред. коробка...">
+                            <input type="text" th:field="*{deviceGroups[__${iter.index}__].connectionPoint}" placeholder="Распред. коробка..." data-field="connectionPoint">
                         </div>
                     </div>
                     <button type="button" class="link-button danger remove-device" th:if="${iter.index > 0}">Удалить</button>
                 </div>
             </div>
-            <div id="device-group-template" class="device-group card nested-card" hidden>
-                <div class="grid">
-                    <div>
-                        <label>Тип устройства</label>
-                        <select name="deviceGroups[__index__].deviceTypeId">
-                            <option value="">Не выбрано</option>
-                            <option th:each="type : ${deviceTypes}" th:value="${type.id}" th:text="${type.name}"></option>
-                        </select>
+            <template id="device-group-template">
+                <div class="device-group card nested-card">
+                    <div class="grid">
+                        <div>
+                            <label>Тип устройства</label>
+                            <select data-field="deviceTypeId">
+                                <option value="">Не выбрано</option>
+                                <option th:each="type : ${deviceTypes}" th:value="${type.id}" th:text="${type.name}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Количество</label>
+                            <input type="number" min="0" step="1" class="device-count" data-field="deviceCount">
+                        </div>
                     </div>
-                    <div>
-                        <label>Количество</label>
-                        <input type="number" min="0" step="1" name="deviceGroups[__index__].deviceCount" class="device-count">
+                    <div class="grid">
+                        <div>
+                            <label>Точка установки</label>
+                            <input type="text" placeholder="Крыша, подъезд..." data-field="installLocation">
+                        </div>
+                        <div>
+                            <label>Точка подключения</label>
+                            <input type="text" placeholder="Распред. коробка..." data-field="connectionPoint">
+                        </div>
                     </div>
+                    <button type="button" class="link-button danger remove-device">Удалить</button>
                 </div>
-                <div class="grid">
-                    <div>
-                        <label>Точка установки</label>
-                        <input type="text" name="deviceGroups[__index__].installLocation" placeholder="Крыша, подъезд...">
-                    </div>
-                    <div>
-                        <label>Точка подключения</label>
-                        <input type="text" name="deviceGroups[__index__].connectionPoint" placeholder="Распред. коробка...">
-                    </div>
-                </div>
-                <button type="button" class="link-button danger remove-device">Удалить</button>
-            </div>
+            </template>
             <button type="button" class="button secondary" id="add-device-group">Добавить устройство</button>
             <p><strong>Всего точек подключения:</strong> <span id="connection-total" th:text="${totalConnectionPoints}">0</span></p>
         </section>
@@ -98,8 +100,8 @@
                     <input type="hidden" th:field="*{mountingElements[__${iter.index}__].elementId}">
                     <div class="grid">
                         <div>
-                            <label th:for="${'mounting-' + iter.index}" th:text="${mountingElements[iter.index].elementName != null ? mountingElements[iter.index].elementName : 'Элемент'}">Элемент</label>
-                            <input type="text" th:id="${'mounting-' + iter.index}" th:value="${mountingElements[iter.index].elementName}" readonly>
+                            <label th:for="${'mounting-' + iter.index}" th:text="${element.elementName != null ? element.elementName : 'Элемент'}">Элемент</label>
+                            <input type="text" th:id="${'mounting-' + iter.index}" th:value="${element.elementName}" readonly>
                         </div>
                         <div>
                             <label>Количество / примечание</label>
@@ -119,30 +121,30 @@
                     <div class="grid">
                         <div>
                             <label>Название группы</label>
-                            <input type="text" th:field="*{materialGroups[__${gIndex.index}__].groupName}" placeholder="Линия к узлу 1">
+                            <input type="text" th:field="*{materialGroups[__${gIndex.index}__].groupName}" placeholder="Линия к узлу 1" data-field="groupName">
                         </div>
                         <div>
                             <label>Поверхность прокладки</label>
-                            <input type="text" th:field="*{materialGroups[__${gIndex.index}__].surface}" placeholder="По потолку, в земле...">
+                            <input type="text" th:field="*{materialGroups[__${gIndex.index}__].surface}" placeholder="По потолку, в земле..." data-field="surface">
                         </div>
                     </div>
-                    <div class="stack" th:id="${'material-rows-' + gIndex.index}">
+                    <div class="stack materials-container" th:id="${'material-rows-' + gIndex.index}">
                         <div class="material-row" th:each="usage, uIndex : *{materialGroups[__${gIndex.index}__].materials}" th:data-index="${uIndex.index}">
                             <div class="grid">
                                 <div>
                                     <label>Материал</label>
-                                    <select th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].materialId}">
+                                    <select th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].materialId}" data-field="materialId">
                                         <option value="">Не выбран</option>
                                         <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
                                     </select>
                                 </div>
                                 <div>
                                     <label>Объем / длина</label>
-                                    <input type="text" th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].amount}" placeholder="25 м, 4 шт...">
+                                    <input type="text" th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].amount}" placeholder="25 м, 4 шт..." data-field="amount">
                                 </div>
                                 <div>
                                     <label>По чему проложены</label>
-                                    <input type="text" th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].layingSurface}" placeholder="По стене, в коробе...">
+                                    <input type="text" th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].layingSurface}" placeholder="По стене, в коробе..." data-field="layingSurface">
                                 </div>
                             </div>
                             <button type="button" class="link-button danger remove-material" th:if="${uIndex.index > 0}">Удалить материал</button>
@@ -152,61 +154,66 @@
                     <button type="button" class="link-button danger remove-group" th:if="${gIndex.index > 0}">Удалить группу</button>
                 </div>
             </div>
-            <div id="material-group-template" class="material-group card nested-card" hidden>
-                <div class="grid">
-                    <div>
-                        <label>Название группы</label>
-                        <input type="text" name="materialGroups[__group__].groupName" placeholder="Линия">
-                    </div>
-                    <div>
-                        <label>Поверхность прокладки</label>
-                        <input type="text" name="materialGroups[__group__].surface" placeholder="По потолку, в земле...">
-                    </div>
-                </div>
-                <div class="stack">
-                    <div class="material-row">
-                        <div class="grid">
-                            <div>
-                                <label>Материал</label>
-                                <select name="materialGroups[__group__].materials[0].materialId">
-                                    <option value="">Не выбран</option>
-                                    <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Объем / длина</label>
-                                <input type="text" name="materialGroups[__group__].materials[0].amount" placeholder="25 м, 4 шт...">
-                            </div>
-                            <div>
-                                <label>По чему проложены</label>
-                                <input type="text" name="materialGroups[__group__].materials[0].layingSurface" placeholder="По стене, в коробе...">
-                            </div>
+            <template id="material-group-template">
+                <div class="material-group card nested-card">
+                    <div class="grid">
+                        <div>
+                            <label>Название группы</label>
+                            <input type="text" placeholder="Линия" data-field="groupName">
+                        </div>
+                        <div>
+                            <label>Поверхность прокладки</label>
+                            <input type="text" placeholder="По потолку, в земле..." data-field="surface">
                         </div>
                     </div>
+                    <div class="stack materials-container">
+                        <div class="material-row">
+                            <div class="grid">
+                                <div>
+                                    <label>Материал</label>
+                                    <select data-field="materialId">
+                                        <option value="">Не выбран</option>
+                                        <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Объем / длина</label>
+                                    <input type="text" placeholder="25 м, 4 шт..." data-field="amount">
+                                </div>
+                                <div>
+                                    <label>По чему проложены</label>
+                                    <input type="text" placeholder="По стене, в коробе..." data-field="layingSurface">
+                                </div>
+                            </div>
+                            <button type="button" class="link-button danger remove-material">Удалить материал</button>
+                        </div>
+                    </div>
+                    <button type="button" class="button secondary add-material">Добавить материал</button>
+                    <button type="button" class="link-button danger remove-group">Удалить группу</button>
                 </div>
-                <button type="button" class="button secondary add-material" data-group="__group__">Добавить материал</button>
-                <button type="button" class="link-button danger remove-group">Удалить группу</button>
-            </div>
-            <div id="material-row-template" class="material-row" hidden>
-                <div class="grid">
-                    <div>
-                        <label>Материал</label>
-                        <select name="materialGroups[__group__].materials[__index__].materialId">
-                            <option value="">Не выбран</option>
-                            <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
-                        </select>
+            </template>
+            <template id="material-row-template">
+                <div class="material-row">
+                    <div class="grid">
+                        <div>
+                            <label>Материал</label>
+                            <select data-field="materialId">
+                                <option value="">Не выбран</option>
+                                <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Объем / длина</label>
+                            <input type="text" placeholder="25 м, 4 шт..." data-field="amount">
+                        </div>
+                        <div>
+                            <label>По чему проложены</label>
+                            <input type="text" placeholder="По стене, в коробе..." data-field="layingSurface">
+                        </div>
                     </div>
-                    <div>
-                        <label>Объем / длина</label>
-                        <input type="text" name="materialGroups[__group__].materials[__index__].amount" placeholder="25 м, 4 шт...">
-                    </div>
-                    <div>
-                        <label>По чему проложены</label>
-                        <input type="text" name="materialGroups[__group__].materials[__index__].layingSurface" placeholder="По стене, в коробе...">
-                    </div>
+                    <button type="button" class="link-button danger remove-material">Удалить материал</button>
                 </div>
-                <button type="button" class="link-button danger remove-material">Удалить материал</button>
-            </div>
+            </template>
             <button type="button" class="button secondary" id="add-material-group">Добавить группу материалов</button>
         </section>
 
@@ -227,24 +234,20 @@
         const connectionTotal = document.getElementById('connection-total');
 
         function reindexDeviceGroups() {
+            if (!deviceContainer) {
+                return;
+            }
             const groups = deviceContainer.querySelectorAll('.device-group');
             groups.forEach((group, index) => {
                 group.dataset.index = index.toString();
-                const selects = group.querySelectorAll('select');
-                const inputs = group.querySelectorAll('input');
-                selects.forEach(select => {
-                    if (select.name?.includes('deviceGroups')) {
-                        select.name = `deviceGroups[${index}].deviceTypeId`;
+                const fields = group.querySelectorAll('[data-field]');
+                fields.forEach(field => {
+                    const key = field.getAttribute('data-field');
+                    if (!key) {
+                        return;
                     }
-                });
-                inputs.forEach(input => {
-                    if (input.classList.contains('device-count')) {
-                        input.name = `deviceGroups[${index}].deviceCount`;
-                    } else if (input.name?.includes('installLocation')) {
-                        input.name = `deviceGroups[${index}].installLocation`;
-                    } else if (input.name?.includes('connectionPoint')) {
-                        input.name = `deviceGroups[${index}].connectionPoint`;
-                    }
+                    field.removeAttribute('disabled');
+                    field.setAttribute('name', `deviceGroups[${index}].${key}`);
                 });
                 const removeButton = group.querySelector('.remove-device');
                 if (removeButton) {
@@ -255,6 +258,9 @@
         }
 
         function recalcConnections() {
+            if (!deviceContainer) {
+                return;
+            }
             const counts = deviceContainer.querySelectorAll('.device-count');
             let total = 0;
             counts.forEach(input => {
@@ -269,11 +275,10 @@
         }
 
         addDeviceButton?.addEventListener('click', () => {
-            if (!deviceTemplate) {
+            if (!(deviceTemplate instanceof HTMLTemplateElement) || !deviceContainer) {
                 return;
             }
-            const clone = deviceTemplate.cloneNode(true);
-            clone.hidden = false;
+            const clone = deviceTemplate.content.firstElementChild.cloneNode(true);
             deviceContainer.appendChild(clone);
             reindexDeviceGroups();
         });
@@ -305,34 +310,44 @@
         const addMaterialGroupButton = document.getElementById('add-material-group');
 
         function visibleMaterialGroups() {
+            if (!materialGroupsContainer) {
+                return [];
+            }
             return Array.from(materialGroupsContainer.children)
-                .filter(child => child.classList?.contains('material-group') && !child.hasAttribute('hidden'));
+                .filter(child => child.classList?.contains('material-group'));
         }
 
         function reindexMaterialGroups() {
             const groups = visibleMaterialGroups();
             groups.forEach((group, groupIndex) => {
                 group.dataset.index = groupIndex.toString();
-                const groupNameInput = group.querySelector('input[name$="groupName"]');
+                const groupNameInput = group.querySelector('input[data-field="groupName"]');
                 if (groupNameInput) {
                     groupNameInput.name = `materialGroups[${groupIndex}].groupName`;
                 }
-                const surfaceInput = group.querySelector('input[name$="surface"]');
+                const surfaceInput = group.querySelector('input[data-field="surface"]');
                 if (surfaceInput) {
                     surfaceInput.name = `materialGroups[${groupIndex}].surface`;
                 }
                 const rows = group.querySelectorAll('.material-row');
                 rows.forEach((row, rowIndex) => {
-                    const selects = row.querySelectorAll('select');
-                    selects.forEach(select => {
-                        select.name = `materialGroups[${groupIndex}].materials[${rowIndex}].materialId`;
-                    });
-                    const inputs = row.querySelectorAll('input');
-                    inputs.forEach(input => {
-                        if (input.name?.includes('amount')) {
-                            input.name = `materialGroups[${groupIndex}].materials[${rowIndex}].amount`;
-                        } else if (input.name?.includes('layingSurface')) {
-                            input.name = `materialGroups[${groupIndex}].materials[${rowIndex}].layingSurface`;
+                    const fields = row.querySelectorAll('[data-field]');
+                    fields.forEach(field => {
+                        const key = field.getAttribute('data-field');
+                        if (!key) {
+                            return;
+                        }
+                        let name = '';
+                        if (key === 'materialId') {
+                            name = `materialGroups[${groupIndex}].materials[${rowIndex}].materialId`;
+                        } else if (key === 'amount') {
+                            name = `materialGroups[${groupIndex}].materials[${rowIndex}].amount`;
+                        } else if (key === 'layingSurface') {
+                            name = `materialGroups[${groupIndex}].materials[${rowIndex}].layingSurface`;
+                        }
+                        if (name) {
+                            field.removeAttribute('disabled');
+                            field.setAttribute('name', name);
                         }
                     });
                     const removeButton = row.querySelector('.remove-material');
@@ -348,11 +363,10 @@
         }
 
         addMaterialGroupButton?.addEventListener('click', () => {
-            if (!materialGroupTemplate || !materialGroupsContainer) {
+            if (!(materialGroupTemplate instanceof HTMLTemplateElement) || !materialGroupsContainer) {
                 return;
             }
-            const clone = materialGroupTemplate.cloneNode(true);
-            clone.hidden = false;
+            const clone = materialGroupTemplate.content.firstElementChild.cloneNode(true);
             materialGroupsContainer.appendChild(clone);
             reindexMaterialGroups();
         });
@@ -368,13 +382,12 @@
                 if (!groupElement) {
                     return;
                 }
-                const rowsContainer = groupElement.querySelector('.stack');
+                const rowsContainer = groupElement.querySelector('.materials-container');
                 const template = document.getElementById('material-row-template');
-                if (!template || !rowsContainer) {
+                if (!(template instanceof HTMLTemplateElement) || !rowsContainer) {
                     return;
                 }
-                const clone = template.cloneNode(true);
-                clone.hidden = false;
+                const clone = template.content.firstElementChild.cloneNode(true);
                 rowsContainer.appendChild(clone);
                 reindexMaterialGroups();
                 return;
