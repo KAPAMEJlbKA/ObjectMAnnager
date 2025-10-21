@@ -55,10 +55,12 @@ public class ManagedObjectService {
     }
 
     @Transactional
-    public ManagedObject create(String name, String description, String primaryData, UUID customerId, UserAccount creator) {
+    public ManagedObject create(String name, String description, String primaryData,
+                               UUID customerId, Double latitude, Double longitude,
+                               UserAccount creator) {
         ProjectCustomer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
-        ManagedObject managedObject = new ManagedObject(name, description, primaryData, customer);
+        ManagedObject managedObject = new ManagedObject(name, description, primaryData, customer, latitude, longitude);
         managedObject.setCreatedAt(LocalDateTime.now());
         managedObject.setUpdatedAt(LocalDateTime.now());
         ManagedObject saved = managedObjectRepository.save(managedObject);
@@ -71,7 +73,9 @@ public class ManagedObjectService {
     }
 
     @Transactional
-    public ManagedObject update(UUID id, String name, String description, String primaryData, UUID customerId, UserAccount editor) {
+    public ManagedObject update(UUID id, String name, String description, String primaryData,
+                               UUID customerId, Double latitude, Double longitude,
+                               UserAccount editor) {
         ManagedObject managedObject = getById(id);
         ProjectCustomer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
@@ -92,8 +96,35 @@ public class ManagedObjectService {
                     "customer", managedObject.getCustomer().getName(), customer.getName());
             managedObject.setCustomer(customer);
         }
+        if (!Objects.equals(managedObject.getLatitude(), latitude)) {
+            recordChange(managedObject, editor, ObjectChangeType.UPDATED,
+                    "latitude",
+                    managedObject.getLatitude() == null ? null : managedObject.getLatitude().toString(),
+                    latitude == null ? null : latitude.toString());
+            managedObject.setLatitude(latitude);
+        }
+        if (!Objects.equals(managedObject.getLongitude(), longitude)) {
+            recordChange(managedObject, editor, ObjectChangeType.UPDATED,
+                    "longitude",
+                    managedObject.getLongitude() == null ? null : managedObject.getLongitude().toString(),
+                    longitude == null ? null : longitude.toString());
+            managedObject.setLongitude(longitude);
+        }
         managedObject.setUpdatedAt(LocalDateTime.now());
         return managedObjectRepository.save(managedObject);
+    }
+
+    @Transactional
+    public ManagedObject updatePrimaryData(UUID id, String primaryData, UserAccount editor) {
+        ManagedObject managedObject = getById(id);
+        if (!Objects.equals(managedObject.getPrimaryData(), primaryData)) {
+            recordChange(managedObject, editor, ObjectChangeType.UPDATED,
+                    "primaryData", managedObject.getPrimaryData(), primaryData);
+            managedObject.setPrimaryData(primaryData);
+            managedObject.setUpdatedAt(LocalDateTime.now());
+            managedObjectRepository.save(managedObject);
+        }
+        return managedObject;
     }
 
     @Transactional

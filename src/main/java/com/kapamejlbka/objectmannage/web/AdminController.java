@@ -1,11 +1,19 @@
 package com.kapamejlbka.objectmannage.web;
 
+import com.kapamejlbka.objectmannage.model.DeviceType;
 import com.kapamejlbka.objectmannage.model.ManagedObject;
+import com.kapamejlbka.objectmannage.model.MapProvider;
+import com.kapamejlbka.objectmannage.model.MountingElement;
 import com.kapamejlbka.objectmannage.model.UserAccount;
+import com.kapamejlbka.objectmannage.model.InstallationMaterial;
 import com.kapamejlbka.objectmannage.repository.ProjectCustomerRepository;
+import com.kapamejlbka.objectmannage.repository.DeviceTypeRepository;
+import com.kapamejlbka.objectmannage.repository.MountingElementRepository;
+import com.kapamejlbka.objectmannage.repository.InstallationMaterialRepository;
 import com.kapamejlbka.objectmannage.service.DatabaseSettingsService;
 import com.kapamejlbka.objectmannage.service.ManagedObjectService;
 import com.kapamejlbka.objectmannage.service.UserService;
+import com.kapamejlbka.objectmannage.service.ApplicationSettingsService;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -30,15 +38,27 @@ public class AdminController {
     private final DatabaseSettingsService databaseSettingsService;
     private final ManagedObjectService managedObjectService;
     private final ProjectCustomerRepository customerRepository;
+    private final DeviceTypeRepository deviceTypeRepository;
+    private final MountingElementRepository mountingElementRepository;
+    private final InstallationMaterialRepository installationMaterialRepository;
+    private final ApplicationSettingsService applicationSettingsService;
     private final UserService userService;
 
     public AdminController(DatabaseSettingsService databaseSettingsService,
                            ManagedObjectService managedObjectService,
                            ProjectCustomerRepository customerRepository,
+                           DeviceTypeRepository deviceTypeRepository,
+                           MountingElementRepository mountingElementRepository,
+                           InstallationMaterialRepository installationMaterialRepository,
+                           ApplicationSettingsService applicationSettingsService,
                            UserService userService) {
         this.databaseSettingsService = databaseSettingsService;
         this.managedObjectService = managedObjectService;
         this.customerRepository = customerRepository;
+        this.deviceTypeRepository = deviceTypeRepository;
+        this.mountingElementRepository = mountingElementRepository;
+        this.installationMaterialRepository = installationMaterialRepository;
+        this.applicationSettingsService = applicationSettingsService;
         this.userService = userService;
     }
 
@@ -51,6 +71,13 @@ public class AdminController {
         model.addAttribute("pendingObjects", managedObjectService.listPendingDeletion());
         model.addAttribute("users", userService.findAll());
         model.addAttribute("userForm", new UserForm());
+        model.addAttribute("mapSettingsForm", MapSettingsForm.from(applicationSettingsService.getMapProvider()));
+        model.addAttribute("deviceTypeForm", new DeviceTypeForm());
+        model.addAttribute("mountingElementForm", new MountingElementForm());
+        model.addAttribute("installationMaterialForm", new InstallationMaterialForm());
+        model.addAttribute("deviceTypes", deviceTypeRepository.findAll());
+        model.addAttribute("mountingElements", mountingElementRepository.findAll());
+        model.addAttribute("installationMaterials", installationMaterialRepository.findAll());
         return "admin/dashboard";
     }
 
@@ -87,13 +114,64 @@ public class AdminController {
         String name = form.getName() == null || form.getName().isBlank() ? current.getName() : form.getName();
         String description = form.getDescription() == null || form.getDescription().isBlank() ? current.getDescription() : form.getDescription();
         String primaryData = form.getPrimaryData() == null || form.getPrimaryData().isBlank() ? current.getPrimaryData() : form.getPrimaryData();
-        managedObjectService.update(id, name, description, primaryData, form.getCustomerId(), admin);
+        managedObjectService.update(id, name, description, primaryData, form.getCustomerId(),
+                form.getLatitude(), form.getLongitude(), admin);
         return "redirect:/admin";
     }
 
     @PostMapping("/admin/users")
     public String createUser(@ModelAttribute("userForm") UserForm form) {
         userService.createUser(form.getUsername(), form.getPassword(), form.isAdmin());
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/settings/map-provider")
+    public String updateMapProvider(@ModelAttribute("mapSettingsForm") MapSettingsForm form) {
+        applicationSettingsService.updateMapProvider(form.getMapProvider());
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/device-types")
+    public String createDeviceType(@ModelAttribute("deviceTypeForm") DeviceTypeForm form) {
+        if (form.getName() != null && !form.getName().isBlank()) {
+            deviceTypeRepository.save(new DeviceType(form.getName().trim()));
+        }
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/device-types/{id}/delete")
+    public String deleteDeviceType(@PathVariable UUID id) {
+        deviceTypeRepository.deleteById(id);
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/mounting-elements")
+    public String createMountingElement(@ModelAttribute("mountingElementForm") MountingElementForm form) {
+        if (form.getName() != null && !form.getName().isBlank()) {
+            mountingElementRepository.save(new MountingElement(form.getName().trim()));
+        }
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/mounting-elements/{id}/delete")
+    public String deleteMountingElement(@PathVariable UUID id) {
+        mountingElementRepository.deleteById(id);
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/installation-materials")
+    public String createInstallationMaterial(@ModelAttribute("installationMaterialForm") InstallationMaterialForm form) {
+        if (form.getName() != null && !form.getName().isBlank()) {
+            InstallationMaterial material = new InstallationMaterial(form.getName().trim(),
+                    form.getUnit() != null ? form.getUnit().trim() : null);
+            installationMaterialRepository.save(material);
+        }
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/installation-materials/{id}/delete")
+    public String deleteInstallationMaterial(@PathVariable UUID id) {
+        installationMaterialRepository.deleteById(id);
         return "redirect:/admin";
     }
 
@@ -179,6 +257,8 @@ public class AdminController {
         private String name;
         private String description;
         private String primaryData;
+        private Double latitude;
+        private Double longitude;
 
         public UUID getCustomerId() {
             return customerId;
@@ -211,6 +291,22 @@ public class AdminController {
         public void setPrimaryData(String primaryData) {
             this.primaryData = primaryData;
         }
+
+        public Double getLatitude() {
+            return latitude;
+        }
+
+        public void setLatitude(Double latitude) {
+            this.latitude = latitude;
+        }
+
+        public Double getLongitude() {
+            return longitude;
+        }
+
+        public void setLongitude(Double longitude) {
+            this.longitude = longitude;
+        }
     }
 
     public static class UserForm {
@@ -242,6 +338,73 @@ public class AdminController {
 
         public void setAdmin(boolean admin) {
             this.admin = admin;
+        }
+    }
+
+    public static class MapSettingsForm {
+        @NotNull
+        private MapProvider mapProvider = MapProvider.YANDEX;
+
+        public static MapSettingsForm from(MapProvider provider) {
+            MapSettingsForm form = new MapSettingsForm();
+            form.setMapProvider(provider);
+            return form;
+        }
+
+        public MapProvider getMapProvider() {
+            return mapProvider;
+        }
+
+        public void setMapProvider(MapProvider mapProvider) {
+            this.mapProvider = mapProvider;
+        }
+    }
+
+    public static class DeviceTypeForm {
+        @NotBlank
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
+    public static class MountingElementForm {
+        @NotBlank
+        private String name;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+    }
+
+    public static class InstallationMaterialForm {
+        @NotBlank
+        private String name;
+        private String unit;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getUnit() {
+            return unit;
+        }
+
+        public void setUnit(String unit) {
+            this.unit = unit;
         }
     }
 }

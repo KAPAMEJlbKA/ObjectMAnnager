@@ -1,10 +1,14 @@
 package com.kapamejlbka.objectmannage.model;
 
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,9 +27,18 @@ public class ProjectCustomer {
     @Column(nullable = false, unique = true)
     private String name;
 
+    @Column(name = "enterprise_name")
+    private String enterpriseName;
+
+    @Column(name = "tax_number")
+    private String taxNumber;
+
     private String contactEmail;
 
-    private String contactPhone;
+    @ElementCollection
+    @CollectionTable(name = "project_customer_phones", joinColumns = @JoinColumn(name = "customer_id"))
+    @Column(name = "phone_number", length = 64)
+    private List<String> contactPhones = new ArrayList<>();
 
     private LocalDateTime createdAt;
 
@@ -35,11 +48,20 @@ public class ProjectCustomer {
     public ProjectCustomer() {
     }
 
-    public ProjectCustomer(String name, String contactEmail, String contactPhone) {
+    public ProjectCustomer(String name, String enterpriseName, String taxNumber,
+                           String contactEmail, List<String> contactPhones) {
         this.name = name;
+        this.enterpriseName = enterpriseName;
+        this.taxNumber = taxNumber;
         this.contactEmail = contactEmail;
-        this.contactPhone = contactPhone;
-        this.createdAt = LocalDateTime.now();
+        setContactPhones(contactPhones);
+    }
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
 
     public UUID getId() {
@@ -54,6 +76,22 @@ public class ProjectCustomer {
         this.name = name;
     }
 
+    public String getEnterpriseName() {
+        return enterpriseName;
+    }
+
+    public void setEnterpriseName(String enterpriseName) {
+        this.enterpriseName = enterpriseName;
+    }
+
+    public String getTaxNumber() {
+        return taxNumber;
+    }
+
+    public void setTaxNumber(String taxNumber) {
+        this.taxNumber = taxNumber;
+    }
+
     public String getContactEmail() {
         return contactEmail;
     }
@@ -62,12 +100,18 @@ public class ProjectCustomer {
         this.contactEmail = contactEmail;
     }
 
-    public String getContactPhone() {
-        return contactPhone;
+    public List<String> getContactPhones() {
+        return Collections.unmodifiableList(contactPhones);
     }
 
-    public void setContactPhone(String contactPhone) {
-        this.contactPhone = contactPhone;
+    public void setContactPhones(List<String> phones) {
+        this.contactPhones.clear();
+        if (phones != null) {
+            phones.stream()
+                    .map(phone -> phone == null ? null : phone.trim())
+                    .filter(phone -> phone != null && !phone.isEmpty())
+                    .forEach(this.contactPhones::add);
+        }
     }
 
     public LocalDateTime getCreatedAt() {

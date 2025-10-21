@@ -23,6 +23,9 @@
         <h2>Создать новый объект</h2>
         <form method="post" action="/objects" class="grid-form" th:object="${form}">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <div class="alert" th:if="${#fields.hasErrors('*')}">
+                <p th:each="err : ${#fields.errors('*')}" th:text="${err}"></p>
+            </div>
             <div>
                 <label for="name">Название</label>
                 <input type="text" id="name" th:field="*{name}" required>
@@ -35,12 +38,61 @@
                 <label for="primaryData">Первичные данные</label>
                 <textarea id="primaryData" th:field="*{primaryData}" rows="4" placeholder="JSON или свободная форма"></textarea>
             </div>
+            <div class="grid">
+                <div>
+                    <label for="latitude">Широта</label>
+                    <input type="number" id="latitude" th:field="*{latitude}" step="0.000001" placeholder="53.902496">
+                </div>
+                <div>
+                    <label for="longitude">Долгота</label>
+                    <input type="number" id="longitude" th:field="*{longitude}" step="0.000001" placeholder="27.561481">
+                </div>
+            </div>
             <div>
                 <label for="customer">Заказчик</label>
-                <select id="customer" th:field="*{customerId}" required>
-                    <option value="" disabled selected>Выберите заказчика</option>
-                    <option th:each="customer : ${customers}" th:value="${customer.id}" th:text="${customer.name}"></option>
+                <select id="customer" th:field="*{customerId}" th:attr="disabled=${form.createNewCustomer} ? 'disabled' : null">
+                    <option value="" disabled>Выберите заказчика</option>
+                    <option th:each="customer : ${customers}" th:value="${customer.id}" th:text="${customer.name}" th:selected="${customer.id == form.customerId}"></option>
                 </select>
+                <label class="checkbox">
+                    <input type="checkbox" id="createNewCustomer" th:field="*{createNewCustomer}">
+                    Создать нового заказчика
+                </label>
+            </div>
+            <div id="newCustomerSection" th:classappend="${form.createNewCustomer} ? '' : ' is-hidden'" class="card nested-card">
+                <h3>Новый заказчик</h3>
+                <div class="grid-form">
+                    <div>
+                        <label for="newCustomerName">Название</label>
+                        <input type="text" id="newCustomerName" th:field="*{newCustomer.name}">
+                    </div>
+                    <div>
+                        <label for="newCustomerEnterprise">Наименование предприятия</label>
+                        <input type="text" id="newCustomerEnterprise" th:field="*{newCustomer.enterpriseName}" placeholder="ООО \"Ромашка\"">
+                    </div>
+                    <div>
+                        <label for="newCustomerTax">УНП</label>
+                        <input type="text" id="newCustomerTax" th:field="*{newCustomer.taxNumber}" placeholder="123456789">
+                    </div>
+                    <div>
+                        <label for="newCustomerEmail">Email</label>
+                        <input type="email" id="newCustomerEmail" th:field="*{newCustomer.contactEmail}" placeholder="client@example.com">
+                    </div>
+                    <div class="repeatable-field">
+                        <label>Контактные телефоны</label>
+                        <div id="object-customer-phones" class="stack">
+                            <div class="phone-row" th:each="phone, iter : *{newCustomer.contactPhones}" th:data-index="${iter.index}">
+                                <input type="text" th:field="*{newCustomer.contactPhones[__${iter.index}__]}" placeholder="+375 (29) 000-00-00">
+                                <button type="button" class="link-button danger remove-object-phone" th:if="${iter.index > 0}">Удалить</button>
+                            </div>
+                        </div>
+                        <div id="object-phone-template" class="phone-row" hidden>
+                            <input type="text" name="newCustomer.contactPhones[__index__]" placeholder="+375 (29) 000-00-00">
+                            <button type="button" class="link-button danger remove-object-phone">Удалить</button>
+                        </div>
+                        <button type="button" id="addObjectPhone" class="button secondary">Добавить телефон</button>
+                    </div>
+                </div>
             </div>
             <div class="form-row">
                 <button type="submit">Создать</button>
@@ -52,5 +104,76 @@
 <footer class="footer">
     <p>Object Manager &copy; 2025</p>
 </footer>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggle = document.getElementById('createNewCustomer');
+        const section = document.getElementById('newCustomerSection');
+        const customerSelect = document.getElementById('customer');
+        const phoneContainer = document.getElementById('object-customer-phones');
+        const phoneTemplate = document.getElementById('object-phone-template');
+        const addPhoneButton = document.getElementById('addObjectPhone');
+
+        function updateVisibility() {
+            const creating = toggle?.checked;
+            if (section) {
+                section.classList.toggle('is-hidden', !creating);
+            }
+            if (customerSelect) {
+                if (creating) {
+                    customerSelect.setAttribute('disabled', 'disabled');
+                    customerSelect.value = '';
+                } else {
+                    customerSelect.removeAttribute('disabled');
+                }
+            }
+        }
+
+        function reindexPhones() {
+            if (!phoneContainer) {
+                return;
+            }
+            const rows = phoneContainer.querySelectorAll('.phone-row');
+            rows.forEach((row, index) => {
+                const input = row.querySelector('input');
+                if (input) {
+                    input.name = `newCustomer.contactPhones[${index}]`;
+                }
+                const removeButton = row.querySelector('.remove-object-phone');
+                if (removeButton) {
+                    removeButton.style.display = index === 0 ? 'none' : '';
+                }
+            });
+        }
+
+        toggle?.addEventListener('change', updateVisibility);
+        updateVisibility();
+
+        addPhoneButton?.addEventListener('click', () => {
+            if (!phoneTemplate || !phoneContainer) {
+                return;
+            }
+            const clone = phoneTemplate.cloneNode(true);
+            clone.hidden = false;
+            phoneContainer.appendChild(clone);
+            reindexPhones();
+        });
+
+        phoneContainer?.addEventListener('click', (event) => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+            if (target.classList.contains('remove-object-phone')) {
+                const row = target.closest('.phone-row');
+                if (row && phoneContainer.children.length > 1) {
+                    row.remove();
+                    reindexPhones();
+                }
+            }
+        });
+
+        reindexPhones();
+    });
+</script>
 </body>
 </html>

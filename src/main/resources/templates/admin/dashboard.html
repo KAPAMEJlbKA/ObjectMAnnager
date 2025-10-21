@@ -92,6 +92,19 @@
     </section>
 
     <section class="card">
+        <h2>Настройки карт</h2>
+        <p class="muted">Выберите сервис карт, который будет использоваться для ссылок на координаты объектов.</p>
+        <form method="post" action="/admin/settings/map-provider" class="inline-form" th:object="${mapSettingsForm}">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <select th:field="*{mapProvider}">
+                <option th:value="${T(com.kapamejlbka.objectmannage.model.MapProvider).YANDEX}">Яндекс.Карты</option>
+                <option th:value="${T(com.kapamejlbka.objectmannage.model.MapProvider).GOOGLE}">Google Maps</option>
+            </select>
+            <button type="submit">Сохранить</button>
+        </form>
+    </section>
+
+    <section class="card">
         <h2>Объекты ожидающие решения</h2>
         <p class="muted">Пользователи не видят объекты из этого списка. Администратор может удалить или перенести их.</p>
         <p th:if="${#lists.isEmpty(pendingObjects)}">Запросов на удаление нет.</p>
@@ -118,6 +131,16 @@
                         <div>
                             <label>Первичные данные</label>
                             <textarea name="primaryData" rows="3" th:placeholder="${object.primaryData}"></textarea>
+                        </div>
+                        <div class="grid">
+                            <div>
+                                <label>Широта</label>
+                                <input type="number" name="latitude" step="0.000001" th:placeholder="${object.latitude}">
+                            </div>
+                            <div>
+                                <label>Долгота</label>
+                                <input type="number" name="longitude" step="0.000001" th:placeholder="${object.longitude}">
+                            </div>
                         </div>
                         <div>
                             <label>Новый заказчик</label>
@@ -167,6 +190,75 @@
             </tr>
             </tbody>
         </table>
+    </section>
+
+    <section class="card">
+        <h2>Справочники для первичных данных</h2>
+        <div class="grid">
+            <div>
+                <h3>Типы устройств</h3>
+                <form method="post" action="/admin/device-types" class="inline-form" th:object="${deviceTypeForm}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="text" th:field="*{name}" placeholder="Видеокамера" required>
+                    <button type="submit">Добавить</button>
+                </form>
+                <ul class="compact-list">
+                    <li th:if="${#lists.isEmpty(deviceTypes)}" class="muted">Список пуст.</li>
+                    <li th:each="type : ${deviceTypes}">
+                        <div class="inline-form">
+                            <span th:text="${type.name}"></span>
+                            <form method="post" th:action="@{'/admin/device-types/' + ${type.id} + '/delete'}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="link-button danger">Удалить</button>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h3>Монтажные элементы</h3>
+                <form method="post" action="/admin/mounting-elements" class="inline-form" th:object="${mountingElementForm}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="text" th:field="*{name}" placeholder="Монтажный шкаф" required>
+                    <button type="submit">Добавить</button>
+                </form>
+                <ul class="compact-list">
+                    <li th:if="${#lists.isEmpty(mountingElements)}" class="muted">Список пуст.</li>
+                    <li th:each="element : ${mountingElements}">
+                        <div class="inline-form">
+                            <span th:text="${element.name}"></span>
+                            <form method="post" th:action="@{'/admin/mounting-elements/' + ${element.id} + '/delete'}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="link-button danger">Удалить</button>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h3>Монтажные материалы</h3>
+                <form method="post" action="/admin/installation-materials" class="grid-form" th:object="${installationMaterialForm}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="text" th:field="*{name}" placeholder="Гофротруба" required>
+                    <input type="text" th:field="*{unit}" placeholder="м, шт, коробка">
+                    <div class="form-row">
+                        <button type="submit">Добавить</button>
+                    </div>
+                </form>
+                <ul class="compact-list">
+                    <li th:if="${#lists.isEmpty(installationMaterials)}" class="muted">Список пуст.</li>
+                    <li th:each="material : ${installationMaterials}">
+                        <div class="inline-form">
+                            <span th:text="${material.name} + (material.unit != null ? ' (' + material.unit + ')' : '')"></span>
+                            <form method="post" th:action="@{'/admin/installation-materials/' + ${material.id} + '/delete'}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="link-button danger">Удалить</button>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </section>
 </main>
 <footer class="footer">
