@@ -50,14 +50,24 @@
         <p th:if="${#lists.isEmpty(object.files)}">Файлы ещё не загружены.</p>
         <div class="file-gallery" th:if="${!#lists.isEmpty(object.files)}">
             <div class="file-card" th:each="file : ${object.files}">
-                <div class="file-preview">
-                    <img th:if="${file.contentType != null and file.contentType.startsWith('image/') }"
+                <div class="file-preview"
+                     th:with="isImage=${file.contentType != null and file.contentType.startsWith('image/')},
+                              isPdf=${file.contentType == 'application/pdf'},
+                              isExcel=${(file.contentType != null and (file.contentType.startsWith('application/vnd.ms-excel')
+                                      or file.contentType.startsWith('application/vnd.openxmlformats-officedocument.spreadsheetml')))
+                                      or (#strings.equalsIgnoreCase(file.extension, 'xls') or #strings.equalsIgnoreCase(file.extension, 'xlsx'))}"
+                     th:classappend="${isExcel} ? ' excel-preview-container'">
+                    <img th:if="${isImage}"
                          th:src="@{|/objects/${object.id}/files/${file.id}|}"
                          th:alt="${file.originalFilename}">
-                    <iframe th:if="${file.contentType == 'application/pdf'}"
+                    <iframe th:if="${isPdf}"
                             th:src="@{|/objects/${object.id}/files/${file.id}|}"
                             loading="lazy"></iframe>
-                    <div class="file-icon" th:if="${file.contentType == null or (!file.contentType.startsWith('image/') and file.contentType != 'application/pdf')}">
+                    <iframe th:if="${isExcel}"
+                            class="sheet-preview"
+                            th:src="@{|/objects/${object.id}/files/${file.id}/preview|}"
+                            loading="lazy"></iframe>
+                    <div class="file-icon" th:if="${!isImage and !isPdf and !isExcel}">
                         <span class="file-ext"
                               th:text="${#strings.isEmpty(file.extension) ? 'FILE' : #strings.toUpperCase(file.extension)}">
                             DOC
