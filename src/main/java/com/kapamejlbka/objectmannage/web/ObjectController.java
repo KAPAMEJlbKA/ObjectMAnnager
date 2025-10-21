@@ -22,8 +22,6 @@ import com.kapamejlbka.objectmannage.service.FilePreviewService;
 import com.kapamejlbka.objectmannage.service.ManagedObjectService;
 import com.kapamejlbka.objectmannage.service.UserService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.AssertTrue;
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -116,18 +114,32 @@ public class ObjectController {
                                BindingResult bindingResult,
                                Principal principal,
                                Model model) {
+        if (form.isCreateNewCustomer()) {
+            ObjectCustomerForm newCustomer = form.getNewCustomer();
+            if (newCustomer == null || newCustomer.sanitizedName() == null) {
+                bindingResult.rejectValue("newCustomer.name", "NotBlank", "Укажите название нового заказчика");
+            }
+            if (newCustomer != null && newCustomer.sanitizedEmail() != null
+                    && !newCustomer.isEmailValid()) {
+                bindingResult.rejectValue("newCustomer.contactEmail", "Email", "Некорректный email");
+            }
+        } else if (form.getCustomerId() == null) {
+            bindingResult.rejectValue("customerId", "NotNull", "Выберите заказчика");
+        }
+
         if (bindingResult.hasErrors()) {
             return "objects/create";
         }
         UserAccount user = userService.findByUsername(principal.getName());
         UUID customerId = form.getCustomerId();
         if (form.isCreateNewCustomer()) {
+            ObjectCustomerForm newCustomerForm = form.getNewCustomer();
             ProjectCustomer newCustomer = new ProjectCustomer(
-                    form.getNewCustomer().getName(),
-                    form.getNewCustomer().getEnterpriseName(),
-                    form.getNewCustomer().getTaxNumber(),
-                    form.getNewCustomer().getContactEmail(),
-                    form.getNewCustomer().sanitizedPhones()
+                    newCustomerForm.sanitizedName(),
+                    newCustomerForm.sanitizedEnterpriseName(),
+                    newCustomerForm.sanitizedTaxNumber(),
+                    newCustomerForm.sanitizedEmail(),
+                    newCustomerForm.sanitizedPhones()
             );
             customerRepository.save(newCustomer);
             customerId = newCustomer.getId();
@@ -135,7 +147,6 @@ public class ObjectController {
         ManagedObject managedObject = managedObjectService.create(
                 form.getName(),
                 form.getDescription(),
-                form.getPrimaryData(),
                 customerId,
                 form.getLatitude(),
                 form.getLongitude(),
@@ -302,21 +313,11 @@ public class ObjectController {
         @NotBlank
         private String name;
         private String description;
-        private String primaryData;
         private UUID customerId;
         private boolean createNewCustomer;
-        @Valid
         private ObjectCustomerForm newCustomer = new ObjectCustomerForm();
         private Double latitude;
         private Double longitude;
-
-        @AssertTrue(message = "Выберите заказчика или заполните данные нового заказчика")
-        public boolean isCustomerSelectionValid() {
-            if (createNewCustomer) {
-                return newCustomer != null && newCustomer.isValid();
-            }
-            return customerId != null;
-        }
 
         public String getName() {
             return name;
@@ -332,14 +333,6 @@ public class ObjectController {
 
         public void setDescription(String description) {
             this.description = description;
-        }
-
-        public String getPrimaryData() {
-            return primaryData;
-        }
-
-        public void setPrimaryData(String primaryData) {
-            this.primaryData = primaryData;
         }
 
         public UUID getCustomerId() {
@@ -387,20 +380,14 @@ public class ObjectController {
     }
 
     public static class ObjectCustomerForm {
-        @NotBlank
         private String name;
         private String enterpriseName;
         private String taxNumber;
-        @Email(message = "Некорректный email", regexp = "^$|^[^@]+@[^@]+$")
         private String contactEmail;
         private List<String> contactPhones = new ArrayList<>();
 
         public ObjectCustomerForm() {
             contactPhones.add("");
-        }
-
-        public boolean isValid() {
-            return StringUtils.hasText(name);
         }
 
         public List<String> sanitizedPhones() {
@@ -411,6 +398,27 @@ public class ObjectController {
                     .map(phone -> phone == null ? null : phone.trim())
                     .filter(phone -> phone != null && !phone.isEmpty())
                     .collect(Collectors.toList());
+        }
+
+        public boolean isEmailValid() {
+            String email = sanitizedEmail();
+            return email == null || email.matches("^[^@]+@[^@]+$");
+        }
+
+        public String sanitizedName() {
+            return StringUtils.hasText(name) ? name.trim() : null;
+        }
+
+        public String sanitizedEnterpriseName() {
+            return StringUtils.hasText(enterpriseName) ? enterpriseName.trim() : null;
+        }
+
+        public String sanitizedTaxNumber() {
+            return StringUtils.hasText(taxNumber) ? taxNumber.trim() : null;
+        }
+
+        public String sanitizedEmail() {
+            return StringUtils.hasText(contactEmail) ? contactEmail.trim() : null;
         }
 
         public String getName() {
