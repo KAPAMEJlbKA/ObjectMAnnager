@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
+import java.util.Locale;
 import java.util.UUID;
 
 @Entity
@@ -102,11 +103,59 @@ public class StoredFile {
         return originalFilename.substring(lastDotIndex + 1);
     }
 
+    public boolean isImageType() {
+        String normalizedContentType = normalizeContentType();
+        return !normalizedContentType.isEmpty() && normalizedContentType.startsWith("image/");
+    }
+
+    public boolean isPdfType() {
+        return "application/pdf".equals(normalizeContentType());
+    }
+
+    public boolean isExcelType() {
+        String normalizedContentType = normalizeContentType();
+        if (normalizedContentType.startsWith("application/vnd.ms-excel")
+                || normalizedContentType.startsWith("application/vnd.openxmlformats-officedocument.spreadsheetml")) {
+            return true;
+        }
+
+        String extension = normalizeExtension();
+        return "xls".equals(extension) || "xlsx".equals(extension);
+    }
+
+    public boolean isWordType() {
+        String normalizedContentType = normalizeContentType();
+        if ("application/msword".equals(normalizedContentType)
+                || normalizedContentType.startsWith("application/vnd.openxmlformats-officedocument.wordprocessingml")) {
+            return true;
+        }
+
+        String extension = normalizeExtension();
+        return "doc".equals(extension) || "docx".equals(extension);
+    }
+
+    public boolean hasCustomPreview() {
+        return isExcelType() || isWordType();
+    }
+
+    public boolean isUnknownType() {
+        return !isImageType() && !isPdfType() && !isExcelType() && !isWordType();
+    }
+
     public ManagedObject getManagedObject() {
         return managedObject;
     }
 
     public void setManagedObject(ManagedObject managedObject) {
         this.managedObject = managedObject;
+    }
+
+    private String normalizeContentType() {
+        return contentType == null ? "" : contentType.toLowerCase(Locale.ROOT);
+    }
+
+    private String normalizeExtension() {
+        String extension = getExtension();
+        return extension.isEmpty() ? "" : extension.toLowerCase(Locale.ROOT);
     }
 }
