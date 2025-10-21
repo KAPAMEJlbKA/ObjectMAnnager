@@ -88,7 +88,9 @@
                     <div class="file-actions">
                         <a href="#"
                            class="button secondary open-preview"
-                           th:attr="data-preview-url=${isExcel or isWord ? @{|/objects/${object.id}/files/${file.id}/preview|} : @{|/objects/${object.id}/files/${file.id}|}},
+                           th:with="downloadUrl=@{/objects/{objectId}/files/{fileId}(objectId=${object.id}, fileId=${file.id})},
+                                    previewUrl=@{/objects/{objectId}/files/{fileId}/preview(objectId=${object.id}, fileId=${file.id})}"
+                           th:attr="data-preview-url=${(isExcel or isWord) ? previewUrl : downloadUrl},
                                     data-file-name=${file.originalFilename}">
                             Открыть
                         </a>
