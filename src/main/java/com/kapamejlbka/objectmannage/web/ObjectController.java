@@ -7,6 +7,7 @@ import com.kapamejlbka.objectmannage.model.StoredFile;
 import com.kapamejlbka.objectmannage.model.UserAccount;
 import com.kapamejlbka.objectmannage.repository.ObjectChangeRepository;
 import com.kapamejlbka.objectmannage.repository.ProjectCustomerRepository;
+import com.kapamejlbka.objectmannage.service.FilePreviewService;
 import com.kapamejlbka.objectmannage.service.ManagedObjectService;
 import com.kapamejlbka.objectmannage.service.UserService;
 import jakarta.validation.constraints.NotBlank;
@@ -41,15 +42,18 @@ public class ObjectController {
     private final ProjectCustomerRepository customerRepository;
     private final ObjectChangeRepository objectChangeRepository;
     private final UserService userService;
+    private final FilePreviewService filePreviewService;
 
     public ObjectController(ManagedObjectService managedObjectService,
                             ProjectCustomerRepository customerRepository,
                             ObjectChangeRepository objectChangeRepository,
-                            UserService userService) {
+                            UserService userService,
+                            FilePreviewService filePreviewService) {
         this.managedObjectService = managedObjectService;
         this.customerRepository = customerRepository;
         this.objectChangeRepository = objectChangeRepository;
         this.userService = userService;
+        this.filePreviewService = filePreviewService;
     }
 
     @ModelAttribute("customers")
@@ -131,6 +135,16 @@ public class ObjectController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(resource);
+    }
+
+    @GetMapping("/{objectId}/files/{fileId}/preview")
+    public ResponseEntity<String> previewFile(@PathVariable UUID objectId,
+                                              @PathVariable UUID fileId) {
+        StoredFile file = managedObjectService.getFile(objectId, fileId);
+        String previewHtml = filePreviewService.renderPreview(file);
+        return ResponseEntity.ok()
+                .contentType(MediaType.TEXT_HTML)
+                .body(previewHtml);
     }
 
     @PostMapping("/{id}/request-delete")

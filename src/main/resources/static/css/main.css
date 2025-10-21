@@ -225,6 +225,12 @@ button:hover {
     overflow: hidden;
 }
 
+.file-preview.excel-preview-container {
+    padding-top: 0;
+    height: 320px;
+    background: #ffffff;
+}
+
 .file-preview img,
 .file-preview iframe {
     position: absolute;
@@ -234,6 +240,12 @@ button:hover {
     height: 100%;
     object-fit: cover;
     border: none;
+}
+
+.file-preview.excel-preview-container iframe {
+    position: relative;
+    object-fit: contain;
+    background: transparent;
 }
 
 .file-icon {
