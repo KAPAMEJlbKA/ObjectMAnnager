@@ -89,6 +89,19 @@ public class StoredFile {
         this.contentType = contentType;
     }
 
+    public String getExtension() {
+        if (originalFilename == null) {
+            return "";
+        }
+
+        int lastDotIndex = originalFilename.lastIndexOf('.');
+        if (lastDotIndex < 0 || lastDotIndex == originalFilename.length() - 1) {
+            return "";
+        }
+
+        return originalFilename.substring(lastDotIndex + 1);
+    }
+
     public ManagedObject getManagedObject() {
         return managedObject;
     }

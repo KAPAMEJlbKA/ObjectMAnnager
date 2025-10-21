@@ -59,7 +59,7 @@
                             loading="lazy"></iframe>
                     <div class="file-icon" th:if="${file.contentType == null or (!file.contentType.startsWith('image/') and file.contentType != 'application/pdf')}">
                         <span class="file-ext"
-                              th:text="${#strings.isEmpty(#strings.substringAfterLast(file.originalFilename,'.')) ? 'FILE' : #strings.toUpperCase(#strings.substringAfterLast(file.originalFilename,'.'))}">
+                              th:text="${#strings.isEmpty(file.extension) ? 'FILE' : #strings.toUpperCase(file.extension)}">
                             DOC
                         </span>
                     </div>
