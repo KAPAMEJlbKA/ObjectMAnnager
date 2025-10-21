@@ -32,9 +32,17 @@
         </div>
         <p class="meta">Заказчик: <strong th:text="${object.customer.name}"></strong></p>
         <p><strong>Описание:</strong> <span th:text="${object.description}"></span></p>
+        <div class="meta" th:if="${coordinateDisplay != null}">
+            Координаты: <strong th:text="${coordinateDisplay}"></strong>
+            <a th:if="${mapLink != null}" th:href="${mapLink}" target="_blank" class="button secondary">Открыть на карте</a>
+        </div>
+        <p class="muted" th:if="${coordinateDisplay == null}">Координаты не указаны.</p>
         <p><strong>Первичные данные:</strong></p>
         <p class="muted" th:if="${#strings.isEmpty(object.primaryData)}">Данные не заполнены.</p>
         <pre class="primary-data" th:if="${!#strings.isEmpty(object.primaryData)}" th:text="${object.primaryData}"></pre>
+        <div class="form-row">
+            <a class="button secondary" th:href="@{'/objects/' + ${object.id} + '/primary-data/wizard'}">Заполнить первичные данные</a>
+        </div>
         <p class="meta">Создан: <span th:text="${object.createdAt}"></span></p>
         <p class="meta">Обновлён: <span th:text="${object.updatedAt}"></span></p>
     </section>

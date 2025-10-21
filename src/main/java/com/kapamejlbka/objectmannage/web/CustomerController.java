@@ -4,6 +4,9 @@ import com.kapamejlbka.objectmannage.model.ProjectCustomer;
 import com.kapamejlbka.objectmannage.repository.ProjectCustomerRepository;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.annotation.Validated;
@@ -32,7 +35,17 @@ public class CustomerController {
 
     @PostMapping
     public String createCustomer(@ModelAttribute("form") CustomerForm form) {
-        ProjectCustomer customer = new ProjectCustomer(form.getName(), form.getContactEmail(), form.getContactPhone());
+        List<String> phones = form.getContactPhones().stream()
+                .map(phone -> phone == null ? null : phone.trim())
+                .filter(phone -> phone != null && !phone.isEmpty())
+                .collect(Collectors.toList());
+        ProjectCustomer customer = new ProjectCustomer(
+                form.getName(),
+                form.getEnterpriseName(),
+                form.getTaxNumber(),
+                form.getContactEmail(),
+                phones
+        );
         customerRepository.save(customer);
         return "redirect:/customers";
     }
@@ -42,7 +55,13 @@ public class CustomerController {
         private String name;
         @Email(message = "Некорректный email", regexp = "^$|^[^@]+@[^@]+$")
         private String contactEmail;
-        private String contactPhone;
+        private String enterpriseName;
+        private String taxNumber;
+        private List<String> contactPhones = new ArrayList<>();
+
+        public CustomerForm() {
+            this.contactPhones.add("");
+        }
 
         public String getName() {
             return name;
@@ -60,12 +79,28 @@ public class CustomerController {
             this.contactEmail = contactEmail;
         }
 
-        public String getContactPhone() {
-            return contactPhone;
+        public String getEnterpriseName() {
+            return enterpriseName;
         }
 
-        public void setContactPhone(String contactPhone) {
-            this.contactPhone = contactPhone;
+        public void setEnterpriseName(String enterpriseName) {
+            this.enterpriseName = enterpriseName;
+        }
+
+        public String getTaxNumber() {
+            return taxNumber;
+        }
+
+        public void setTaxNumber(String taxNumber) {
+            this.taxNumber = taxNumber;
+        }
+
+        public List<String> getContactPhones() {
+            return contactPhones;
+        }
+
+        public void setContactPhones(List<String> contactPhones) {
+            this.contactPhones = contactPhones;
         }
     }
 }
