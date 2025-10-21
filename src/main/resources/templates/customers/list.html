@@ -50,10 +50,12 @@
                                 th:if="${iter.index > 0}">Удалить</button>
                     </div>
                 </div>
-                <div id="phone-template" class="phone-row" hidden>
-                    <input type="text" name="contactPhones[__index__]" placeholder="+375 (29) 000-00-00">
-                    <button type="button" class="link-button danger remove-phone">Удалить</button>
-                </div>
+                <template id="phone-template">
+                    <div class="phone-row">
+                        <input type="text" name="contactPhones[__index__]" placeholder="+375 (29) 000-00-00">
+                        <button type="button" class="link-button danger remove-phone">Удалить</button>
+                    </div>
+                </template>
                 <button type="button" id="add-phone" class="button secondary">Добавить телефон</button>
             </div>
             <div class="form-row">
@@ -122,12 +124,14 @@
 
         if (addButton) {
             addButton.addEventListener('click', () => {
-                if (!template) {
+                if (!(template instanceof HTMLTemplateElement)) {
                     return;
                 }
-                const clone = template.cloneNode(true);
-                clone.hidden = false;
-                container.appendChild(clone);
+                const fragment = template.content.firstElementChild?.cloneNode(true);
+                if (!(fragment instanceof HTMLElement)) {
+                    return;
+                }
+                container.appendChild(fragment);
                 reindexRows();
             });
         }

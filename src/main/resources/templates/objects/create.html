@@ -86,10 +86,12 @@
                                 <button type="button" class="link-button danger remove-object-phone" th:if="${iter.index > 0}">Удалить</button>
                             </div>
                         </div>
-                        <div id="object-phone-template" class="phone-row" hidden>
-                            <input type="text" name="newCustomer.contactPhones[__index__]" placeholder="+375 (29) 000-00-00">
-                            <button type="button" class="link-button danger remove-object-phone">Удалить</button>
-                        </div>
+                        <template id="object-phone-template">
+                            <div class="phone-row">
+                                <input type="text" name="newCustomer.contactPhones[__index__]" placeholder="+375 (29) 000-00-00">
+                                <button type="button" class="link-button danger remove-object-phone">Удалить</button>
+                            </div>
+                        </template>
                         <button type="button" id="addObjectPhone" class="button secondary">Добавить телефон</button>
                     </div>
                 </div>
@@ -149,12 +151,14 @@
         updateVisibility();
 
         addPhoneButton?.addEventListener('click', () => {
-            if (!phoneTemplate || !phoneContainer) {
+            if (!(phoneTemplate instanceof HTMLTemplateElement) || !phoneContainer) {
                 return;
             }
-            const clone = phoneTemplate.cloneNode(true);
-            clone.hidden = false;
-            phoneContainer.appendChild(clone);
+            const fragment = phoneTemplate.content.firstElementChild?.cloneNode(true);
+            if (!(fragment instanceof HTMLElement)) {
+                return;
+            }
+            phoneContainer.appendChild(fragment);
             reindexPhones();
         });
 
