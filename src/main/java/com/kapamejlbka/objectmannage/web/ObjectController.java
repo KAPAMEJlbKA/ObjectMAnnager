@@ -30,8 +30,10 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -459,6 +461,8 @@ public class ObjectController {
         @Valid
         private List<DeviceGroupForm> deviceGroups = new ArrayList<>();
         @Valid
+        private List<ConnectionPointForm> connectionPoints = new ArrayList<>();
+        @Valid
         private List<MountingSelectionForm> mountingElements = new ArrayList<>();
         @Valid
         private List<MaterialGroupForm> materialGroups = new ArrayList<>();
@@ -466,6 +470,9 @@ public class ObjectController {
         public PrimaryDataWizardForm() {
             if (deviceGroups.isEmpty()) {
                 deviceGroups.add(new DeviceGroupForm());
+            }
+            if (connectionPoints.isEmpty()) {
+                connectionPoints.add(new ConnectionPointForm());
             }
             if (materialGroups.isEmpty()) {
                 materialGroups.add(new MaterialGroupForm());
@@ -476,6 +483,8 @@ public class ObjectController {
                                                   List<InstallationMaterial> materials) {
             PrimaryDataWizardForm form = new PrimaryDataWizardForm();
             form.mountingElements = createMountingSelectionForms(Collections.emptyMap(), mountingElements);
+            form.connectionPoints = new ArrayList<>();
+            form.connectionPoints.add(new ConnectionPointForm());
             ensureMaterialRows(form.materialGroups);
             return form;
         }
@@ -492,6 +501,8 @@ public class ObjectController {
                     groupForm.setDeviceCount(group.getQuantity());
                     groupForm.setInstallLocation(group.getInstallLocation());
                     groupForm.setConnectionPoint(group.getConnectionPoint());
+                    groupForm.setDistanceToConnectionPoint(group.getDistanceToConnectionPoint());
+                    groupForm.setGroupLabel(group.getGroupLabel());
                     form.deviceGroups.add(groupForm);
                 }
             }
@@ -508,11 +519,34 @@ public class ObjectController {
             }
             form.mountingElements = createMountingSelectionForms(existingMounting, mountingElements);
 
+            form.connectionPoints.clear();
+            if (snapshot != null && snapshot.getConnectionPoints() != null) {
+                for (PrimaryDataSnapshot.ConnectionPoint point : snapshot.getConnectionPoints()) {
+                    ConnectionPointForm pointForm = new ConnectionPointForm();
+                    pointForm.setName(point.getName());
+                    pointForm.setMountingElementId(point.getMountingElementId());
+                    form.connectionPoints.add(pointForm);
+                }
+            }
+            if (form.connectionPoints.isEmpty()) {
+                List<String> deduped = collectUniqueConnectionPointNames(form.deviceGroups);
+                if (deduped.isEmpty()) {
+                    form.connectionPoints.add(new ConnectionPointForm());
+                } else {
+                    for (String name : deduped) {
+                        ConnectionPointForm pointForm = new ConnectionPointForm();
+                        pointForm.setName(name);
+                        form.connectionPoints.add(pointForm);
+                    }
+                }
+            }
+
             form.materialGroups.clear();
             if (snapshot != null && snapshot.getMaterialGroups() != null) {
                 for (PrimaryDataSnapshot.MaterialGroup group : snapshot.getMaterialGroups()) {
                     MaterialGroupForm groupForm = new MaterialGroupForm();
                     groupForm.setGroupName(group.getGroupName());
+                    groupForm.setGroupLabel(group.getGroupLabel());
                     groupForm.setSurface(group.getSurface());
                     if (group.getMaterials() != null) {
                         for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
@@ -561,6 +595,20 @@ public class ObjectController {
             }
         }
 
+        private static List<String> collectUniqueConnectionPointNames(List<DeviceGroupForm> deviceGroups) {
+            Set<String> names = new LinkedHashSet<>();
+            for (DeviceGroupForm group : deviceGroups) {
+                if (group == null) {
+                    continue;
+                }
+                String connectionPoint = group.getConnectionPoint();
+                if (StringUtils.hasText(connectionPoint)) {
+                    names.add(connectionPoint.trim());
+                }
+            }
+            return new ArrayList<>(names);
+        }
+
         public List<DeviceGroupForm> getDeviceGroups() {
             return deviceGroups;
         }
@@ -569,6 +617,17 @@ public class ObjectController {
             this.deviceGroups = deviceGroups == null ? new ArrayList<>() : deviceGroups;
             if (this.deviceGroups.isEmpty()) {
                 this.deviceGroups.add(new DeviceGroupForm());
+            }
+        }
+
+        public List<ConnectionPointForm> getConnectionPoints() {
+            return connectionPoints;
+        }
+
+        public void setConnectionPoints(List<ConnectionPointForm> connectionPoints) {
+            this.connectionPoints = connectionPoints == null ? new ArrayList<>() : connectionPoints;
+            if (this.connectionPoints.isEmpty()) {
+                this.connectionPoints.add(new ConnectionPointForm());
             }
         }
 
@@ -626,10 +685,30 @@ public class ObjectController {
                 group.setQuantity(form.getDeviceCount() != null ? form.getDeviceCount() : 0);
                 group.setInstallLocation(trim(form.getInstallLocation()));
                 group.setConnectionPoint(trim(form.getConnectionPoint()));
+                group.setDistanceToConnectionPoint(form.getDistanceToConnectionPoint());
+                group.setGroupLabel(trim(form.getGroupLabel()));
                 snapshotGroups.add(group);
             }
             snapshot.setDeviceGroups(snapshotGroups);
             snapshot.setTotalConnectionPoints(calculateTotalConnectionPoints());
+
+            List<PrimaryDataSnapshot.ConnectionPoint> connectionPointSnapshots = new ArrayList<>();
+            for (ConnectionPointForm connectionPoint : connectionPoints) {
+                if (connectionPoint == null || !StringUtils.hasText(connectionPoint.getName())) {
+                    continue;
+                }
+                PrimaryDataSnapshot.ConnectionPoint snapshotPoint = new PrimaryDataSnapshot.ConnectionPoint();
+                snapshotPoint.setName(connectionPoint.getName().trim());
+                snapshotPoint.setMountingElementId(connectionPoint.getMountingElementId());
+                if (connectionPoint.getMountingElementId() != null) {
+                    MountingElement element = elementMap.get(connectionPoint.getMountingElementId());
+                    if (element != null) {
+                        snapshotPoint.setMountingElementName(element.getName());
+                    }
+                }
+                connectionPointSnapshots.add(snapshotPoint);
+            }
+            snapshot.setConnectionPoints(connectionPointSnapshots);
 
             List<PrimaryDataSnapshot.MountingRequirement> requirements = new ArrayList<>();
             for (MountingSelectionForm form : this.mountingElements) {
@@ -674,6 +753,7 @@ public class ObjectController {
                 }
                 PrimaryDataSnapshot.MaterialGroup group = new PrimaryDataSnapshot.MaterialGroup();
                 group.setGroupName(trim(groupForm.getGroupName()));
+                group.setGroupLabel(trim(groupForm.getGroupLabel()));
                 group.setSurface(trim(groupForm.getSurface()));
                 group.setMaterials(usages);
                 materialGroupsSnapshot.add(group);
@@ -691,12 +771,16 @@ public class ObjectController {
             private Integer deviceCount;
             private String installLocation;
             private String connectionPoint;
+            private Double distanceToConnectionPoint;
+            private String groupLabel;
 
             public boolean isEmpty() {
                 return (deviceTypeId == null)
                         && (deviceCount == null || deviceCount == 0)
                         && !StringUtils.hasText(installLocation)
-                        && !StringUtils.hasText(connectionPoint);
+                        && !StringUtils.hasText(connectionPoint)
+                        && distanceToConnectionPoint == null
+                        && !StringUtils.hasText(groupLabel);
             }
 
             public UUID getDeviceTypeId() {
@@ -729,6 +813,43 @@ public class ObjectController {
 
             public void setConnectionPoint(String connectionPoint) {
                 this.connectionPoint = connectionPoint;
+            }
+
+            public Double getDistanceToConnectionPoint() {
+                return distanceToConnectionPoint;
+            }
+
+            public void setDistanceToConnectionPoint(Double distanceToConnectionPoint) {
+                this.distanceToConnectionPoint = distanceToConnectionPoint;
+            }
+
+            public String getGroupLabel() {
+                return groupLabel;
+            }
+
+            public void setGroupLabel(String groupLabel) {
+                this.groupLabel = groupLabel;
+            }
+        }
+
+        public static class ConnectionPointForm {
+            private String name;
+            private UUID mountingElementId;
+
+            public String getName() {
+                return name;
+            }
+
+            public void setName(String name) {
+                this.name = name;
+            }
+
+            public UUID getMountingElementId() {
+                return mountingElementId;
+            }
+
+            public void setMountingElementId(UUID mountingElementId) {
+                this.mountingElementId = mountingElementId;
             }
         }
 
@@ -764,7 +885,9 @@ public class ObjectController {
 
         public static class MaterialGroupForm {
             private String groupName;
+            private String groupLabel;
             private String surface;
+            @Valid
             private List<MaterialUsageForm> materials = new ArrayList<>();
 
             public String getGroupName() {
@@ -773,6 +896,14 @@ public class ObjectController {
 
             public void setGroupName(String groupName) {
                 this.groupName = groupName;
+            }
+
+            public String getGroupLabel() {
+                return groupLabel;
+            }
+
+            public void setGroupLabel(String groupLabel) {
+                this.groupLabel = groupLabel;
             }
 
             public String getSurface() {

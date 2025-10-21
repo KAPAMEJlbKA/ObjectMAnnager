@@ -399,6 +399,80 @@ button:hover {
     font-size: 0.9rem;
 }
 
+.wizard-progress {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+
+.wizard-progress-step {
+    flex: 1 1 160px;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 12px;
+    background: #eef2ff;
+    color: #1f2937;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+    align-self: stretch;
+}
+
+.wizard-progress-step.active {
+    background: #1d4ed8;
+    color: #ffffff;
+    box-shadow: 0 10px 25px rgba(29, 78, 216, 0.2);
+}
+
+.wizard-progress-step:disabled {
+    cursor: default;
+    opacity: 0.8;
+}
+
+.wizard-panels {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.wizard-step[hidden] {
+    display: none;
+}
+
+.wizard-controls {
+    flex-direction: row;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.input-error {
+    border-color: #dc2626 !important;
+    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.15);
+}
+
+.field-error {
+    color: #dc2626;
+    font-size: 0.85rem;
+    margin-top: 0.35rem;
+}
+
+.connection-usage {
+    font-size: 0.85rem;
+    color: #475569;
+    margin-top: 0.5rem;
+}
+
+.group-label {
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+.small {
+    font-size: 0.85rem;
+}
+
 .muted {
     color: var(--muted);
 }
