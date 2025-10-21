@@ -7,6 +7,7 @@ import java.util.UUID;
 public class PrimaryDataSnapshot {
 
     private List<DeviceGroup> deviceGroups = new ArrayList<>();
+    private List<ConnectionPoint> connectionPoints = new ArrayList<>();
     private List<MountingRequirement> mountingElements = new ArrayList<>();
     private List<MaterialGroup> materialGroups = new ArrayList<>();
     private int totalConnectionPoints;
@@ -17,6 +18,14 @@ public class PrimaryDataSnapshot {
 
     public void setDeviceGroups(List<DeviceGroup> deviceGroups) {
         this.deviceGroups = deviceGroups;
+    }
+
+    public List<ConnectionPoint> getConnectionPoints() {
+        return connectionPoints;
+    }
+
+    public void setConnectionPoints(List<ConnectionPoint> connectionPoints) {
+        this.connectionPoints = connectionPoints;
     }
 
     public List<MountingRequirement> getMountingElements() {
@@ -49,6 +58,8 @@ public class PrimaryDataSnapshot {
         private int quantity;
         private String installLocation;
         private String connectionPoint;
+        private Double distanceToConnectionPoint;
+        private String groupLabel;
 
         public UUID getDeviceTypeId() {
             return deviceTypeId;
@@ -89,6 +100,52 @@ public class PrimaryDataSnapshot {
         public void setConnectionPoint(String connectionPoint) {
             this.connectionPoint = connectionPoint;
         }
+
+        public Double getDistanceToConnectionPoint() {
+            return distanceToConnectionPoint;
+        }
+
+        public void setDistanceToConnectionPoint(Double distanceToConnectionPoint) {
+            this.distanceToConnectionPoint = distanceToConnectionPoint;
+        }
+
+        public String getGroupLabel() {
+            return groupLabel;
+        }
+
+        public void setGroupLabel(String groupLabel) {
+            this.groupLabel = groupLabel;
+        }
+    }
+
+    public static class ConnectionPoint {
+        private String name;
+        private UUID mountingElementId;
+        private String mountingElementName;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public UUID getMountingElementId() {
+            return mountingElementId;
+        }
+
+        public void setMountingElementId(UUID mountingElementId) {
+            this.mountingElementId = mountingElementId;
+        }
+
+        public String getMountingElementName() {
+            return mountingElementName;
+        }
+
+        public void setMountingElementName(String mountingElementName) {
+            this.mountingElementName = mountingElementName;
+        }
     }
 
     public static class MountingRequirement {
@@ -123,6 +180,7 @@ public class PrimaryDataSnapshot {
 
     public static class MaterialGroup {
         private String groupName;
+        private String groupLabel;
         private String surface;
         private List<MaterialUsage> materials = new ArrayList<>();
 
@@ -132,6 +190,14 @@ public class PrimaryDataSnapshot {
 
         public void setGroupName(String groupName) {
             this.groupName = groupName;
+        }
+
+        public String getGroupLabel() {
+            return groupLabel;
+        }
+
+        public void setGroupLabel(String groupLabel) {
+            this.groupLabel = groupLabel;
         }
 
         public String getSurface() {
