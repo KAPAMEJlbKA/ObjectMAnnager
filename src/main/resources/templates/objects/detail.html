@@ -37,9 +37,90 @@
             <a th:if="${mapLink != null}" th:href="${mapLink}" target="_blank" class="button secondary">Открыть на карте</a>
         </div>
         <p class="muted" th:if="${coordinateDisplay == null}">Координаты не указаны.</p>
-        <p><strong>Первичные данные:</strong></p>
-        <p class="muted" th:if="${#strings.isEmpty(object.primaryData)}">Данные не заполнены.</p>
-        <pre class="primary-data" th:if="${!#strings.isEmpty(object.primaryData)}" th:text="${object.primaryData}"></pre>
+        <section class="primary-summary">
+            <h3>Сводка первичных данных</h3>
+            <div th:if="${primarySummary != null}">
+                <div th:if="${primarySummary.parseError}">
+                    <p class="field-error" th:text="'Не удалось прочитать данные: ' + ${primarySummary.errorMessage}"></p>
+                    <pre class="primary-data" th:text="${object.primaryData}"></pre>
+                </div>
+                <div th:if="${!primarySummary.parseError}">
+                    <p class="muted" th:if="${!primarySummary.hasData}">Данные не заполнены.</p>
+                    <div class="stack" th:if="${primarySummary.hasData}">
+                        <ul class="compact-list stats-list">
+                            <li>Всего оборудования: <strong th:text="${primarySummary.totalDeviceCount}"></strong></li>
+                            <li>Количество узлов: <strong th:text="${primarySummary.totalNodes}"></strong></li>
+                            <li th:if="${primarySummary.declaredConnectionAssignments != null}">Назначено точек подключения: <strong th:text="${primarySummary.declaredConnectionAssignments}"></strong></li>
+                            <li>Общий метраж кабелей: <strong th:text="${#numbers.formatDecimal(primarySummary.totalCableLength, 1, 2)} + ' м'"></strong></li>
+                            <li th:if="${primarySummary.unnamedConnectionAssignments > 0}">Без названия: <strong th:text="${primarySummary.unnamedConnectionAssignments}"></strong></li>
+                        </ul>
+                        <div>
+                            <h4>Оборудование по типам</h4>
+                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.deviceTypeSummaries)}">Типы устройств не указаны.</p>
+                            <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.deviceTypeSummaries)}">
+                                <thead>
+                                <tr>
+                                    <th>Тип</th>
+                                    <th>Количество</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="summary : ${primarySummary.deviceTypeSummaries}">
+                                    <td th:text="${summary.deviceTypeName}"></td>
+                                    <td th:text="${summary.quantity}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
+                            <h4>Кабельные линии</h4>
+                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.cableLengthSummaries)}">Кабели не указаны.</p>
+                            <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.cableLengthSummaries)}">
+                                <thead>
+                                <tr>
+                                    <th>Тип кабеля</th>
+                                    <th>Метраж</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="cable : ${primarySummary.cableLengthSummaries}">
+                                    <td>
+                                        <span th:text="${cable.cableTypeName}"></span>
+                                        <span class="badge warning" th:if="${cable.classificationMissing}">нет классификации</span>
+                                    </td>
+                                    <td th:text="${#numbers.formatDecimal(cable.totalLength, 1, 2)} + ' м'"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
+                            <h4>Узлы</h4>
+                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.nodeSummaries)}">Узлы не указаны.</p>
+                            <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.nodeSummaries)}">
+                                <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Монтажный элемент</th>
+                                    <th>Расстояние до запитки</th>
+                                    <th>Кабель</th>
+                                    <th>Способ прокладки</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="node : ${primarySummary.nodeSummaries}">
+                                    <td th:text="${node.name}"></td>
+                                    <td th:text="${node.mountingElementName}"></td>
+                                    <td th:text="${node.distanceToPower != null ? #numbers.formatDecimal(node.distanceToPower, 1, 2) + ' м' : '—'}"></td>
+                                    <td th:text="${node.powerCableTypeName != null ? node.powerCableTypeName : '—'}"></td>
+                                    <td th:text="${node.layingMethod != null ? node.layingMethod : '—'}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
         <div class="form-row">
             <a class="button secondary" th:href="@{'/objects/' + ${object.id} + '/primary-data/wizard'}">Заполнить первичные данные</a>
         </div>

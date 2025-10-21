@@ -2,6 +2,7 @@ package com.kapamejlbka.objectmannage.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kapamejlbka.objectmannage.model.CableType;
 import com.kapamejlbka.objectmannage.model.DeviceType;
 import com.kapamejlbka.objectmannage.model.InstallationMaterial;
 import com.kapamejlbka.objectmannage.model.ManagedObject;
@@ -9,9 +10,11 @@ import com.kapamejlbka.objectmannage.model.MapProvider;
 import com.kapamejlbka.objectmannage.model.MountingElement;
 import com.kapamejlbka.objectmannage.model.ObjectChange;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSummary;
 import com.kapamejlbka.objectmannage.model.ProjectCustomer;
 import com.kapamejlbka.objectmannage.model.StoredFile;
 import com.kapamejlbka.objectmannage.model.UserAccount;
+import com.kapamejlbka.objectmannage.repository.CableTypeRepository;
 import com.kapamejlbka.objectmannage.repository.DeviceTypeRepository;
 import com.kapamejlbka.objectmannage.repository.InstallationMaterialRepository;
 import com.kapamejlbka.objectmannage.repository.MountingElementRepository;
@@ -20,6 +23,7 @@ import com.kapamejlbka.objectmannage.repository.ProjectCustomerRepository;
 import com.kapamejlbka.objectmannage.service.ApplicationSettingsService;
 import com.kapamejlbka.objectmannage.service.FilePreviewService;
 import com.kapamejlbka.objectmannage.service.ManagedObjectService;
+import com.kapamejlbka.objectmannage.service.PrimaryDataSummaryService;
 import com.kapamejlbka.objectmannage.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -68,10 +72,12 @@ public class ObjectController {
     private final DeviceTypeRepository deviceTypeRepository;
     private final MountingElementRepository mountingElementRepository;
     private final InstallationMaterialRepository installationMaterialRepository;
+    private final CableTypeRepository cableTypeRepository;
     private final ApplicationSettingsService applicationSettingsService;
     private final UserService userService;
     private final FilePreviewService filePreviewService;
     private final ObjectMapper objectMapper;
+    private final PrimaryDataSummaryService primaryDataSummaryService;
 
     public ObjectController(ManagedObjectService managedObjectService,
                             ProjectCustomerRepository customerRepository,
@@ -79,20 +85,24 @@ public class ObjectController {
                             DeviceTypeRepository deviceTypeRepository,
                             MountingElementRepository mountingElementRepository,
                             InstallationMaterialRepository installationMaterialRepository,
+                            CableTypeRepository cableTypeRepository,
                             ApplicationSettingsService applicationSettingsService,
                             UserService userService,
                             FilePreviewService filePreviewService,
-                            ObjectProvider<ObjectMapper> objectMapperProvider) {
+                            ObjectProvider<ObjectMapper> objectMapperProvider,
+                            PrimaryDataSummaryService primaryDataSummaryService) {
         this.managedObjectService = managedObjectService;
         this.customerRepository = customerRepository;
         this.objectChangeRepository = objectChangeRepository;
         this.deviceTypeRepository = deviceTypeRepository;
         this.mountingElementRepository = mountingElementRepository;
         this.installationMaterialRepository = installationMaterialRepository;
+        this.cableTypeRepository = cableTypeRepository;
         this.applicationSettingsService = applicationSettingsService;
         this.userService = userService;
         this.filePreviewService = filePreviewService;
         this.objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
+        this.primaryDataSummaryService = primaryDataSummaryService;
     }
 
     @InitBinder
@@ -182,6 +192,8 @@ public class ObjectController {
         model.addAttribute("mapProvider", mapProvider);
         model.addAttribute("coordinateDisplay", formatCoordinates(managedObject.getLatitude(), managedObject.getLongitude()));
         model.addAttribute("mapLink", buildMapLink(mapProvider, managedObject.getLatitude(), managedObject.getLongitude()));
+        PrimaryDataSummary primarySummary = primaryDataSummaryService.summarize(managedObject.getPrimaryData());
+        model.addAttribute("primarySummary", primarySummary);
         return "objects/detail";
     }
 
@@ -268,7 +280,8 @@ public class ObjectController {
         List<DeviceType> deviceTypes = deviceTypeRepository.findAll();
         List<MountingElement> mountingElements = mountingElementRepository.findAll();
         List<InstallationMaterial> materials = installationMaterialRepository.findAll();
-        PrimaryDataSnapshot snapshot = form.toSnapshot(deviceTypes, mountingElements, materials);
+        List<CableType> cableTypes = cableTypeRepository.findAll();
+        PrimaryDataSnapshot snapshot = form.toSnapshot(deviceTypes, mountingElements, materials, cableTypes);
         String json;
         try {
             json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(snapshot);
@@ -300,11 +313,13 @@ public class ObjectController {
         List<DeviceType> deviceTypes = deviceTypeRepository.findAll();
         List<MountingElement> mountingElements = mountingElementRepository.findAll();
         List<InstallationMaterial> materials = installationMaterialRepository.findAll();
+        List<CableType> cableTypes = cableTypeRepository.findAll();
         model.addAttribute("object", managedObject);
         model.addAttribute("wizardForm", form);
         model.addAttribute("deviceTypes", deviceTypes);
         model.addAttribute("mountingElements", mountingElements);
         model.addAttribute("installationMaterials", materials);
+        model.addAttribute("cableTypes", cableTypes);
         model.addAttribute("totalConnectionPoints", form.calculateTotalConnectionPoints());
         model.addAttribute("mapProvider", applicationSettingsService.getMapProvider());
     }
@@ -550,6 +565,9 @@ public class ObjectController {
                     ConnectionPointForm pointForm = new ConnectionPointForm();
                     pointForm.setName(point.getName());
                     pointForm.setMountingElementId(point.getMountingElementId());
+                    pointForm.setDistanceToPower(point.getDistanceToPower());
+                    pointForm.setPowerCableTypeId(point.getPowerCableTypeId());
+                    pointForm.setLayingMethod(point.getLayingMethod());
                     form.connectionPoints.add(pointForm);
                 }
             }
@@ -686,7 +704,8 @@ public class ObjectController {
 
         public PrimaryDataSnapshot toSnapshot(List<DeviceType> deviceTypes,
                                               List<MountingElement> availableMountingElements,
-                                              List<InstallationMaterial> materials) {
+                                              List<InstallationMaterial> materials,
+                                              List<CableType> cableTypes) {
             PrimaryDataSnapshot snapshot = new PrimaryDataSnapshot();
             Map<UUID, DeviceType> deviceTypeMap = deviceTypes.stream()
                     .filter(type -> type.getId() != null)
@@ -697,6 +716,9 @@ public class ObjectController {
             Map<UUID, InstallationMaterial> materialMap = materials.stream()
                     .filter(material -> material.getId() != null)
                     .collect(Collectors.toMap(InstallationMaterial::getId, Function.identity()));
+            Map<UUID, CableType> cableTypeMap = cableTypes.stream()
+                    .filter(cable -> cable.getId() != null)
+                    .collect(Collectors.toMap(CableType::getId, Function.identity()));
 
             List<PrimaryDataSnapshot.DeviceGroup> snapshotGroups = new ArrayList<>();
             for (DeviceGroupForm form : deviceGroups) {
@@ -731,6 +753,15 @@ public class ObjectController {
                         snapshotPoint.setMountingElementName(element.getName());
                     }
                 }
+                snapshotPoint.setDistanceToPower(connectionPoint.getDistanceToPower());
+                snapshotPoint.setPowerCableTypeId(connectionPoint.getPowerCableTypeId());
+                if (connectionPoint.getPowerCableTypeId() != null) {
+                    CableType cableType = cableTypeMap.get(connectionPoint.getPowerCableTypeId());
+                    if (cableType != null) {
+                        snapshotPoint.setPowerCableTypeName(cableType.getName());
+                    }
+                }
+                snapshotPoint.setLayingMethod(trim(connectionPoint.getLayingMethod()));
                 connectionPointSnapshots.add(snapshotPoint);
             }
             snapshot.setConnectionPoints(connectionPointSnapshots);
@@ -860,6 +891,9 @@ public class ObjectController {
         public static class ConnectionPointForm {
             private String name;
             private UUID mountingElementId;
+            private Double distanceToPower;
+            private UUID powerCableTypeId;
+            private String layingMethod;
 
             public String getName() {
                 return name;
@@ -875,6 +909,30 @@ public class ObjectController {
 
             public void setMountingElementId(UUID mountingElementId) {
                 this.mountingElementId = mountingElementId;
+            }
+
+            public Double getDistanceToPower() {
+                return distanceToPower;
+            }
+
+            public void setDistanceToPower(Double distanceToPower) {
+                this.distanceToPower = distanceToPower;
+            }
+
+            public UUID getPowerCableTypeId() {
+                return powerCableTypeId;
+            }
+
+            public void setPowerCableTypeId(UUID powerCableTypeId) {
+                this.powerCableTypeId = powerCableTypeId;
+            }
+
+            public String getLayingMethod() {
+                return layingMethod;
+            }
+
+            public void setLayingMethod(String layingMethod) {
+                this.layingMethod = layingMethod;
             }
         }
 
