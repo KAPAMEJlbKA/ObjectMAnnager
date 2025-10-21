@@ -51,14 +51,15 @@
         <div class="file-gallery" th:if="${!#lists.isEmpty(object.files)}">
             <div class="file-card" th:each="file : ${object.files}">
                 <div class="file-preview"
-                     th:with="isImage=${file.contentType != null and file.contentType.startsWith('image/')},
+                     th:with="extension=${file.extension != null ? file.extension : ''},
+                              isImage=${file.contentType != null and file.contentType.startsWith('image/')},
                               isPdf=${file.contentType == 'application/pdf'},
                               isExcel=${(file.contentType != null and (file.contentType.startsWith('application/vnd.ms-excel')
                                       or file.contentType.startsWith('application/vnd.openxmlformats-officedocument.spreadsheetml')))
-                                      or (#strings.equalsIgnoreCase(file.extension, 'xls') or #strings.equalsIgnoreCase(file.extension, 'xlsx'))},
+                                      or (#strings.equalsIgnoreCase(extension, 'xls') or #strings.equalsIgnoreCase(extension, 'xlsx'))},
                                isWord=${(file.contentType != null and (file.contentType == 'application/msword'
                                       or file.contentType.startsWith('application/vnd.openxmlformats-officedocument.wordprocessingml')))
-                                      or (#strings.equalsIgnoreCase(file.extension, 'doc') or #strings.equalsIgnoreCase(file.extension, 'docx'))}"
+                                      or (#strings.equalsIgnoreCase(extension, 'doc') or #strings.equalsIgnoreCase(extension, 'docx'))}"
                      th:classappend="${(isExcel ? ' excel-preview-container' : '') + (isWord ? ' word-preview-container' : '')}">
                     <img th:if="${isImage}"
                          th:src="@{|/objects/${object.id}/files/${file.id}|}"
@@ -88,7 +89,9 @@
                     <div class="file-actions">
                         <a href="#"
                            class="button secondary open-preview"
-                           th:attr="data-preview-url=${isExcel or isWord ? @{|/objects/${object.id}/files/${file.id}/preview|} : @{|/objects/${object.id}/files/${file.id}|}},
+                           th:with="downloadUrl=@{/objects/{objectId}/files/{fileId}(objectId=${object.id}, fileId=${file.id})},
+                                    previewUrl=@{/objects/{objectId}/files/{fileId}/preview(objectId=${object.id}, fileId=${file.id})}"
+                           th:attr="data-preview-url=${(#bools.isTrue(isExcel) or #bools.isTrue(isWord)) ? previewUrl : downloadUrl},
                                     data-file-name=${file.originalFilename}">
                             Открыть
                         </a>
