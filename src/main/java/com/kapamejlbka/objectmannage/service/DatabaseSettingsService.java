@@ -218,6 +218,21 @@ public class DatabaseSettingsService {
                         summary TEXT
                     )
                     """);
+            ensureLongTextColumn(statement, "object_changes", "old_value");
+            ensureLongTextColumn(statement, "object_changes", "new_value");
+        }
+    }
+
+    private void ensureLongTextColumn(Statement statement, String table, String column) {
+        tryExecute(statement, "ALTER TABLE " + table + " ALTER COLUMN " + column + " SET DATA TYPE TEXT");
+        tryExecute(statement, "ALTER TABLE " + table + " ALTER COLUMN " + column + " TYPE TEXT");
+    }
+
+    private void tryExecute(Statement statement, String sql) {
+        try {
+            statement.executeUpdate(sql);
+        } catch (SQLException ignored) {
+            // Если команда не поддерживается БД или тип уже обновлён, просто пропускаем
         }
     }
 }

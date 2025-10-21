@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -36,10 +37,10 @@ public class ObjectChange {
 
     private String fieldName;
 
-    @Column(length = 1024)
+    @Lob
     private String oldValue;
 
-    @Column(length = 1024)
+    @Lob
     private String newValue;
 
     @Column(length = 1024)
