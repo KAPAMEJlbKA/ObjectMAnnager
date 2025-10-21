@@ -83,7 +83,7 @@
 
     <section class="card">
         <h2>Локальная база H2</h2>
-        <p>Создайте файл-базу H2 для автономного хранения данных. Приложение по умолчанию использует встроенную H2 в памяти.</p>
+        <p>Создайте файл-базу H2 для автономного хранения данных. Приложение по умолчанию использует файловую базу H2 в каталоге <code>data</code>.</p>
         <form method="post" action="/admin/database/h2" class="inline-form" th:object="${h2Form}">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <input type="text" th:field="*{name}" placeholder="object-storage" required>

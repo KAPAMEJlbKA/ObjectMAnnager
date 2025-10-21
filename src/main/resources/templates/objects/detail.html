@@ -55,8 +55,12 @@
                               isPdf=${file.contentType == 'application/pdf'},
                               isExcel=${(file.contentType != null and (file.contentType.startsWith('application/vnd.ms-excel')
                                       or file.contentType.startsWith('application/vnd.openxmlformats-officedocument.spreadsheetml')))
-                                      or (#strings.equalsIgnoreCase(file.extension, 'xls') or #strings.equalsIgnoreCase(file.extension, 'xlsx'))}"
-                     th:classappend="${isExcel} ? ' excel-preview-container'">
+                                      or (#strings.equalsIgnoreCase(file.extension, 'xls') or #strings.equalsIgnoreCase(file.extension, 'xlsx'))},
+                               isWord=${(file.contentType != null and (file.contentType == 'application/msword'
+                                      or file.contentType.startsWith('application/vnd.openxmlformats-officedocument.wordprocessingml')))
+                                      or (#strings.equalsIgnoreCase(file.extension, 'doc') or #strings.equalsIgnoreCase(file.extension, 'docx'))}"
+                     th:classappend="${isExcel} ? ' excel-preview-container' : ''"
+                     th:classappend="${isWord} ? ' word-preview-container' : ''">
                     <img th:if="${isImage}"
                          th:src="@{|/objects/${object.id}/files/${file.id}|}"
                          th:alt="${file.originalFilename}">
@@ -65,6 +69,10 @@
                             loading="lazy"></iframe>
                     <iframe th:if="${isExcel}"
                             class="sheet-preview"
+                            th:src="@{|/objects/${object.id}/files/${file.id}/preview|}"
+                            loading="lazy"></iframe>
+                    <iframe th:if="${isWord}"
+                            class="word-preview-frame"
                             th:src="@{|/objects/${object.id}/files/${file.id}/preview|}"
                             loading="lazy"></iframe>
                     <div class="file-icon" th:if="${!isImage and !isPdf and !isExcel}">
@@ -79,11 +87,28 @@
                     <p class="file-meta">Размер: <span th:text="${#numbers.formatDecimal(file.size / 1024.0, 1, 2)} + ' КБ'"></span></p>
                     <p class="file-meta">Загружен: <span th:text="${file.uploadedAt}"></span></p>
                     <div class="file-actions">
-                        <a th:href="@{|/objects/${object.id}/files/${file.id}|}" class="button secondary" target="_blank">Открыть</a>
+                        <a href="#"
+                           class="button secondary open-preview"
+                           th:attr="data-preview-url=${isExcel or isWord ? @{|/objects/${object.id}/files/${file.id}/preview|} : @{|/objects/${object.id}/files/${file.id}|}},
+                                    data-file-name=${file.originalFilename}">
+                            Открыть
+                        </a>
                         <a th:href="@{|/objects/${object.id}/files/${file.id}?download=true|}" class="button">Скачать</a>
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <section class="card" th:if="${!#lists.isEmpty(object.files)}">
+        <h3>Просмотр файла</h3>
+        <div class="preview-viewer">
+            <div class="preview-viewer__header">
+                <strong id="file-preview-name">Файл не выбран</strong>
+                <button type="button" id="file-preview-reset" class="link-button" hidden>Очистить</button>
+            </div>
+            <p class="preview-placeholder" id="file-preview-placeholder">Выберите файл для просмотра.</p>
+            <iframe id="file-preview-frame" class="preview-frame" hidden loading="lazy"></iframe>
         </div>
     </section>
 
@@ -117,5 +142,57 @@
 <footer class="footer">
     <p>Object Manager &copy; 2025</p>
 </footer>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const previewLinks = document.querySelectorAll('.open-preview');
+        const frame = document.getElementById('file-preview-frame');
+        const placeholder = document.getElementById('file-preview-placeholder');
+        const nameLabel = document.getElementById('file-preview-name');
+        const resetButton = document.getElementById('file-preview-reset');
+
+        function resetPreview() {
+            if (!frame) {
+                return;
+            }
+            frame.hidden = true;
+            frame.removeAttribute('src');
+            if (placeholder) {
+                placeholder.style.display = '';
+            }
+            if (nameLabel) {
+                nameLabel.textContent = 'Файл не выбран';
+            }
+            if (resetButton) {
+                resetButton.hidden = true;
+            }
+        }
+
+        if (resetButton) {
+            resetButton.addEventListener('click', resetPreview);
+        }
+
+        previewLinks.forEach(function (link) {
+            link.addEventListener('click', function (event) {
+                event.preventDefault();
+                const url = this.dataset.previewUrl;
+                const fileName = this.dataset.fileName || 'Файл';
+                if (!url || !frame) {
+                    return;
+                }
+                frame.hidden = false;
+                frame.src = url;
+                if (placeholder) {
+                    placeholder.style.display = 'none';
+                }
+                if (nameLabel) {
+                    nameLabel.textContent = fileName;
+                }
+                if (resetButton) {
+                    resetButton.hidden = false;
+                }
+            });
+        });
+    });
+</script>
 </body>
 </html>
