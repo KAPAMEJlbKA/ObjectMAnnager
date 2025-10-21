@@ -61,10 +61,54 @@ public class DatabaseSettingsService {
         Path legacyFile = dataDirectory.resolve(name + ".h2.db");
         boolean existedBefore = Files.exists(dbFile) || Files.exists(legacyFile);
 
-        String url = "jdbc:h2:file:" + dataDirectory.resolve(name).toString() + ";AUTO_SERVER=TRUE";
+        String url = "jdbc:h2:file:" + dataDirectory.resolve(name).toString() + ";DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
         settings.setDatabaseName(url);
         settings.setUsername("sa");
         settings.setPassword("");
+        refreshH2Settings(settings, url, dataDirectory.resolve(name), existedBefore, true);
+        return repository.save(settings);
+    }
+
+    @Transactional
+    public void refreshLocalStores() {
+        repository.findAll().stream()
+                .filter(settings -> settings.getDatabaseType() == DatabaseType.H2)
+                .forEach(settings -> {
+                    String url = settings.getDatabaseName();
+                    if (url == null || !url.startsWith("jdbc:h2:file:")) {
+                        return;
+                    }
+                    Path databasePath = extractDatabasePath(url);
+                    boolean existedBefore = databasePath != null
+                            && (Files.exists(withExtension(databasePath, ".mv.db"))
+                            || Files.exists(withExtension(databasePath, ".h2.db")));
+                    refreshH2Settings(settings, url, databasePath, existedBefore, false);
+                    repository.save(settings);
+                });
+    }
+
+    private void refreshH2Settings(DatabaseConnectionSettings settings, String url, Path databasePath,
+                                   boolean existedBefore, boolean allowCreate) {
+        Path parentDirectory = databasePath != null ? databasePath.getParent() : null;
+        if (parentDirectory != null) {
+            try {
+                Files.createDirectories(parentDirectory);
+            } catch (Exception ex) {
+                settings.setInitialized(false);
+                settings.setStatusMessage("Не удалось подготовить каталог: " + ex.getMessage());
+                settings.setLastVerifiedAt(LocalDateTime.now());
+                return;
+            }
+        }
+
+        if (!allowCreate && !existedBefore) {
+            settings.setInitialized(false);
+            settings.setStatusMessage("Файл H2 базы не найден по пути "
+                    + (databasePath != null ? databasePath : "(не указан)"));
+            settings.setLastVerifiedAt(LocalDateTime.now());
+            return;
+        }
+
         try (Connection connection = DriverManager.getConnection(url, settings.getUsername(), settings.getPassword())) {
             initializeSchema(connection);
             settings.setInitialized(true);
@@ -76,7 +120,20 @@ public class DatabaseSettingsService {
             settings.setStatusMessage("Ошибка подключения к H2: " + ex.getMessage());
         }
         settings.setLastVerifiedAt(LocalDateTime.now());
-        return repository.save(settings);
+    }
+
+    private Path extractDatabasePath(String url) {
+        String withoutPrefix = url.substring("jdbc:h2:file:".length());
+        int separatorIndex = withoutPrefix.indexOf(';');
+        String pathPart = separatorIndex >= 0 ? withoutPrefix.substring(0, separatorIndex) : withoutPrefix;
+        if (pathPart.isBlank()) {
+            return null;
+        }
+        return Path.of(pathPart).toAbsolutePath().normalize();
+    }
+
+    private Path withExtension(Path databasePath, String extension) {
+        return Path.of(databasePath.toString() + extension);
     }
 
     private void verifyAndInitialize(DatabaseConnectionSettings settings) {
