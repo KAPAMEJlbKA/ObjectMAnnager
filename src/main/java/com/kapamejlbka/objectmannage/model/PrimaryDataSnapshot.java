@@ -122,6 +122,10 @@ public class PrimaryDataSnapshot {
         private String name;
         private UUID mountingElementId;
         private String mountingElementName;
+        private Double distanceToPower;
+        private UUID powerCableTypeId;
+        private String powerCableTypeName;
+        private String layingMethod;
 
         public String getName() {
             return name;
@@ -145,6 +149,38 @@ public class PrimaryDataSnapshot {
 
         public void setMountingElementName(String mountingElementName) {
             this.mountingElementName = mountingElementName;
+        }
+
+        public Double getDistanceToPower() {
+            return distanceToPower;
+        }
+
+        public void setDistanceToPower(Double distanceToPower) {
+            this.distanceToPower = distanceToPower;
+        }
+
+        public UUID getPowerCableTypeId() {
+            return powerCableTypeId;
+        }
+
+        public void setPowerCableTypeId(UUID powerCableTypeId) {
+            this.powerCableTypeId = powerCableTypeId;
+        }
+
+        public String getPowerCableTypeName() {
+            return powerCableTypeName;
+        }
+
+        public void setPowerCableTypeName(String powerCableTypeName) {
+            this.powerCableTypeName = powerCableTypeName;
+        }
+
+        public String getLayingMethod() {
+            return layingMethod;
+        }
+
+        public void setLayingMethod(String layingMethod) {
+            this.layingMethod = layingMethod;
         }
     }
 

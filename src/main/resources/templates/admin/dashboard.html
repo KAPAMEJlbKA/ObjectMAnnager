@@ -259,6 +259,71 @@
                 </ul>
             </div>
         </div>
+        <div class="grid">
+            <div>
+                <h3>Типы кабелей</h3>
+                <form method="post" action="/admin/cable-types" class="inline-form" th:object="${cableTypeForm}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <input type="text" th:field="*{name}" placeholder="UTP 5e" required>
+                    <button type="submit">Добавить</button>
+                </form>
+                <ul class="compact-list">
+                    <li th:if="${#lists.isEmpty(cableTypes)}" class="muted">Список пуст.</li>
+                    <li th:each="cable : ${cableTypes}">
+                        <div class="inline-form">
+                            <span th:text="${cable.name}"></span>
+                            <form method="post" th:action="@{'/admin/cable-types/' + ${cable.id} + '/delete'}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="link-button danger">Удалить</button>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+            <div>
+                <h3>Классификация кабелей по устройствам</h3>
+                <form method="post" action="/admin/device-cable-profiles" class="grid-form" th:object="${deviceCableProfileForm}">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <div>
+                        <label>Устройство</label>
+                        <select th:field="*{deviceTypeId}" required>
+                            <option value="">Не выбрано</option>
+                            <option th:each="type : ${deviceTypes}" th:value="${type.id}" th:text="${type.name}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Кабель</label>
+                        <select th:field="*{cableTypeId}" required>
+                            <option value="">Не выбран</option>
+                            <option th:each="cable : ${cableTypes}" th:value="${cable.id}" th:text="${cable.name}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Конечная точка</label>
+                        <input type="text" th:field="*{endpointName}" placeholder="Сетевая розетка" required>
+                    </div>
+                    <div class="form-row">
+                        <button type="submit">Добавить</button>
+                    </div>
+                </form>
+                <ul class="compact-list">
+                    <li th:if="${#lists.isEmpty(deviceCableProfiles)}" class="muted">Классификация ещё не задана.</li>
+                    <li th:each="profile : ${deviceCableProfiles}">
+                        <div class="inline-form">
+                            <span>
+                                <strong th:text="${profile.deviceType != null ? profile.deviceType.name : 'Неизвестно'}"></strong>
+                                &rarr; <span th:text="${profile.endpointName}"></span>
+                                — <span th:text="${profile.cableType != null ? profile.cableType.name : '—'}"></span>
+                            </span>
+                            <form method="post" th:action="@{'/admin/device-cable-profiles/' + ${profile.id} + '/delete'}">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="link-button danger">Удалить</button>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </section>
 </main>
 <footer class="footer">
