@@ -78,14 +78,16 @@
                     <p class="file-meta">Размер: <span th:text="${#numbers.formatDecimal(file.size / 1024.0, 1, 2)} + ' КБ'"></span></p>
                     <p class="file-meta">Загружен: <span th:text="${file.uploadedAt}"></span></p>
                     <div class="file-actions">
-                        <a href="#"
-                           class="button secondary open-preview"
-                           th:with="downloadUrl=@{/objects/{objectId}/files/{fileId}(objectId=${object.id}, fileId=${file.id})},
-                                    previewUrl=@{/objects/{objectId}/files/{fileId}/preview(objectId=${object.id}, fileId=${file.id})}"
-                           th:attr="data-preview-url=${file.hasCustomPreview()} ? previewUrl : downloadUrl},
-                                    data-file-name=${file.originalFilename}">
-                            Открыть
-                        </a>
+                        <th:block th:with="downloadUrl=@{/objects/{objectId}/files/{fileId}(objectId=${object.id}, fileId=${file.id})},
+                                             previewUrl=@{/objects/{objectId}/files/{fileId}/preview(objectId=${object.id}, fileId=${file.id})},
+                                             previewLink=${file.hasCustomPreview()} ? previewUrl : downloadUrl">
+                            <a href="#"
+                               class="button secondary open-preview"
+                               th:data-preview-url="${previewLink}"
+                               th:data-file-name="${file.originalFilename}">
+                                Открыть
+                            </a>
+                        </th:block>
                         <a th:href="@{|/objects/${object.id}/files/${file.id}?download=true|}" class="button">Скачать</a>
                     </div>
                 </div>
