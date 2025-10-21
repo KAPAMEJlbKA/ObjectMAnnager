@@ -179,8 +179,8 @@
                     <h4>Монтажные элементы</h4>
                     <p class="muted small">Укажите дополнительные монтажные элементы, необходимые для всех групп.</p>
                     <div class="stack">
-                        <div class="mounting-row" th:each="element, iter : *{mountingElements}">
-                            <input type="hidden" th:field="*{mountingElements[__${iter.index}__].elementId}">
+                        <div class="mounting-row" th:each="element, iter : *{mountingElements}" th:data-index="${iter.index}">
+                            <input type="hidden" th:field="*{mountingElements[__${iter.index}__].elementId}" data-field="elementId">
                             <div class="grid">
                                 <div>
                                     <label th:for="${'mounting-' + iter.index}" th:text="${element.elementName != null ? element.elementName : 'Элемент'}">Элемент</label>
@@ -188,7 +188,7 @@
                                 </div>
                                 <div>
                                     <label>Количество / примечание</label>
-                                    <input type="text" th:field="*{mountingElements[__${iter.index}__].quantity}" placeholder="2 шт, 1 комплект...">
+                                    <input type="text" th:field="*{mountingElements[__${iter.index}__].quantity}" data-field="quantity" placeholder="2 шт, 1 комплект...">
                                 </div>
                             </div>
                         </div>
@@ -335,6 +335,7 @@
         const prevButton = document.querySelector('[data-action="prev-step"]');
         const nextButton = document.querySelector('[data-action="next-step"]');
         const finishButton = document.querySelector('[data-role="finish"]');
+        const wizardForm = document.querySelector('.wizard-form');
 
         let currentStep = 0;
 
@@ -405,6 +406,23 @@
 
         function getDeviceGroups() {
             return Array.from(deviceContainer?.querySelectorAll('.device-group') ?? []);
+        }
+
+        function getMountingRows() {
+            return Array.from(document.querySelectorAll('.mounting-row'));
+        }
+
+        function reindexMountingRows() {
+            getMountingRows().forEach((row, index) => {
+                row.dataset.index = index.toString();
+                row.querySelectorAll('[data-field]').forEach(field => {
+                    const key = field.getAttribute('data-field');
+                    if (!key) {
+                        return;
+                    }
+                    field.setAttribute('name', `mountingElements[${index}].${key}`);
+                });
+            });
         }
 
         function reindexDeviceGroups() {
@@ -904,6 +922,54 @@
             }
         });
 
+        function sanitizeFieldNames() {
+            reindexDeviceGroups();
+            reindexMountingRows();
+            reindexConnectionPoints();
+            reindexMaterialGroups();
+            if (!wizardForm) {
+                return;
+            }
+            wizardForm.querySelectorAll('[name*="__index__"]').forEach(field => {
+                const key = field.getAttribute('data-field');
+                if (!key) {
+                    field.removeAttribute('name');
+                    return;
+                }
+                const deviceGroup = field.closest('.device-group');
+                if (deviceGroup && deviceGroup.dataset.index) {
+                    field.setAttribute('name', `deviceGroups[${deviceGroup.dataset.index}].${key}`);
+                    return;
+                }
+                const connectionPoint = field.closest('.connection-point');
+                if (connectionPoint && connectionPoint.dataset.index) {
+                    field.setAttribute('name', `connectionPoints[${connectionPoint.dataset.index}].${key}`);
+                    return;
+                }
+                const materialGroup = field.closest('.material-group');
+                if (materialGroup && materialGroup.dataset.index) {
+                    const materialRow = field.closest('.material-row');
+                    if (materialRow && materialRow.dataset.index) {
+                        field.setAttribute('name', `materialGroups[${materialGroup.dataset.index}].materials[${materialRow.dataset.index}].${key}`);
+                    } else {
+                        field.setAttribute('name', `materialGroups[${materialGroup.dataset.index}].${key}`);
+                    }
+                    return;
+                }
+                const mountingRow = field.closest('.mounting-row');
+                if (mountingRow && mountingRow.dataset.index) {
+                    field.setAttribute('name', `mountingElements[${mountingRow.dataset.index}].${key}`);
+                    return;
+                }
+                field.removeAttribute('name');
+            });
+        }
+
+        wizardForm?.addEventListener('submit', () => {
+            sanitizeFieldNames();
+        });
+
+        reindexMountingRows();
         reindexDeviceGroups();
         showStep(0);
     });
