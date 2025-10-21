@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <title>Первичные данные объекта</title>
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+<header class="topbar">
+    <h1>Object Manager</h1>
+    <nav>
+        <a href="/objects" class="active">Объекты</a>
+        <a href="/customers">Заказчики</a>
+        <a href="/admin" sec:authorize="hasRole('ADMIN')">Администрирование</a>
+        <form method="post" action="/logout">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit" class="link-button">Выход</button>
+        </form>
+    </nav>
+</header>
+<main class="content">
+    <section class="card">
+        <div class="card-header">
+            <h2 th:text="${object.name}">Объект</h2>
+            <a class="button secondary" th:href="@{'/objects/' + ${object.id}}">Назад к объекту</a>
+        </div>
+        <p class="muted">Заполните параметры оборудования, монтажные элементы и монтажные материалы. Итоговое описание будет сохранено в первичных данных объекта.</p>
+    </section>
+
+    <form class="card" method="post" th:action="@{'/objects/' + ${object.id} + '/primary-data/wizard'}" th:object="${wizardForm}">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <section class="stack">
+            <h3>1. Оборудование</h3>
+            <p class="muted">Укажите тип устройства, количество и точки установки/подключения. На основе количества вычислим суммарное число точек подключения.</p>
+            <div id="device-groups" class="stack">
+                <div class="device-group card nested-card" th:each="group, iter : *{deviceGroups}" th:data-index="${iter.index}">
+                    <div class="grid">
+                        <div>
+                            <label>Тип устройства</label>
+                            <select th:field="*{deviceGroups[__${iter.index}__].deviceTypeId}">
+                                <option value="">Не выбрано</option>
+                                <option th:each="type : ${deviceTypes}" th:value="${type.id}" th:text="${type.name}"></option>
+                            </select>
+                        </div>
+                        <div>
+                            <label>Количество</label>
+                            <input type="number" min="0" step="1" th:field="*{deviceGroups[__${iter.index}__].deviceCount}" class="device-count">
+                        </div>
+                    </div>
+                    <div class="grid">
+                        <div>
+                            <label>Точка установки</label>
+                            <input type="text" th:field="*{deviceGroups[__${iter.index}__].installLocation}" placeholder="Крыша, подъезд...">
+                        </div>
+                        <div>
+                            <label>Точка подключения</label>
+                            <input type="text" th:field="*{deviceGroups[__${iter.index}__].connectionPoint}" placeholder="Распред. коробка...">
+                        </div>
+                    </div>
+                    <button type="button" class="link-button danger remove-device" th:if="${iter.index > 0}">Удалить</button>
+                </div>
+            </div>
+            <div id="device-group-template" class="device-group card nested-card" hidden>
+                <div class="grid">
+                    <div>
+                        <label>Тип устройства</label>
+                        <select name="deviceGroups[__index__].deviceTypeId">
+                            <option value="">Не выбрано</option>
+                            <option th:each="type : ${deviceTypes}" th:value="${type.id}" th:text="${type.name}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Количество</label>
+                        <input type="number" min="0" step="1" name="deviceGroups[__index__].deviceCount" class="device-count">
+                    </div>
+                </div>
+                <div class="grid">
+                    <div>
+                        <label>Точка установки</label>
+                        <input type="text" name="deviceGroups[__index__].installLocation" placeholder="Крыша, подъезд...">
+                    </div>
+                    <div>
+                        <label>Точка подключения</label>
+                        <input type="text" name="deviceGroups[__index__].connectionPoint" placeholder="Распред. коробка...">
+                    </div>
+                </div>
+                <button type="button" class="link-button danger remove-device">Удалить</button>
+            </div>
+            <button type="button" class="button secondary" id="add-device-group">Добавить устройство</button>
+            <p><strong>Всего точек подключения:</strong> <span id="connection-total" th:text="${totalConnectionPoints}">0</span></p>
+        </section>
+
+        <section class="stack">
+            <h3>2. Монтажные элементы</h3>
+            <p class="muted">Укажите какие общие монтажные элементы потребуются для узла. Можно оставить поля пустыми, если элемент не нужен.</p>
+            <div class="stack">
+                <div class="mounting-row" th:each="element, iter : *{mountingElements}">
+                    <input type="hidden" th:field="*{mountingElements[__${iter.index}__].elementId}">
+                    <div class="grid">
+                        <div>
+                            <label th:for="${'mounting-' + iter.index}" th:text="${mountingElements[iter.index].elementName != null ? mountingElements[iter.index].elementName : 'Элемент'}">Элемент</label>
+                            <input type="text" th:id="${'mounting-' + iter.index}" th:value="${mountingElements[iter.index].elementName}" readonly>
+                        </div>
+                        <div>
+                            <label>Количество / примечание</label>
+                            <input type="text" th:field="*{mountingElements[__${iter.index}__].quantity}" placeholder="2 шт, 1 комплект...">
+                        </div>
+                    </div>
+                </div>
+                <p th:if="${#lists.isEmpty(mountingElements)}" class="muted">Монтажные элементы пока не добавлены в администрировании.</p>
+            </div>
+        </section>
+
+        <section class="stack">
+            <h3>3. Монтажные материалы</h3>
+            <p class="muted">Сгруппируйте материалы и укажите способы прокладки. Внутри группы можно перечислить несколько материалов.</p>
+            <div id="material-groups" class="stack">
+                <div class="material-group card nested-card" th:each="group, gIndex : *{materialGroups}" th:data-index="${gIndex.index}">
+                    <div class="grid">
+                        <div>
+                            <label>Название группы</label>
+                            <input type="text" th:field="*{materialGroups[__${gIndex.index}__].groupName}" placeholder="Линия к узлу 1">
+                        </div>
+                        <div>
+                            <label>Поверхность прокладки</label>
+                            <input type="text" th:field="*{materialGroups[__${gIndex.index}__].surface}" placeholder="По потолку, в земле...">
+                        </div>
+                    </div>
+                    <div class="stack" th:id="${'material-rows-' + gIndex.index}">
+                        <div class="material-row" th:each="usage, uIndex : *{materialGroups[__${gIndex.index}__].materials}" th:data-index="${uIndex.index}">
+                            <div class="grid">
+                                <div>
+                                    <label>Материал</label>
+                                    <select th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].materialId}">
+                                        <option value="">Не выбран</option>
+                                        <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label>Объем / длина</label>
+                                    <input type="text" th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].amount}" placeholder="25 м, 4 шт...">
+                                </div>
+                                <div>
+                                    <label>По чему проложены</label>
+                                    <input type="text" th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].layingSurface}" placeholder="По стене, в коробе...">
+                                </div>
+                            </div>
+                            <button type="button" class="link-button danger remove-material" th:if="${uIndex.index > 0}">Удалить материал</button>
+                        </div>
+                    </div>
+                    <button type="button" class="button secondary add-material" th:data-group="${gIndex.index}">Добавить материал</button>
+                    <button type="button" class="link-button danger remove-group" th:if="${gIndex.index > 0}">Удалить группу</button>
+                </div>
+            </div>
+            <div id="material-group-template" class="material-group card nested-card" hidden>
+                <div class="grid">
+                    <div>
+                        <label>Название группы</label>
+                        <input type="text" name="materialGroups[__group__].groupName" placeholder="Линия">
+                    </div>
+                    <div>
+                        <label>Поверхность прокладки</label>
+                        <input type="text" name="materialGroups[__group__].surface" placeholder="По потолку, в земле...">
+                    </div>
+                </div>
+                <div class="stack">
+                    <div class="material-row">
+                        <div class="grid">
+                            <div>
+                                <label>Материал</label>
+                                <select name="materialGroups[__group__].materials[0].materialId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Объем / длина</label>
+                                <input type="text" name="materialGroups[__group__].materials[0].amount" placeholder="25 м, 4 шт...">
+                            </div>
+                            <div>
+                                <label>По чему проложены</label>
+                                <input type="text" name="materialGroups[__group__].materials[0].layingSurface" placeholder="По стене, в коробе...">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="button secondary add-material" data-group="__group__">Добавить материал</button>
+                <button type="button" class="link-button danger remove-group">Удалить группу</button>
+            </div>
+            <div id="material-row-template" class="material-row" hidden>
+                <div class="grid">
+                    <div>
+                        <label>Материал</label>
+                        <select name="materialGroups[__group__].materials[__index__].materialId">
+                            <option value="">Не выбран</option>
+                            <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>Объем / длина</label>
+                        <input type="text" name="materialGroups[__group__].materials[__index__].amount" placeholder="25 м, 4 шт...">
+                    </div>
+                    <div>
+                        <label>По чему проложены</label>
+                        <input type="text" name="materialGroups[__group__].materials[__index__].layingSurface" placeholder="По стене, в коробе...">
+                    </div>
+                </div>
+                <button type="button" class="link-button danger remove-material">Удалить материал</button>
+            </div>
+            <button type="button" class="button secondary" id="add-material-group">Добавить группу материалов</button>
+        </section>
+
+        <div class="form-row">
+            <button type="submit">Сохранить первичные данные</button>
+            <a class="button secondary" th:href="@{'/objects/' + ${object.id}}">Отмена</a>
+        </div>
+    </form>
+</main>
+<footer class="footer">
+    <p>Object Manager &copy; 2025</p>
+</footer>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const deviceContainer = document.getElementById('device-groups');
+        const deviceTemplate = document.getElementById('device-group-template');
+        const addDeviceButton = document.getElementById('add-device-group');
+        const connectionTotal = document.getElementById('connection-total');
+
+        function reindexDeviceGroups() {
+            const groups = deviceContainer.querySelectorAll('.device-group');
+            groups.forEach((group, index) => {
+                group.dataset.index = index.toString();
+                const selects = group.querySelectorAll('select');
+                const inputs = group.querySelectorAll('input');
+                selects.forEach(select => {
+                    if (select.name?.includes('deviceGroups')) {
+                        select.name = `deviceGroups[${index}].deviceTypeId`;
+                    }
+                });
+                inputs.forEach(input => {
+                    if (input.classList.contains('device-count')) {
+                        input.name = `deviceGroups[${index}].deviceCount`;
+                    } else if (input.name?.includes('installLocation')) {
+                        input.name = `deviceGroups[${index}].installLocation`;
+                    } else if (input.name?.includes('connectionPoint')) {
+                        input.name = `deviceGroups[${index}].connectionPoint`;
+                    }
+                });
+                const removeButton = group.querySelector('.remove-device');
+                if (removeButton) {
+                    removeButton.style.display = index === 0 ? 'none' : '';
+                }
+            });
+            recalcConnections();
+        }
+
+        function recalcConnections() {
+            const counts = deviceContainer.querySelectorAll('.device-count');
+            let total = 0;
+            counts.forEach(input => {
+                const value = parseInt(input.value, 10);
+                if (!isNaN(value)) {
+                    total += value;
+                }
+            });
+            if (connectionTotal) {
+                connectionTotal.textContent = total.toString();
+            }
+        }
+
+        addDeviceButton?.addEventListener('click', () => {
+            if (!deviceTemplate) {
+                return;
+            }
+            const clone = deviceTemplate.cloneNode(true);
+            clone.hidden = false;
+            deviceContainer.appendChild(clone);
+            reindexDeviceGroups();
+        });
+
+        deviceContainer?.addEventListener('input', event => {
+            if (event.target instanceof HTMLInputElement && event.target.classList.contains('device-count')) {
+                recalcConnections();
+            }
+        });
+
+        deviceContainer?.addEventListener('click', event => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+            if (target.classList.contains('remove-device')) {
+                const group = target.closest('.device-group');
+                if (group && deviceContainer.children.length > 1) {
+                    group.remove();
+                    reindexDeviceGroups();
+                }
+            }
+        });
+
+        reindexDeviceGroups();
+
+        const materialGroupsContainer = document.getElementById('material-groups');
+        const materialGroupTemplate = document.getElementById('material-group-template');
+        const addMaterialGroupButton = document.getElementById('add-material-group');
+
+        function visibleMaterialGroups() {
+            return Array.from(materialGroupsContainer.children)
+                .filter(child => child.classList?.contains('material-group') && !child.hasAttribute('hidden'));
+        }
+
+        function reindexMaterialGroups() {
+            const groups = visibleMaterialGroups();
+            groups.forEach((group, groupIndex) => {
+                group.dataset.index = groupIndex.toString();
+                const groupNameInput = group.querySelector('input[name$="groupName"]');
+                if (groupNameInput) {
+                    groupNameInput.name = `materialGroups[${groupIndex}].groupName`;
+                }
+                const surfaceInput = group.querySelector('input[name$="surface"]');
+                if (surfaceInput) {
+                    surfaceInput.name = `materialGroups[${groupIndex}].surface`;
+                }
+                const rows = group.querySelectorAll('.material-row');
+                rows.forEach((row, rowIndex) => {
+                    const selects = row.querySelectorAll('select');
+                    selects.forEach(select => {
+                        select.name = `materialGroups[${groupIndex}].materials[${rowIndex}].materialId`;
+                    });
+                    const inputs = row.querySelectorAll('input');
+                    inputs.forEach(input => {
+                        if (input.name?.includes('amount')) {
+                            input.name = `materialGroups[${groupIndex}].materials[${rowIndex}].amount`;
+                        } else if (input.name?.includes('layingSurface')) {
+                            input.name = `materialGroups[${groupIndex}].materials[${rowIndex}].layingSurface`;
+                        }
+                    });
+                    const removeButton = row.querySelector('.remove-material');
+                    if (removeButton) {
+                        removeButton.style.display = rowIndex === 0 ? 'none' : '';
+                    }
+                });
+                const removeGroupButton = group.querySelector('.remove-group');
+                if (removeGroupButton) {
+                    removeGroupButton.style.display = groupIndex === 0 ? 'none' : '';
+                }
+            });
+        }
+
+        addMaterialGroupButton?.addEventListener('click', () => {
+            if (!materialGroupTemplate || !materialGroupsContainer) {
+                return;
+            }
+            const clone = materialGroupTemplate.cloneNode(true);
+            clone.hidden = false;
+            materialGroupsContainer.appendChild(clone);
+            reindexMaterialGroups();
+        });
+
+        materialGroupsContainer?.addEventListener('click', event => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+            if (target.classList.contains('add-material')) {
+                event.preventDefault();
+                const groupElement = target.closest('.material-group');
+                if (!groupElement) {
+                    return;
+                }
+                const rowsContainer = groupElement.querySelector('.stack');
+                const template = document.getElementById('material-row-template');
+                if (!template || !rowsContainer) {
+                    return;
+                }
+                const clone = template.cloneNode(true);
+                clone.hidden = false;
+                rowsContainer.appendChild(clone);
+                reindexMaterialGroups();
+                return;
+            }
+            if (target.classList.contains('remove-material')) {
+                const row = target.closest('.material-row');
+                const groupElement = target.closest('.material-group');
+                if (row && groupElement) {
+                    const rows = groupElement.querySelectorAll('.material-row');
+                    if (rows.length > 1) {
+                        row.remove();
+                        reindexMaterialGroups();
+                    }
+                }
+                return;
+            }
+            if (target.classList.contains('remove-group')) {
+                const group = target.closest('.material-group');
+                const groups = visibleMaterialGroups();
+                if (group && groups.length > 1) {
+                    group.remove();
+                    reindexMaterialGroups();
+                }
+            }
+        });
+
+        reindexMaterialGroups();
+    });
+</script>
+</body>
+</html>

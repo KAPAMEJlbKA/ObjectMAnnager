@@ -106,6 +106,12 @@ body {
     gap: 1rem;
 }
 
+.grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
 .form-row {
     display: flex;
     flex-direction: column;
@@ -169,6 +175,22 @@ button:hover {
 
 .button.danger:hover {
     background: #b91c1c;
+}
+
+.nested-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.5rem;
+    background: #f9fafb;
+    margin-top: 1rem;
+}
+
+.alert {
+    background: #fee2e2;
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
 }
 
 .inline-form {
@@ -379,6 +401,45 @@ button:hover {
 
 .muted {
     color: var(--muted);
+}
+
+.repeatable-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.phone-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.link-button.danger {
+    color: #dc2626;
+}
+
+.link-button.danger:hover {
+    color: #b91c1c;
+}
+
+.compact-list {
+    margin: 0;
+    padding-left: 1.25rem;
+}
+
+.compact-list li {
+    margin-bottom: 0.25rem;
+}
+
+.is-hidden {
+    display: none !important;
 }
 
 .primary-data {
