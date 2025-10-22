@@ -24,6 +24,7 @@ import com.kapamejlbka.objectmannage.service.ApplicationSettingsService;
 import com.kapamejlbka.objectmannage.service.FilePreviewService;
 import com.kapamejlbka.objectmannage.service.ManagedObjectService;
 import com.kapamejlbka.objectmannage.service.PrimaryDataSummaryService;
+import com.kapamejlbka.objectmannage.service.PdfReportService;
 import com.kapamejlbka.objectmannage.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -78,6 +79,7 @@ public class ObjectController {
     private final FilePreviewService filePreviewService;
     private final ObjectMapper objectMapper;
     private final PrimaryDataSummaryService primaryDataSummaryService;
+    private final PdfReportService pdfReportService;
 
     public ObjectController(ManagedObjectService managedObjectService,
                             ProjectCustomerRepository customerRepository,
@@ -90,7 +92,8 @@ public class ObjectController {
                             UserService userService,
                             FilePreviewService filePreviewService,
                             ObjectProvider<ObjectMapper> objectMapperProvider,
-                            PrimaryDataSummaryService primaryDataSummaryService) {
+                            PrimaryDataSummaryService primaryDataSummaryService,
+                            PdfReportService pdfReportService) {
         this.managedObjectService = managedObjectService;
         this.customerRepository = customerRepository;
         this.objectChangeRepository = objectChangeRepository;
@@ -103,6 +106,7 @@ public class ObjectController {
         this.filePreviewService = filePreviewService;
         this.objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
         this.primaryDataSummaryService = primaryDataSummaryService;
+        this.pdfReportService = pdfReportService;
     }
 
     @InitBinder
@@ -195,6 +199,21 @@ public class ObjectController {
         PrimaryDataSummary primarySummary = primaryDataSummaryService.summarize(managedObject.getPrimaryData());
         model.addAttribute("primarySummary", primarySummary);
         return "objects/detail";
+    }
+
+    @GetMapping("/{id}/report.pdf")
+    public ResponseEntity<byte[]> downloadReport(@PathVariable UUID id) {
+        ManagedObject managedObject = managedObjectService.getById(id);
+        PrimaryDataSummary summary = primaryDataSummaryService.summarize(managedObject.getPrimaryData());
+        PrimaryDataSnapshot snapshot = parseSnapshot(managedObject.getPrimaryData());
+        byte[] pdf = pdfReportService.buildObjectReport(managedObject, snapshot, summary);
+        ContentDisposition disposition = ContentDisposition.attachment()
+                .filename(buildReportFileName(managedObject), StandardCharsets.UTF_8)
+                .build();
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .body(pdf);
     }
 
     @PostMapping("/{id}/files")
@@ -322,6 +341,28 @@ public class ObjectController {
         model.addAttribute("cableTypes", cableTypes);
         model.addAttribute("totalConnectionPoints", form.calculateTotalConnectionPoints());
         model.addAttribute("mapProvider", applicationSettingsService.getMapProvider());
+    }
+
+    private PrimaryDataSnapshot parseSnapshot(String primaryData) {
+        if (!StringUtils.hasText(primaryData)) {
+            return new PrimaryDataSnapshot();
+        }
+        try {
+            return objectMapper.readValue(primaryData, PrimaryDataSnapshot.class);
+        } catch (JsonProcessingException e) {
+            return new PrimaryDataSnapshot();
+        }
+    }
+
+    private String buildReportFileName(ManagedObject managedObject) {
+        String base = managedObject != null && StringUtils.hasText(managedObject.getName())
+                ? managedObject.getName().trim()
+                : "object";
+        String normalized = base.replaceAll("[^a-zA-Z0-9._-]+", "-");
+        if (!StringUtils.hasText(normalized)) {
+            normalized = "object";
+        }
+        return normalized + "-report.pdf";
     }
 
     private String formatCoordinates(Double latitude, Double longitude) {
@@ -695,11 +736,17 @@ public class ObjectController {
         }
 
         public int calculateTotalConnectionPoints() {
-            return deviceGroups.stream()
-                    .map(DeviceGroupForm::getDeviceCount)
-                    .filter(count -> count != null && count > 0)
-                    .mapToInt(Integer::intValue)
-                    .sum();
+            Set<String> unique = new LinkedHashSet<>();
+            for (DeviceGroupForm group : deviceGroups) {
+                if (group == null) {
+                    continue;
+                }
+                String connectionPoint = group.getConnectionPoint();
+                if (StringUtils.hasText(connectionPoint)) {
+                    unique.add(connectionPoint.trim());
+                }
+            }
+            return unique.size();
         }
 
         public PrimaryDataSnapshot toSnapshot(List<DeviceType> deviceTypes,

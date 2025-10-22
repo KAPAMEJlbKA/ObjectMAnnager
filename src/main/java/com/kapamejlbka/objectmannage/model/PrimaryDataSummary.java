@@ -11,12 +11,14 @@ public class PrimaryDataSummary {
     private final String errorMessage;
     private final List<DeviceTypeSummary> deviceTypeSummaries;
     private final List<CableLengthSummary> cableLengthSummaries;
+    private final List<CableFunctionSummary> cableFunctionSummaries;
     private final List<NodeSummary> nodeSummaries;
     private final int totalDeviceCount;
     private final int totalNodes;
     private final int unnamedConnectionAssignments;
     private final Integer declaredConnectionAssignments;
     private final double totalCableLength;
+    private final String deviceTypeBreakdown;
 
     private PrimaryDataSummary(Builder builder) {
         this.hasData = builder.hasData;
@@ -24,12 +26,14 @@ public class PrimaryDataSummary {
         this.errorMessage = builder.errorMessage;
         this.deviceTypeSummaries = Collections.unmodifiableList(new ArrayList<>(builder.deviceTypeSummaries));
         this.cableLengthSummaries = Collections.unmodifiableList(new ArrayList<>(builder.cableLengthSummaries));
+        this.cableFunctionSummaries = Collections.unmodifiableList(new ArrayList<>(builder.cableFunctionSummaries));
         this.nodeSummaries = Collections.unmodifiableList(new ArrayList<>(builder.nodeSummaries));
         this.totalDeviceCount = builder.totalDeviceCount;
         this.totalNodes = builder.totalNodes;
         this.unnamedConnectionAssignments = builder.unnamedConnectionAssignments;
         this.declaredConnectionAssignments = builder.declaredConnectionAssignments;
         this.totalCableLength = builder.totalCableLength;
+        this.deviceTypeBreakdown = builder.deviceTypeBreakdown;
     }
 
     public static PrimaryDataSummary empty() {
@@ -67,6 +71,10 @@ public class PrimaryDataSummary {
         return cableLengthSummaries;
     }
 
+    public List<CableFunctionSummary> getCableFunctionSummaries() {
+        return cableFunctionSummaries;
+    }
+
     public List<NodeSummary> getNodeSummaries() {
         return nodeSummaries;
     }
@@ -91,18 +99,24 @@ public class PrimaryDataSummary {
         return totalCableLength;
     }
 
+    public String getDeviceTypeBreakdown() {
+        return deviceTypeBreakdown;
+    }
+
     public static class Builder {
         private boolean hasData = true;
         private boolean parseError;
         private String errorMessage;
         private final List<DeviceTypeSummary> deviceTypeSummaries = new ArrayList<>();
         private final List<CableLengthSummary> cableLengthSummaries = new ArrayList<>();
+        private final List<CableFunctionSummary> cableFunctionSummaries = new ArrayList<>();
         private final List<NodeSummary> nodeSummaries = new ArrayList<>();
         private int totalDeviceCount;
         private int totalNodes;
         private int unnamedConnectionAssignments;
         private Integer declaredConnectionAssignments;
         private double totalCableLength;
+        private String deviceTypeBreakdown;
 
         public Builder withHasData(boolean hasData) {
             this.hasData = hasData;
@@ -129,6 +143,13 @@ public class PrimaryDataSummary {
         public Builder addCableLengthSummary(CableLengthSummary summary) {
             if (summary != null) {
                 this.cableLengthSummaries.add(summary);
+            }
+            return this;
+        }
+
+        public Builder addCableFunctionSummary(CableFunctionSummary summary) {
+            if (summary != null) {
+                this.cableFunctionSummaries.add(summary);
             }
             return this;
         }
@@ -165,16 +186,23 @@ public class PrimaryDataSummary {
             return this;
         }
 
+        public Builder withDeviceTypeBreakdown(String deviceTypeBreakdown) {
+            this.deviceTypeBreakdown = deviceTypeBreakdown;
+            return this;
+        }
+
         public PrimaryDataSummary build() {
             if (!hasData) {
                 this.deviceTypeSummaries.clear();
                 this.cableLengthSummaries.clear();
+                this.cableFunctionSummaries.clear();
                 this.nodeSummaries.clear();
                 this.totalDeviceCount = 0;
                 this.totalNodes = 0;
                 this.unnamedConnectionAssignments = 0;
                 this.declaredConnectionAssignments = null;
                 this.totalCableLength = 0.0;
+                this.deviceTypeBreakdown = null;
             }
             return new PrimaryDataSummary(this);
         }
@@ -195,6 +223,24 @@ public class PrimaryDataSummary {
 
         public int getQuantity() {
             return quantity;
+        }
+    }
+
+    public static class CableFunctionSummary {
+        private final String functionName;
+        private final double totalLength;
+
+        public CableFunctionSummary(String functionName, double totalLength) {
+            this.functionName = functionName;
+            this.totalLength = totalLength;
+        }
+
+        public String getFunctionName() {
+            return functionName;
+        }
+
+        public double getTotalLength() {
+            return totalLength;
         }
     }
 

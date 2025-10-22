@@ -1,5 +1,6 @@
 package com.kapamejlbka.objectmannage.web;
 
+import com.kapamejlbka.objectmannage.model.CableFunction;
 import com.kapamejlbka.objectmannage.model.CableType;
 import com.kapamejlbka.objectmannage.model.DeviceCableProfile;
 import com.kapamejlbka.objectmannage.model.DeviceType;
@@ -174,7 +175,7 @@ public class AdminController {
         if (form.getName() != null && !form.getName().isBlank()) {
             String name = form.getName().trim();
             if (!cableTypeRepository.existsByNameIgnoreCase(name)) {
-                cableTypeRepository.save(new CableType(name));
+                cableTypeRepository.save(new CableType(name, form.getFunction()));
             }
         }
         return "redirect:/admin";
@@ -446,6 +447,7 @@ public class AdminController {
     public static class CableTypeForm {
         @NotBlank
         private String name;
+        private CableFunction function = CableFunction.SIGNAL;
 
         public String getName() {
             return name;
@@ -453,6 +455,14 @@ public class AdminController {
 
         public void setName(String name) {
             this.name = name;
+        }
+
+        public CableFunction getFunction() {
+            return function;
+        }
+
+        public void setFunction(CableFunction function) {
+            this.function = function == null ? CableFunction.SIGNAL : function;
         }
     }
 
