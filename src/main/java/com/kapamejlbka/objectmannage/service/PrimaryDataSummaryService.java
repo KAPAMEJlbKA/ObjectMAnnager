@@ -2,21 +2,26 @@ package com.kapamejlbka.objectmannage.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kapamejlbka.objectmannage.model.CableFunction;
 import com.kapamejlbka.objectmannage.model.CableType;
 import com.kapamejlbka.objectmannage.model.DeviceCableProfile;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableLengthSummary;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableFunctionSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.DeviceTypeSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.NodeSummary;
 import com.kapamejlbka.objectmannage.repository.CableTypeRepository;
 import com.kapamejlbka.objectmannage.repository.DeviceCableProfileRepository;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
@@ -62,11 +67,14 @@ public class PrimaryDataSummaryService {
         List<NodeSummary> nodeSummaries = new ArrayList<>();
 
         Map<UUID, List<DeviceCableProfile>> cableProfiles = groupProfilesByDeviceType();
-        Map<UUID, String> cableTypeNames = loadCableTypeNames();
+        Map<UUID, CableTypeData> cableTypeData = loadCableTypeData();
 
         int totalDevices = 0;
         int unnamedAssignments = 0;
         double totalCableLength = 0.0;
+        EnumMap<CableFunction, Double> functionTotals = new EnumMap<>(CableFunction.class);
+        Set<String> assignedConnectionPoints = new HashSet<>();
+        Set<String> definedConnectionPoints = new HashSet<>();
 
         if (snapshot.getDeviceGroups() != null) {
             for (PrimaryDataSnapshot.DeviceGroup group : snapshot.getDeviceGroups()) {
@@ -82,21 +90,32 @@ public class PrimaryDataSummaryService {
                 if (!StringUtils.hasText(group.getConnectionPoint())) {
                     unnamedAssignments += group.getQuantity();
                 }
+                String assignment = StringUtils.hasText(group.getConnectionPoint())
+                        ? group.getConnectionPoint().trim() : null;
+                if (assignment != null) {
+                    assignedConnectionPoints.add(assignment);
+                }
 
                 double segmentLength = Math.max(0.0, defaultDouble(group.getDistanceToConnectionPoint()))
                         * Math.max(group.getQuantity(), 0);
 
                 List<DeviceCableProfile> profiles = cableProfiles.get(group.getDeviceTypeId());
                 if (profiles == null || profiles.isEmpty()) {
-                    addCableLength(cableLengthMap, UNKNOWN_CABLE_TYPE, segmentLength, true);
+                    addCableLength(cableLengthMap, UNKNOWN_CABLE_TYPE, segmentLength, true,
+                            CableFunction.UNKNOWN, functionTotals);
                     totalCableLength += segmentLength;
                 } else {
                     for (DeviceCableProfile profile : profiles) {
                         if (profile == null || profile.getCableType() == null) {
                             continue;
                         }
-                        String cableName = profile.getCableType().getName();
-                        addCableLength(cableLengthMap, cableName, segmentLength, false);
+                        CableType type = profile.getCableType();
+                        String cableName = type.getName();
+                        CableFunction function = type.getFunction();
+                        if (function == null) {
+                            function = CableFunction.SIGNAL;
+                        }
+                        addCableLength(cableLengthMap, cableName, segmentLength, false, function, functionTotals);
                         totalCableLength += segmentLength;
                     }
                 }
@@ -108,18 +127,26 @@ public class PrimaryDataSummaryService {
                 if (point == null) {
                     continue;
                 }
-                String name = StringUtils.hasText(point.getName()) ? point.getName() : "Без названия";
+                String trimmedName = point.getName() != null ? point.getName().trim() : null;
+                if (StringUtils.hasText(trimmedName)) {
+                    definedConnectionPoints.add(trimmedName);
+                }
+                String name = StringUtils.hasText(trimmedName) ? trimmedName : "Без названия";
                 String elementName = point.getMountingElementName();
                 Double distanceToPower = point.getDistanceToPower();
-                String powerCableName = resolveCableName(point.getPowerCableTypeName(),
-                        point.getPowerCableTypeId(), cableTypeNames);
+                CableTypeData powerCable = resolveCable(point.getPowerCableTypeName(),
+                        point.getPowerCableTypeId(), cableTypeData);
+                String powerCableName = powerCable != null ? powerCable.name() : null;
                 String layingMethod = point.getLayingMethod();
                 nodeSummaries.add(new NodeSummary(name, elementName, distanceToPower, powerCableName, layingMethod));
 
                 double powerLength = Math.max(0.0, defaultDouble(distanceToPower));
                 if (powerLength > 0) {
+                    CableFunction function = powerCable != null && powerCable.function() != null
+                            ? powerCable.function() : CableFunction.UNKNOWN;
+                    boolean missingClassification = powerCable == null || powerCable.function() == CableFunction.UNKNOWN;
                     addCableLength(cableLengthMap, powerCableName != null ? powerCableName : UNKNOWN_CABLE_TYPE,
-                            powerLength, !StringUtils.hasText(powerCableName));
+                            powerLength, missingClassification, function, functionTotals);
                     totalCableLength += powerLength;
                 }
             }
@@ -131,6 +158,11 @@ public class PrimaryDataSummaryService {
         deviceSummaries.sort(Comparator.comparing(DeviceTypeSummary::getDeviceTypeName,
                 Comparator.nullsLast(String::compareToIgnoreCase)));
 
+        String deviceBreakdown = deviceSummaries.stream()
+                .map(summary -> String.format("%s — %d", summary.getDeviceTypeName(), summary.getQuantity()))
+                .reduce((left, right) -> left + ", " + right)
+                .orElse(null);
+
         List<CableLengthSummary> cableSummaries = new ArrayList<>();
         cableLengthMap.values().stream()
                 .sorted(Comparator.comparing(CableLengthAccumulator::name,
@@ -140,16 +172,35 @@ public class PrimaryDataSummaryService {
                         acc.totalLength(),
                         acc.classificationMissing())));
 
+        List<CableFunctionSummary> functionSummaries = new ArrayList<>();
+        functionTotals.forEach((function, total) -> {
+            if (total != null && total > 0) {
+                functionSummaries.add(new CableFunctionSummary(function.getDisplayName(), total));
+            }
+        });
+        functionSummaries.sort(Comparator.comparing(CableFunctionSummary::getFunctionName));
+
+        int recordedConnectionPoints = Math.max(0, snapshot.getTotalConnectionPoints());
+        if (recordedConnectionPoints == 0 && !definedConnectionPoints.isEmpty()) {
+            recordedConnectionPoints = definedConnectionPoints.size();
+        }
+        if (recordedConnectionPoints == 0 && !assignedConnectionPoints.isEmpty()) {
+            recordedConnectionPoints = assignedConnectionPoints.size();
+        }
+        Integer declaredAssignments = recordedConnectionPoints > 0 ? recordedConnectionPoints : null;
+
         PrimaryDataSummary.Builder builder = PrimaryDataSummary.builder()
                 .withHasData(true)
                 .withTotalDeviceCount(totalDevices)
                 .withTotalNodes(nodeSummaries.size())
                 .withUnnamedConnectionAssignments(unnamedAssignments)
-                .withDeclaredConnectionAssignments(snapshot.getTotalConnectionPoints())
-                .withTotalCableLength(totalCableLength);
+                .withDeclaredConnectionAssignments(declaredAssignments)
+                .withTotalCableLength(totalCableLength)
+                .withDeviceTypeBreakdown(deviceBreakdown);
 
         deviceSummaries.forEach(builder::addDeviceTypeSummary);
         cableSummaries.forEach(builder::addCableLengthSummary);
+        functionSummaries.forEach(builder::addCableFunctionSummary);
         nodeSummaries.forEach(builder::addNodeSummary);
         return builder.build();
     }
@@ -166,11 +217,15 @@ public class PrimaryDataSummaryService {
         return map;
     }
 
-    private Map<UUID, String> loadCableTypeNames() {
-        Map<UUID, String> map = new HashMap<>();
+    private Map<UUID, CableTypeData> loadCableTypeData() {
+        Map<UUID, CableTypeData> map = new HashMap<>();
         cableTypeRepository.findAll().forEach(type -> {
             if (type != null && type.getId() != null) {
-                map.put(type.getId(), type.getName());
+                CableFunction function = type.getFunction();
+                if (function == null) {
+                    function = CableFunction.SIGNAL;
+                }
+                map.put(type.getId(), new CableTypeData(type.getName(), function));
             }
         });
         return map;
@@ -179,42 +234,55 @@ public class PrimaryDataSummaryService {
     private void addCableLength(Map<String, CableLengthAccumulator> totals,
                                 String cableName,
                                 double length,
-                                boolean missingClassification) {
+                                boolean missingClassification,
+                                CableFunction function,
+                                EnumMap<CableFunction, Double> functionTotals) {
         if (length <= 0) {
             return;
         }
         String key = StringUtils.hasText(cableName) ? cableName : UNKNOWN_CABLE_TYPE;
         CableLengthAccumulator accumulator = totals.computeIfAbsent(key,
-                name -> new CableLengthAccumulator(name, 0.0, missingClassification));
+                name -> new CableLengthAccumulator(name, 0.0, missingClassification, function));
         accumulator.add(length);
         if (!missingClassification) {
             accumulator.setClassificationMissing(false);
         }
+        CableFunction effectiveFunction = function != null ? function : CableFunction.UNKNOWN;
+        functionTotals.merge(effectiveFunction, length, Double::sum);
     }
 
-    private String resolveCableName(String storedName, UUID cableTypeId, Map<UUID, String> cableTypeNames) {
-        if (StringUtils.hasText(storedName)) {
-            return storedName;
-        }
+    private CableTypeData resolveCable(String storedName, UUID cableTypeId, Map<UUID, CableTypeData> cableTypeData) {
+        CableTypeData resolved = null;
         if (cableTypeId != null) {
-            return cableTypeNames.get(cableTypeId);
+            resolved = cableTypeData.get(cableTypeId);
         }
-        return null;
+        if (StringUtils.hasText(storedName)) {
+            if (resolved == null) {
+                return new CableTypeData(storedName, CableFunction.UNKNOWN);
+            }
+            return new CableTypeData(storedName, resolved.function());
+        }
+        return resolved;
     }
 
     private double defaultDouble(Double value) {
         return value == null ? 0.0 : value;
     }
 
+    private record CableTypeData(String name, CableFunction function) {
+    }
+
     private static class CableLengthAccumulator {
         private final String name;
         private double totalLength;
         private boolean classificationMissing;
+        private final CableFunction function;
 
-        CableLengthAccumulator(String name, double totalLength, boolean classificationMissing) {
+        CableLengthAccumulator(String name, double totalLength, boolean classificationMissing, CableFunction function) {
             this.name = name;
             this.totalLength = totalLength;
             this.classificationMissing = classificationMissing;
+            this.function = function;
         }
 
         void add(double value) {
@@ -235,6 +303,10 @@ public class PrimaryDataSummaryService {
 
         boolean classificationMissing() {
             return classificationMissing;
+        }
+
+        CableFunction function() {
+            return function;
         }
     }
 }

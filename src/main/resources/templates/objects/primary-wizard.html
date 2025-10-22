@@ -189,19 +189,41 @@
             <section class="wizard-step" data-step-index="2" hidden>
                 <h3>Шаг 3. Группы устройств</h3>
                 <p class="muted">Объедините камеры и другие устройства в логические группы. Эти группы будут использоваться для выбора монтажных материалов.</p>
-                <div id="grouping-list" class="stack">
-                    <div class="grouping-row card nested-card" th:each="group, iter : *{deviceGroups}" th:data-index="${iter.index}">
-                        <p class="muted small" data-role="summary">Заполните информацию на первом шаге, чтобы увидеть сводку.</p>
-                        <label>Название группы</label>
-                        <input type="text" th:field="*{deviceGroups[__${iter.index}__].groupLabel}" data-field="groupLabel" placeholder="Линия 1" list="group-label-datalist">
-                    </div>
+                <div class="grouping-board">
+                    <section class="grouping-source">
+                        <h4>Устройства</h4>
+                        <p class="muted small">Перетащите устройство в нужную группу.</p>
+                        <div id="grouping-pool" class="grouping-pool">
+                            <div class="device-chip" th:each="group, iter : *{deviceGroups}" th:data-index="${iter.index}" draggable="true">
+                                <input type="hidden" th:field="*{deviceGroups[__${iter.index}__].groupLabel}" data-field="groupLabel">
+                                <p class="muted small" data-role="summary">Заполните информацию на первом шаге, чтобы увидеть сводку.</p>
+                                <p class="muted small" data-role="assignment">Группа: <span data-role="assignment-label">не задана</span></p>
+                            </div>
+                        </div>
+                    </section>
+                    <section class="grouping-destinations">
+                        <div class="grouping-controls">
+                            <button type="button" class="button secondary" id="add-group">Создать группу</button>
+                        </div>
+                        <p class="muted small" id="grouping-empty">Создайте группу и перетащите в неё устройства.</p>
+                        <div id="grouping-columns" class="grouping-columns"></div>
+                    </section>
                 </div>
-                <datalist id="group-label-datalist"></datalist>
-                <template id="grouping-row-template">
-                    <div class="grouping-row card nested-card">
+                <template id="group-column-template">
+                    <div class="group-column card nested-card" data-group-label="">
+                        <header class="group-header">
+                            <input type="text" class="group-name-input" placeholder="Новая группа">
+                            <button type="button" class="link-button danger remove-group">Удалить</button>
+                        </header>
+                        <p class="muted small" data-role="capacity">Длина линии: 0 м</p>
+                        <div class="group-dropzone" data-role="dropzone"></div>
+                    </div>
+                </template>
+                <template id="device-chip-template">
+                    <div class="device-chip" draggable="true">
+                        <input type="hidden" data-field="groupLabel">
                         <p class="muted small" data-role="summary">Заполните информацию на первом шаге, чтобы увидеть сводку.</p>
-                        <label>Название группы</label>
-                        <input type="text" data-field="groupLabel" placeholder="Линия 1" list="group-label-datalist">
+                        <p class="muted small" data-role="assignment">Группа: <span data-role="assignment-label">не задана</span></p>
                     </div>
                 </template>
             </section>
@@ -236,6 +258,7 @@
                         <header class="group-header">
                             <h4 class="group-label">Группа: <span data-role="label" th:text="${group.groupLabel}">Без названия</span></h4>
                         </header>
+                        <p class="field-error capacity-warning" data-role="capacity-warning" hidden>Длина материалов превышает допустимую для этой группы.</p>
                         <div class="grid">
                             <div>
                                 <label>Отображаемое название</label>
@@ -277,6 +300,7 @@
                         <header class="group-header">
                             <h4 class="group-label">Группа: <span data-role="label">Без названия</span></h4>
                         </header>
+                        <p class="field-error capacity-warning" data-role="capacity-warning" hidden>Длина материалов превышает допустимую для этой группы.</p>
                         <div class="grid">
                             <div>
                                 <label>Отображаемое название</label>
@@ -357,9 +381,12 @@
         const connectionContainer = document.getElementById('connection-points');
         const connectionTemplate = document.getElementById('connection-point-template');
         const connectionEmptyMessage = document.getElementById('connection-empty');
-        const groupingContainer = document.getElementById('grouping-list');
-        const groupingTemplate = document.getElementById('grouping-row-template');
-        const groupLabelDatalist = document.getElementById('group-label-datalist');
+        const groupingPool = document.getElementById('grouping-pool');
+        const groupColumnsContainer = document.getElementById('grouping-columns');
+        const groupColumnTemplate = document.getElementById('group-column-template');
+        const groupingEmptyMessage = document.getElementById('grouping-empty');
+        const addGroupButton = document.getElementById('add-group');
+        const deviceChipTemplate = document.getElementById('device-chip-template');
         const materialGroupsContainer = document.getElementById('material-groups');
         const materialGroupTemplate = document.getElementById('material-group-template');
         const materialRowTemplate = document.getElementById('material-row-template');
@@ -427,15 +454,15 @@
             if (!connectionTotal || !deviceContainer) {
                 return;
             }
-            const counts = deviceContainer.querySelectorAll('input[data-field="deviceCount"]');
-            let total = 0;
-            counts.forEach(input => {
-                const value = parseInt(input.value, 10);
-                if (!Number.isNaN(value)) {
-                    total += value;
+            const names = new Set();
+            const connectionInputs = deviceContainer.querySelectorAll('input[data-field="connectionPoint"]');
+            connectionInputs.forEach(input => {
+                const value = input.value.trim();
+                if (value) {
+                    names.add(value);
                 }
             });
-            connectionTotal.textContent = total.toString();
+            connectionTotal.textContent = names.size.toString();
         }
 
         function getDeviceGroups() {
@@ -476,43 +503,180 @@
                 }
             });
             updateTotalConnectionPoints();
-            reindexGroupingRows();
+            ensureDeviceCards();
+            refreshGroupColumnsFromCards();
             syncConnectionPointsFromDevices();
-            updateGroupingSummaries();
-            syncMaterialGroupsWithLabels();
         }
 
-        function addGroupingRow() {
-            if (!groupingContainer || !(groupingTemplate instanceof HTMLTemplateElement)) {
+        function getDeviceCards() {
+            return Array.from(groupingPool?.querySelectorAll('.device-chip') ?? []);
+        }
+
+        function enableCardDrag(card) {
+            if (!card || card.dataset.dragBound === 'true') {
                 return;
             }
-            const clone = groupingTemplate.content.firstElementChild.cloneNode(true);
-            groupingContainer.appendChild(clone);
+            card.addEventListener('dragstart', event => {
+                event.dataTransfer?.setData('text/plain', card.dataset.index ?? '');
+                event.dataTransfer?.setDragImage(card, 12, 12);
+                card.classList.add('dragging');
+            });
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+            });
+            card.dataset.dragBound = 'true';
         }
 
-        function reindexGroupingRows() {
-            if (!groupingContainer) {
+        function ensureDeviceCards() {
+            if (!groupingPool) {
                 return;
             }
             const groups = getDeviceGroups();
-            let rows = Array.from(groupingContainer.querySelectorAll('.grouping-row'));
-            while (rows.length < groups.length) {
-                addGroupingRow();
-                rows = Array.from(groupingContainer.querySelectorAll('.grouping-row'));
-            }
-            while (rows.length > groups.length) {
-                const row = rows.pop();
-                row?.remove();
-            }
-            rows = Array.from(groupingContainer.querySelectorAll('.grouping-row'));
-            rows.forEach((row, index) => {
-                row.dataset.index = index.toString();
-                const input = row.querySelector('input[data-field="groupLabel"]');
-                if (input) {
-                    input.setAttribute('name', `deviceGroups[${index}].groupLabel`);
+            let cards = getDeviceCards();
+            while (cards.length < groups.length) {
+                if (!(deviceChipTemplate instanceof HTMLTemplateElement)) {
+                    break;
                 }
+                const clone = deviceChipTemplate.content.firstElementChild.cloneNode(true);
+                groupingPool.appendChild(clone);
+                cards = getDeviceCards();
+            }
+            while (cards.length > groups.length) {
+                const card = cards.pop();
+                card?.remove();
+            }
+            cards = getDeviceCards();
+            cards.forEach((card, index) => {
+                card.dataset.index = index.toString();
+                const hidden = card.querySelector('input[data-field="groupLabel"]');
+                if (hidden) {
+                    hidden.setAttribute('name', `deviceGroups[${index}].groupLabel`);
+                    card.dataset.groupLabel = hidden.value.trim();
+                }
+                enableCardDrag(card);
+                updateCardAssignmentDisplay(card);
             });
-            updateGroupLabelSuggestions();
+        }
+
+        function getGroupColumns() {
+            return Array.from(groupColumnsContainer?.querySelectorAll('.group-column') ?? []);
+        }
+
+        function ensureGroupColumn(label) {
+            if (!groupColumnsContainer) {
+                return null;
+            }
+            const trimmed = (label || '').trim();
+            if (!trimmed) {
+                return null;
+            }
+            let column = getGroupColumns().find(col => (col.dataset.groupLabel || '') === trimmed);
+            if (!column) {
+                if (!(groupColumnTemplate instanceof HTMLTemplateElement)) {
+                    return null;
+                }
+                column = groupColumnTemplate.content.firstElementChild.cloneNode(true);
+                groupColumnsContainer.appendChild(column);
+                bindGroupColumnEvents(column);
+            }
+            column.dataset.groupLabel = trimmed;
+            const input = column.querySelector('.group-name-input');
+            if (input && input !== document.activeElement) {
+                input.value = trimmed;
+            }
+            updateGroupingEmptyState();
+            return column;
+        }
+
+        function bindGroupColumnEvents(column) {
+            const input = column.querySelector('.group-name-input');
+            const dropzone = column.querySelector('[data-role="dropzone"]');
+            const removeButton = column.querySelector('.remove-group');
+            input?.addEventListener('input', () => {
+                const newLabel = input.value.trim();
+                column.dataset.groupLabel = newLabel;
+                Array.from(dropzone?.querySelectorAll('.device-chip') ?? []).forEach(card => {
+                    moveCardToGroup(card, newLabel);
+                });
+                if (!newLabel) {
+                    column.remove();
+                    updateGroupingEmptyState();
+                    syncMaterialGroupsWithLabels();
+                    validateMaterialCapacity();
+                    return;
+                }
+                updateGroupingEmptyState();
+                updateGroupCapacities();
+                syncMaterialGroupsWithLabels();
+                validateMaterialCapacity();
+            });
+            dropzone?.addEventListener('dragover', event => {
+                event.preventDefault();
+                dropzone.classList.add('drop-target');
+            });
+            dropzone?.addEventListener('dragleave', () => {
+                dropzone.classList.remove('drop-target');
+            });
+            dropzone?.addEventListener('drop', event => {
+                event.preventDefault();
+                dropzone.classList.remove('drop-target');
+                const index = Number(event.dataTransfer?.getData('text/plain'));
+                const label = column.dataset.groupLabel || input?.value.trim() || '';
+                moveCardToGroupByIndex(index, label);
+            });
+            removeButton?.addEventListener('click', () => {
+                Array.from(column.querySelectorAll('.device-chip')).forEach(card => moveCardToGroup(card, ''));
+                column.remove();
+                updateGroupingEmptyState();
+                syncMaterialGroupsWithLabels();
+                validateMaterialCapacity();
+            });
+        }
+
+        function updateGroupingEmptyState() {
+            if (!groupingEmptyMessage || !groupColumnsContainer) {
+                return;
+            }
+            const hasGroups = groupColumnsContainer.querySelector('.group-column') !== null;
+            groupingEmptyMessage.hidden = hasGroups;
+        }
+
+        function updateCardAssignmentDisplay(card) {
+            const labelElement = card.querySelector('[data-role="assignment-label"]');
+            const label = (card.dataset.groupLabel || '').trim();
+            if (labelElement) {
+                labelElement.textContent = label || 'не задана';
+            }
+        }
+
+        function moveCardToGroup(card, label) {
+            if (!card) {
+                return;
+            }
+            const trimmed = (label || '').trim();
+            const hidden = card.querySelector('input[data-field="groupLabel"]');
+            if (hidden) {
+                hidden.value = trimmed;
+            }
+            card.dataset.groupLabel = trimmed;
+            updateCardAssignmentDisplay(card);
+            let target = groupingPool;
+            if (trimmed) {
+                const column = ensureGroupColumn(trimmed);
+                target = column?.querySelector('[data-role="dropzone"]') ?? groupingPool;
+            }
+            target?.appendChild(card);
+            updateGroupingEmptyState();
+            updateGroupCapacities();
+            syncMaterialGroupsWithLabels();
+            validateMaterialCapacity();
+        }
+
+        function moveCardToGroupByIndex(index, label) {
+            const card = getDeviceCards().find(item => Number(item.dataset.index) === index);
+            if (card) {
+                moveCardToGroup(card, label);
+            }
         }
 
         function getDeviceGroupData(index) {
@@ -537,19 +701,17 @@
             };
         }
 
-        function updateGroupingSummaries() {
-            if (!groupingContainer) {
-                return;
-            }
-            groupingContainer.querySelectorAll('.grouping-row').forEach(row => {
-                const index = Number(row.dataset.index);
-                const summary = row.querySelector('[data-role="summary"]');
+        function updateDeviceSummaries() {
+            getDeviceCards().forEach(card => {
+                const index = Number(card.dataset.index);
+                const summary = card.querySelector('[data-role="summary"]');
                 if (Number.isNaN(index) || !summary) {
                     return;
                 }
                 const data = getDeviceGroupData(index);
                 if (!data) {
                     summary.textContent = 'Заполните информацию на первом шаге, чтобы увидеть сводку.';
+                    card.dataset.totalLength = '0';
                     return;
                 }
                 const parts = [];
@@ -571,7 +733,80 @@
                 summary.textContent = parts.length > 0
                     ? parts.join(' • ')
                     : 'Заполните информацию на первом шаге, чтобы увидеть сводку.';
+                const countValue = Number.parseInt(data.count.replace(',', '.'), 10);
+                const distanceValue = Number.parseFloat(data.distance.replace(',', '.'));
+                const length = Number.isFinite(countValue) && Number.isFinite(distanceValue)
+                    ? Math.max(countValue, 0) * Math.max(distanceValue, 0)
+                    : 0;
+                card.dataset.totalLength = Number.isFinite(length) ? length.toString() : '0';
             });
+        }
+
+        function refreshGroupColumnsFromCards() {
+            if (!groupingPool) {
+                return;
+            }
+            const cards = getDeviceCards();
+            const labels = new Set();
+            cards.forEach(card => {
+                const label = (card.dataset.groupLabel || card.querySelector('input[data-field="groupLabel"]')?.value || '').trim();
+                if (label) {
+                    labels.add(label);
+                }
+            });
+            labels.forEach(label => ensureGroupColumn(label));
+            getGroupColumns().forEach(column => {
+                const label = (column.dataset.groupLabel || '').trim();
+                if (label && !labels.has(label)) {
+                    column.remove();
+                }
+            });
+            cards.forEach(card => {
+                const label = (card.dataset.groupLabel || '').trim();
+                if (label) {
+                    const dropzone = ensureGroupColumn(label)?.querySelector('[data-role="dropzone"]');
+                    dropzone?.appendChild(card);
+                } else {
+                    groupingPool.appendChild(card);
+                }
+                updateCardAssignmentDisplay(card);
+            });
+            updateGroupingEmptyState();
+            updateDeviceSummaries();
+            updateGroupCapacities();
+            syncMaterialGroupsWithLabels();
+            validateMaterialCapacity();
+        }
+
+        function updateGroupCapacities() {
+            getGroupColumns().forEach(column => {
+                const dropzone = column.querySelector('[data-role="dropzone"]');
+                let total = 0;
+                Array.from(dropzone?.querySelectorAll('.device-chip') ?? []).forEach(card => {
+                    const length = Number.parseFloat(card.dataset.totalLength ?? '0');
+                    if (!Number.isNaN(length)) {
+                        total += length;
+                    }
+                });
+                column.dataset.totalLength = total.toString();
+                const capacity = column.querySelector('[data-role="capacity"]');
+                if (capacity) {
+                    capacity.textContent = `Длина линии: ${total.toFixed(2)} м`;
+                }
+            });
+        }
+
+        function collectGroupLabels() {
+            const seen = new Set();
+            const labels = [];
+            getGroupColumns().forEach(column => {
+                const label = (column.dataset.groupLabel || '').trim();
+                if (label && !seen.has(label)) {
+                    seen.add(label);
+                    labels.push(label);
+                }
+            });
+            return labels;
         }
 
         function setConnectionPointError(input, message) {
@@ -725,22 +960,6 @@
             });
         }
 
-        function collectGroupLabels() {
-            if (!groupingContainer) {
-                return [];
-            }
-            const seen = new Set();
-            const labels = [];
-            groupingContainer.querySelectorAll('input[data-field="groupLabel"]').forEach(input => {
-                const value = input.value.trim();
-                if (value && !seen.has(value)) {
-                    seen.add(value);
-                    labels.push(value);
-                }
-            });
-            return labels;
-        }
-
         function syncMaterialGroupsWithLabels() {
             if (!materialGroupsContainer) {
                 return;
@@ -778,6 +997,7 @@
                 materialsEmptyMessage.hidden = labels.length > 0;
             }
             reindexMaterialGroups();
+            validateMaterialCapacity();
         }
 
         function reindexMaterialGroups() {
@@ -792,6 +1012,7 @@
                 const surfaceInput = group.querySelector('input[data-field="surface"]');
                 if (labelInput) {
                     labelInput.setAttribute('name', `materialGroups[${groupIndex}].groupLabel`);
+                    group.dataset.groupLabel = labelInput.value.trim();
                 }
                 if (nameInput) {
                     nameInput.setAttribute('name', `materialGroups[${groupIndex}].groupName`);
@@ -827,15 +1048,48 @@
             });
         }
 
-        function updateGroupLabelSuggestions() {
-            if (!groupLabelDatalist) {
+        function parseLength(value) {
+            if (!value) {
+                return Number.NaN;
+            }
+            const match = value.replace(',', '.').match(/\d+(?:\.\d+)?/);
+            return match ? Number.parseFloat(match[0]) : Number.NaN;
+        }
+
+        function validateMaterialCapacity() {
+            if (!materialGroupsContainer) {
                 return;
             }
-            groupLabelDatalist.innerHTML = '';
-            collectGroupLabels().forEach(label => {
-                const option = document.createElement('option');
-                option.value = label;
-                groupLabelDatalist.appendChild(option);
+            const capacities = new Map();
+            getGroupColumns().forEach(column => {
+                const label = (column.dataset.groupLabel || '').trim();
+                if (!label) {
+                    return;
+                }
+                const total = Number.parseFloat(column.dataset.totalLength ?? '0');
+                capacities.set(label, Number.isNaN(total) ? 0 : total);
+            });
+            Array.from(materialGroupsContainer.querySelectorAll('.material-group')).forEach(group => {
+                const label = (group.dataset.groupLabel || '').trim();
+                const capacity = capacities.get(label) ?? 0;
+                let used = 0;
+                group.querySelectorAll('input[data-field="amount"]').forEach(input => {
+                    const value = parseLength(input.value);
+                    if (!Number.isNaN(value)) {
+                        used += value;
+                    }
+                });
+                group.dataset.capacity = capacity.toString();
+                group.dataset.usedLength = used.toString();
+                const warning = group.querySelector('[data-role="capacity-warning"]');
+                const over = capacity > 0 && used > capacity + 0.0001;
+                group.classList.toggle('over-capacity', over);
+                if (warning) {
+                    warning.hidden = !over;
+                    if (over) {
+                        warning.textContent = `Запланировано ${used.toFixed(2)} м при доступных ${capacity.toFixed(2)} м.`;
+                    }
+                }
             });
         }
 
@@ -845,7 +1099,6 @@
             }
             const clone = deviceTemplate.content.firstElementChild.cloneNode(true);
             deviceContainer.appendChild(clone);
-            addGroupingRow();
             reindexDeviceGroups();
         });
 
@@ -857,19 +1110,29 @@
             const field = target.getAttribute('data-field');
             if (field === 'deviceCount') {
                 updateTotalConnectionPoints();
+                updateDeviceSummaries();
+                updateGroupCapacities();
+                validateMaterialCapacity();
             }
             if (field === 'connectionPoint') {
+                updateTotalConnectionPoints();
                 syncConnectionPointsFromDevices();
-                updateGroupingSummaries();
+                updateDeviceSummaries();
+                updateGroupCapacities();
+                validateMaterialCapacity();
             } else if (field === 'installLocation' || field === 'distanceToConnectionPoint') {
-                updateGroupingSummaries();
+                updateDeviceSummaries();
+                updateGroupCapacities();
+                validateMaterialCapacity();
             }
         });
 
         deviceContainer?.addEventListener('change', event => {
             const target = event.target;
             if (target instanceof HTMLSelectElement && target.getAttribute('data-field') === 'deviceTypeId') {
-                updateGroupingSummaries();
+                updateDeviceSummaries();
+                updateGroupCapacities();
+                validateMaterialCapacity();
             }
         });
 
@@ -927,15 +1190,47 @@
             row.dataset.connectionName = newValue;
             updateDeviceConnectionNames(oldValue, newValue);
             syncConnectionPointsFromDevices();
-            updateGroupingSummaries();
+            updateDeviceSummaries();
+            updateGroupCapacities();
+            validateMaterialCapacity();
         });
 
-        groupingContainer?.addEventListener('input', event => {
-            const target = event.target;
-            if (target instanceof HTMLInputElement && target.getAttribute('data-field') === 'groupLabel') {
-                syncMaterialGroupsWithLabels();
-                updateGroupLabelSuggestions();
+        addGroupButton?.addEventListener('click', () => {
+            const labels = collectGroupLabels();
+            let counter = labels.length + 1;
+            let proposed = `Группа ${counter}`;
+            while (labels.includes(proposed)) {
+                counter += 1;
+                proposed = `Группа ${counter}`;
             }
+            const column = ensureGroupColumn(proposed);
+            if (column) {
+                const input = column.querySelector('.group-name-input');
+                if (input) {
+                    input.value = proposed;
+                    input.focus();
+                    input.select();
+                }
+                column.dataset.groupLabel = proposed;
+            }
+            updateGroupingEmptyState();
+            syncMaterialGroupsWithLabels();
+        });
+
+        groupingPool?.addEventListener('dragover', event => {
+            event.preventDefault();
+            groupingPool.classList.add('drop-target');
+        });
+
+        groupingPool?.addEventListener('dragleave', () => {
+            groupingPool.classList.remove('drop-target');
+        });
+
+        groupingPool?.addEventListener('drop', event => {
+            event.preventDefault();
+            groupingPool.classList.remove('drop-target');
+            const index = Number(event.dataTransfer?.getData('text/plain'));
+            moveCardToGroupByIndex(index, '');
         });
 
         materialGroupsContainer?.addEventListener('click', event => {
@@ -953,6 +1248,7 @@
                 const clone = materialRowTemplate.content.firstElementChild.cloneNode(true);
                 rowsContainer.appendChild(clone);
                 reindexMaterialGroups();
+                validateMaterialCapacity();
                 return;
             }
             if (target.classList.contains('remove-material')) {
@@ -965,7 +1261,15 @@
                 if (rows.length > 1) {
                     row.remove();
                     reindexMaterialGroups();
+                    validateMaterialCapacity();
                 }
+            }
+        });
+
+        materialGroupsContainer?.addEventListener('input', event => {
+            const target = event.target;
+            if (target instanceof HTMLInputElement && target.getAttribute('data-field') === 'amount') {
+                validateMaterialCapacity();
             }
         });
 
