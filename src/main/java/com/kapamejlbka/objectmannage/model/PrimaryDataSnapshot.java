@@ -60,6 +60,7 @@ public class PrimaryDataSnapshot {
         private String connectionPoint;
         private Double distanceToConnectionPoint;
         private String groupLabel;
+        private String installSurfaceCategory;
 
         public UUID getDeviceTypeId() {
             return deviceTypeId;
@@ -115,6 +116,14 @@ public class PrimaryDataSnapshot {
 
         public void setGroupLabel(String groupLabel) {
             this.groupLabel = groupLabel;
+        }
+
+        public String getInstallSurfaceCategory() {
+            return installSurfaceCategory;
+        }
+
+        public void setInstallSurfaceCategory(String installSurfaceCategory) {
+            this.installSurfaceCategory = installSurfaceCategory;
         }
     }
 
@@ -218,6 +227,7 @@ public class PrimaryDataSnapshot {
         private String groupName;
         private String groupLabel;
         private String surface;
+        private String surfaceCategory;
         private List<MaterialUsage> materials = new ArrayList<>();
 
         public String getGroupName() {
@@ -244,6 +254,14 @@ public class PrimaryDataSnapshot {
             this.surface = surface;
         }
 
+        public String getSurfaceCategory() {
+            return surfaceCategory;
+        }
+
+        public void setSurfaceCategory(String surfaceCategory) {
+            this.surfaceCategory = surfaceCategory;
+        }
+
         public List<MaterialUsage> getMaterials() {
             return materials;
         }
@@ -258,6 +276,7 @@ public class PrimaryDataSnapshot {
         private String materialName;
         private String amount;
         private String layingSurface;
+        private String layingSurfaceCategory;
         private String unit;
 
         public UUID getMaterialId() {
@@ -290,6 +309,14 @@ public class PrimaryDataSnapshot {
 
         public void setLayingSurface(String layingSurface) {
             this.layingSurface = layingSurface;
+        }
+
+        public String getLayingSurfaceCategory() {
+            return layingSurfaceCategory;
+        }
+
+        public void setLayingSurfaceCategory(String layingSurfaceCategory) {
+            this.layingSurfaceCategory = layingSurfaceCategory;
         }
 
         public String getUnit() {

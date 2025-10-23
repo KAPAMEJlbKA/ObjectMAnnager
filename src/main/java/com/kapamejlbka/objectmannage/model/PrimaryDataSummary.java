@@ -13,6 +13,7 @@ public class PrimaryDataSummary {
     private final List<CableLengthSummary> cableLengthSummaries;
     private final List<CableFunctionSummary> cableFunctionSummaries;
     private final List<NodeSummary> nodeSummaries;
+    private final List<AdditionalMaterialItem> additionalMaterials;
     private final int totalDeviceCount;
     private final int totalNodes;
     private final int unnamedConnectionAssignments;
@@ -28,6 +29,7 @@ public class PrimaryDataSummary {
         this.cableLengthSummaries = Collections.unmodifiableList(new ArrayList<>(builder.cableLengthSummaries));
         this.cableFunctionSummaries = Collections.unmodifiableList(new ArrayList<>(builder.cableFunctionSummaries));
         this.nodeSummaries = Collections.unmodifiableList(new ArrayList<>(builder.nodeSummaries));
+        this.additionalMaterials = Collections.unmodifiableList(new ArrayList<>(builder.additionalMaterials));
         this.totalDeviceCount = builder.totalDeviceCount;
         this.totalNodes = builder.totalNodes;
         this.unnamedConnectionAssignments = builder.unnamedConnectionAssignments;
@@ -79,6 +81,10 @@ public class PrimaryDataSummary {
         return nodeSummaries;
     }
 
+    public List<AdditionalMaterialItem> getAdditionalMaterials() {
+        return additionalMaterials;
+    }
+
     public int getTotalDeviceCount() {
         return totalDeviceCount;
     }
@@ -111,6 +117,7 @@ public class PrimaryDataSummary {
         private final List<CableLengthSummary> cableLengthSummaries = new ArrayList<>();
         private final List<CableFunctionSummary> cableFunctionSummaries = new ArrayList<>();
         private final List<NodeSummary> nodeSummaries = new ArrayList<>();
+        private final List<AdditionalMaterialItem> additionalMaterials = new ArrayList<>();
         private int totalDeviceCount;
         private int totalNodes;
         private int unnamedConnectionAssignments;
@@ -191,12 +198,20 @@ public class PrimaryDataSummary {
             return this;
         }
 
+        public Builder addAdditionalMaterial(AdditionalMaterialItem item) {
+            if (item != null) {
+                this.additionalMaterials.add(item);
+            }
+            return this;
+        }
+
         public PrimaryDataSummary build() {
             if (!hasData) {
                 this.deviceTypeSummaries.clear();
                 this.cableLengthSummaries.clear();
                 this.cableFunctionSummaries.clear();
                 this.nodeSummaries.clear();
+                this.additionalMaterials.clear();
                 this.totalDeviceCount = 0;
                 this.totalNodes = 0;
                 this.unnamedConnectionAssignments = 0;
@@ -305,6 +320,30 @@ public class PrimaryDataSummary {
 
         public String getLayingMethod() {
             return layingMethod;
+        }
+    }
+
+    public static class AdditionalMaterialItem {
+        private final String name;
+        private final String unit;
+        private final double quantity;
+
+        public AdditionalMaterialItem(String name, String unit, double quantity) {
+            this.name = name;
+            this.unit = unit;
+            this.quantity = quantity;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getUnit() {
+            return unit;
+        }
+
+        public double getQuantity() {
+            return quantity;
         }
     }
 }
