@@ -207,6 +207,21 @@ button:hover {
     flex-wrap: wrap;
 }
 
+.logo-preview {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.logo-preview img {
+    max-height: 120px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 8px;
+    background-color: #fff;
+}
+
 .inline-form input[type="text"],
 .inline-form input[type="password"] {
     width: 180px;

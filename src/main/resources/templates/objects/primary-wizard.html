@@ -68,6 +68,13 @@
                                 <label>Точка подключения</label>
                                 <input type="text" th:field="*{deviceGroups[__${iter.index}__].connectionPoint}" data-field="connectionPoint" placeholder="Распред. коробка...">
                             </div>
+                            <div>
+                                <label>Поверхность установки</label>
+                                <select th:field="*{deviceGroups[__${iter.index}__].installSurfaceCategory}" data-field="installSurfaceCategory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                </select>
+                            </div>
                         </div>
                         <button type="button" class="link-button danger remove-device" th:if="${iter.index > 0}">Удалить</button>
                     </div>
@@ -99,6 +106,13 @@
                             <div>
                                 <label>Точка подключения</label>
                                 <input type="text" data-field="connectionPoint" placeholder="Распред. коробка...">
+                            </div>
+                            <div>
+                                <label>Поверхность установки</label>
+                                <select data-field="installSurfaceCategory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                </select>
                             </div>
                         </div>
                         <button type="button" class="link-button danger remove-device">Удалить</button>
@@ -265,8 +279,15 @@
                                 <input type="text" th:field="*{materialGroups[__${gIndex.index}__].groupName}" data-field="groupName" placeholder="Например, Линия 1">
                             </div>
                             <div>
-                                <label>Поверхность прокладки</label>
-                                <input type="text" th:field="*{materialGroups[__${gIndex.index}__].surface}" data-field="surface" placeholder="По потолку, в земле...">
+                                <label>Категория поверхности</label>
+                                <select th:field="*{materialGroups[__${gIndex.index}__].surfaceCategory}" data-field="surfaceCategory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Дополнительное описание</label>
+                                <input type="text" th:field="*{materialGroups[__${gIndex.index}__].surface}" data-field="surface" placeholder="По потолку, в коробе...">
                             </div>
                         </div>
                         <div class="stack materials-container" th:id="${'material-rows-' + gIndex.index}">
@@ -284,7 +305,14 @@
                                         <input type="text" th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].amount}" data-field="amount" placeholder="25 м, 4 шт...">
                                     </div>
                                     <div>
-                                        <label>По чему проложены</label>
+                                        <label>Категория прокладки</label>
+                                        <select th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].layingSurfaceCategory}" data-field="layingSurfaceCategory">
+                                            <option value="">Не выбрана</option>
+                                            <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label>Доп. описание прокладки</label>
                                         <input type="text" th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].layingSurface}" data-field="layingSurface" placeholder="По стене, в коробе...">
                                     </div>
                                 </div>
@@ -307,8 +335,15 @@
                                 <input type="text" data-field="groupName" placeholder="Например, Линия 1">
                             </div>
                             <div>
-                                <label>Поверхность прокладки</label>
-                                <input type="text" data-field="surface" placeholder="По потолку, в земле...">
+                                <label>Категория поверхности</label>
+                                <select data-field="surfaceCategory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Дополнительное описание</label>
+                                <input type="text" data-field="surface" placeholder="По потолку, в коробе...">
                             </div>
                         </div>
                         <div class="stack materials-container">
@@ -326,7 +361,14 @@
                                         <input type="text" data-field="amount" placeholder="25 м, 4 шт...">
                                     </div>
                                     <div>
-                                        <label>По чему проложены</label>
+                                        <label>Категория прокладки</label>
+                                        <select data-field="layingSurfaceCategory">
+                                            <option value="">Не выбрана</option>
+                                            <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label>Доп. описание прокладки</label>
                                         <input type="text" data-field="layingSurface" placeholder="По стене, в коробе...">
                                     </div>
                                 </div>
@@ -1010,6 +1052,7 @@
                 const labelInput = group.querySelector('input[data-field="groupLabel"]');
                 const nameInput = group.querySelector('input[data-field="groupName"]');
                 const surfaceInput = group.querySelector('input[data-field="surface"]');
+                const surfaceCategorySelect = group.querySelector('[data-field="surfaceCategory"]');
                 if (labelInput) {
                     labelInput.setAttribute('name', `materialGroups[${groupIndex}].groupLabel`);
                     group.dataset.groupLabel = labelInput.value.trim();
@@ -1019,6 +1062,9 @@
                 }
                 if (surfaceInput) {
                     surfaceInput.setAttribute('name', `materialGroups[${groupIndex}].surface`);
+                }
+                if (surfaceCategorySelect) {
+                    surfaceCategorySelect.setAttribute('name', `materialGroups[${groupIndex}].surfaceCategory`);
                 }
                 const rows = Array.from(group.querySelectorAll('.material-row'));
                 rows.forEach((row, rowIndex) => {
@@ -1035,6 +1081,8 @@
                             name = `materialGroups[${groupIndex}].materials[${rowIndex}].amount`;
                         } else if (key === 'layingSurface') {
                             name = `materialGroups[${groupIndex}].materials[${rowIndex}].layingSurface`;
+                        } else if (key === 'layingSurfaceCategory') {
+                            name = `materialGroups[${groupIndex}].materials[${rowIndex}].layingSurfaceCategory`;
                         }
                         if (name) {
                             field.setAttribute('name', name);

@@ -134,6 +134,26 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div>
+                            <h4>Дополнительные материалы</h4>
+                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.additionalMaterials)}">Дополнительные материалы не рассчитаны.</p>
+                            <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.additionalMaterials)}">
+                                <thead>
+                                <tr>
+                                    <th>Материал</th>
+                                    <th>Количество</th>
+                                    <th>Ед. изм.</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="item : ${primarySummary.additionalMaterials}">
+                                    <td th:text="${item.name}"></td>
+                                    <td th:text="${#numbers.formatDecimal(item.quantity, 0, 2)}"></td>
+                                    <td th:text="${item.unit != null ? item.unit : '—'}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

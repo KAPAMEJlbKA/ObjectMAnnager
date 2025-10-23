@@ -23,7 +23,10 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
+import java.io.IOException;
 import java.security.Principal;
+import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
@@ -35,6 +38,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.util.StringUtils;
 
 @Controller
 @Validated
@@ -84,6 +90,11 @@ public class AdminController {
         model.addAttribute("users", userService.findAll());
         model.addAttribute("userForm", new UserForm());
         model.addAttribute("mapSettingsForm", MapSettingsForm.from(applicationSettingsService.getMapProvider()));
+        model.addAttribute("materialCoefficientsForm", MaterialCoefficientsForm.from(
+                applicationSettingsService.getMaterialCoefficients()));
+        model.addAttribute("currentLogo", applicationSettingsService.getCompanyLogo()
+                .map(this::toDataUri)
+                .orElse(null));
         model.addAttribute("deviceTypeForm", new DeviceTypeForm());
         model.addAttribute("mountingElementForm", new MountingElementForm());
         model.addAttribute("installationMaterialForm", new InstallationMaterialForm());
@@ -244,6 +255,42 @@ public class AdminController {
     public String deleteInstallationMaterial(@PathVariable UUID id) {
         installationMaterialRepository.deleteById(id);
         return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/settings/material-coefficients")
+    public String updateMaterialCoefficients(@ModelAttribute("materialCoefficientsForm") MaterialCoefficientsForm form) {
+        applicationSettingsService.updateMaterialCoefficients(
+                Math.max(0.0, form.getClipsPerMeter()),
+                Math.max(0.0, form.getTiesPerMeter())
+        );
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/settings/company-logo")
+    public String uploadCompanyLogo(@RequestParam("logo") MultipartFile file) {
+        if (file != null && !file.isEmpty()) {
+            try {
+                applicationSettingsService.storeCompanyLogo(file.getBytes(), file.getContentType());
+            } catch (IOException ex) {
+                throw new IllegalStateException("Не удалось сохранить логотип", ex);
+            }
+        }
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/settings/company-logo/remove")
+    public String removeCompanyLogo() {
+        applicationSettingsService.removeCompanyLogo();
+        return "redirect:/admin";
+    }
+
+    private String toDataUri(ApplicationSettingsService.CompanyLogo logo) {
+        if (logo == null || logo.data() == null || logo.data().length == 0) {
+            return null;
+        }
+        String contentType = StringUtils.hasText(logo.contentType()) ? logo.contentType() : "image/png";
+        String encoded = Base64.getEncoder().encodeToString(logo.data());
+        return "data:" + contentType + ";base64," + encoded;
     }
 
     public static class DatabaseSettingsForm {
@@ -428,6 +475,38 @@ public class AdminController {
 
         public void setMapProvider(MapProvider mapProvider) {
             this.mapProvider = mapProvider;
+        }
+    }
+
+    public static class MaterialCoefficientsForm {
+        @PositiveOrZero
+        private double clipsPerMeter;
+        @PositiveOrZero
+        private double tiesPerMeter;
+
+        public static MaterialCoefficientsForm from(ApplicationSettingsService.MaterialCoefficients coefficients) {
+            MaterialCoefficientsForm form = new MaterialCoefficientsForm();
+            if (coefficients != null) {
+                form.setClipsPerMeter(coefficients.clipsPerMeter());
+                form.setTiesPerMeter(coefficients.tiesPerMeter());
+            }
+            return form;
+        }
+
+        public double getClipsPerMeter() {
+            return clipsPerMeter;
+        }
+
+        public void setClipsPerMeter(double clipsPerMeter) {
+            this.clipsPerMeter = clipsPerMeter;
+        }
+
+        public double getTiesPerMeter() {
+            return tiesPerMeter;
+        }
+
+        public void setTiesPerMeter(double tiesPerMeter) {
+            this.tiesPerMeter = tiesPerMeter;
         }
     }
 

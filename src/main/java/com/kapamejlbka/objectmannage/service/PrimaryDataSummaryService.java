@@ -7,12 +7,15 @@ import com.kapamejlbka.objectmannage.model.CableType;
 import com.kapamejlbka.objectmannage.model.DeviceCableProfile;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary;
-import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableLengthSummary;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.AdditionalMaterialItem;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableFunctionSummary;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableLengthSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.DeviceTypeSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.NodeSummary;
+import com.kapamejlbka.objectmannage.model.SurfaceType;
 import com.kapamejlbka.objectmannage.repository.CableTypeRepository;
 import com.kapamejlbka.objectmannage.repository.DeviceCableProfileRepository;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -27,6 +30,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+
 @Service
 public class PrimaryDataSummaryService {
 
@@ -36,13 +40,16 @@ public class PrimaryDataSummaryService {
     private final ObjectMapper objectMapper;
     private final DeviceCableProfileRepository deviceCableProfileRepository;
     private final CableTypeRepository cableTypeRepository;
+    private final ApplicationSettingsService applicationSettingsService;
 
     public PrimaryDataSummaryService(ObjectProvider<ObjectMapper> objectMapperProvider,
                                      DeviceCableProfileRepository deviceCableProfileRepository,
-                                     CableTypeRepository cableTypeRepository) {
+                                     CableTypeRepository cableTypeRepository,
+                                     ApplicationSettingsService applicationSettingsService) {
         this.objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
         this.deviceCableProfileRepository = deviceCableProfileRepository;
         this.cableTypeRepository = cableTypeRepository;
+        this.applicationSettingsService = applicationSettingsService;
     }
 
     public PrimaryDataSummary summarize(String json) {
@@ -65,6 +72,8 @@ public class PrimaryDataSummaryService {
         Map<String, Integer> deviceTypeCounts = new LinkedHashMap<>();
         Map<String, CableLengthAccumulator> cableLengthMap = new LinkedHashMap<>();
         List<NodeSummary> nodeSummaries = new ArrayList<>();
+        Map<String, MaterialAccumulator> additionalMaterials = new LinkedHashMap<>();
+        EnumMap<SurfaceType, Integer> cameraCountsBySurface = new EnumMap<>(SurfaceType.class);
 
         Map<UUID, List<DeviceCableProfile>> cableProfiles = groupProfilesByDeviceType();
         Map<UUID, CableTypeData> cableTypeData = loadCableTypeData();
@@ -75,6 +84,8 @@ public class PrimaryDataSummaryService {
         EnumMap<CableFunction, Double> functionTotals = new EnumMap<>(CableFunction.class);
         Set<String> assignedConnectionPoints = new HashSet<>();
         Set<String> definedConnectionPoints = new HashSet<>();
+        int totalCameras = 0;
+        int boxNodes = 0;
 
         if (snapshot.getDeviceGroups() != null) {
             for (PrimaryDataSnapshot.DeviceGroup group : snapshot.getDeviceGroups()) {
@@ -86,6 +97,14 @@ public class PrimaryDataSummaryService {
                         : UNKNOWN_DEVICE_TYPE;
                 deviceTypeCounts.merge(typeName, group.getQuantity(), Integer::sum);
                 totalDevices += Math.max(group.getQuantity(), 0);
+
+                if (isCameraType(group.getDeviceTypeName())) {
+                    int cameraCount = Math.max(group.getQuantity(), 0);
+                    totalCameras += cameraCount;
+                    SurfaceType surfaceType = SurfaceType.resolve(group.getInstallSurfaceCategory())
+                            .orElse(SurfaceType.UNKNOWN);
+                    cameraCountsBySurface.merge(surfaceType, cameraCount, Integer::sum);
+                }
 
                 if (!StringUtils.hasText(group.getConnectionPoint())) {
                     unnamedAssignments += group.getQuantity();
@@ -140,6 +159,10 @@ public class PrimaryDataSummaryService {
                 String layingMethod = point.getLayingMethod();
                 nodeSummaries.add(new NodeSummary(name, elementName, distanceToPower, powerCableName, layingMethod));
 
+                if (isBoxNode(elementName)) {
+                    boxNodes++;
+                }
+
                 double powerLength = Math.max(0.0, defaultDouble(distanceToPower));
                 if (powerLength > 0) {
                     CableFunction function = powerCable != null && powerCable.function() != null
@@ -189,6 +212,11 @@ public class PrimaryDataSummaryService {
         }
         Integer declaredAssignments = recordedConnectionPoints > 0 ? recordedConnectionPoints : null;
 
+        accumulateCameraMaterials(additionalMaterials, cameraCountsBySurface, totalCameras);
+        accumulateNodeMaterials(additionalMaterials, boxNodes);
+        accumulateCoefficientMaterials(additionalMaterials, snapshot, totalCableLength,
+                applicationSettingsService.getMaterialCoefficients());
+
         PrimaryDataSummary.Builder builder = PrimaryDataSummary.builder()
                 .withHasData(true)
                 .withTotalDeviceCount(totalDevices)
@@ -202,6 +230,10 @@ public class PrimaryDataSummaryService {
         cableSummaries.forEach(builder::addCableLengthSummary);
         functionSummaries.forEach(builder::addCableFunctionSummary);
         nodeSummaries.forEach(builder::addNodeSummary);
+        additionalMaterials.values().stream()
+                .sorted(Comparator.comparing(MaterialAccumulator::name, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .map(acc -> new AdditionalMaterialItem(acc.name(), acc.unit(), acc.quantity()))
+                .forEach(builder::addAdditionalMaterial);
         return builder.build();
     }
 
@@ -229,6 +261,164 @@ public class PrimaryDataSummaryService {
             }
         });
         return map;
+    }
+
+    private boolean isCameraType(String typeName) {
+        if (!StringUtils.hasText(typeName)) {
+            return false;
+        }
+        String normalized = Normalizer.normalize(typeName, Normalizer.Form.NFKD).toLowerCase();
+        return normalized.contains("камера");
+    }
+
+    private boolean isBoxNode(String elementName) {
+        if (!StringUtils.hasText(elementName)) {
+            return false;
+        }
+        String normalized = Normalizer.normalize(elementName, Normalizer.Form.NFKD).toLowerCase();
+        return normalized.contains("ящ");
+    }
+
+    private void accumulateCameraMaterials(Map<String, MaterialAccumulator> accumulator,
+                                           EnumMap<SurfaceType, Integer> countsBySurface,
+                                           int totalCameras) {
+        if (totalCameras <= 0) {
+            return;
+        }
+        addMaterial(accumulator, "Распределительная коробка 100×100×50 (опция)", "шт", totalCameras);
+        addMaterial(accumulator, "Монтажный кронштейн для камеры (опция)", "шт", totalCameras);
+        addMaterial(accumulator, "Разъём RJ-45 (8P8C)", "шт", totalCameras * 2L);
+        countsBySurface.forEach((surface, count) -> {
+            if (count == null || count <= 0) {
+                return;
+            }
+            SurfaceType effective = surface != null ? surface : SurfaceType.UNKNOWN;
+            String fastener = effective.getFastenerName();
+            addMaterial(accumulator, "Крепёж для камер — " + fastener, "шт", count * 4L);
+            addMaterial(accumulator, "Крепёж для коробок (опция) — " + fastener, "шт", count * 4L);
+            addMaterial(accumulator, "Крепёж для кронштейнов (опция) — " + fastener, "шт", count * 4L);
+        });
+    }
+
+    private void accumulateNodeMaterials(Map<String, MaterialAccumulator> accumulator, int boxNodes) {
+        if (boxNodes <= 0) {
+            return;
+        }
+        addMaterial(accumulator, "Двухместная розетка", "шт", boxNodes);
+        addMaterial(accumulator, "Бокс для автоматов", "шт", boxNodes);
+        addMaterial(accumulator, "Автоматический выключатель 6А", "шт", boxNodes * 2L);
+    }
+
+    private void accumulateCoefficientMaterials(Map<String, MaterialAccumulator> accumulator,
+                                                PrimaryDataSnapshot snapshot,
+                                                double totalCableLength,
+                                                ApplicationSettingsService.MaterialCoefficients coefficients) {
+        double clipsPerMeter = Math.max(coefficients.clipsPerMeter(), 0.0);
+        double tiesPerMeter = Math.max(coefficients.tiesPerMeter(), 0.0);
+
+        if (clipsPerMeter > 0) {
+            double corrugatedLength = estimateCorrugatedLength(snapshot);
+            if (corrugatedLength > 0) {
+                addMaterial(accumulator, "Клипсы для гофры", "шт", Math.ceil(corrugatedLength * clipsPerMeter));
+            }
+        }
+
+        if (tiesPerMeter > 0 && totalCableLength > 0) {
+            addMaterial(accumulator, "Нейлоновые стяжки (по кабелю)", "шт", Math.ceil(totalCableLength * tiesPerMeter));
+        }
+    }
+
+    private double estimateCorrugatedLength(PrimaryDataSnapshot snapshot) {
+        double total = 0.0;
+        if (snapshot.getMaterialGroups() == null) {
+            return total;
+        }
+        for (PrimaryDataSnapshot.MaterialGroup group : snapshot.getMaterialGroups()) {
+            if (group == null || group.getMaterials() == null) {
+                continue;
+            }
+            for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
+                if (usage == null) {
+                    continue;
+                }
+                if (containsIgnoreCase(usage.getMaterialName(), "гофр")) {
+                    double length = parseLength(usage.getAmount());
+                    if (length > 0) {
+                        total += length;
+                    }
+                }
+            }
+        }
+        return total;
+    }
+
+    private double parseLength(String value) {
+        if (!StringUtils.hasText(value)) {
+            return 0.0;
+        }
+        String normalized = value.trim().replace(',', '.');
+        StringBuilder builder = new StringBuilder();
+        for (char ch : normalized.toCharArray()) {
+            if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
+                builder.append(ch);
+            } else if (builder.length() > 0) {
+                break;
+            }
+        }
+        if (builder.length() == 0) {
+            return 0.0;
+        }
+        try {
+            return Double.parseDouble(builder.toString());
+        } catch (NumberFormatException ex) {
+            return 0.0;
+        }
+    }
+
+    private boolean containsIgnoreCase(String source, String needle) {
+        if (!StringUtils.hasText(source) || !StringUtils.hasText(needle)) {
+            return false;
+        }
+        String normalizedSource = Normalizer.normalize(source, Normalizer.Form.NFKD).toLowerCase();
+        String normalizedNeedle = Normalizer.normalize(needle, Normalizer.Form.NFKD).toLowerCase();
+        return normalizedSource.contains(normalizedNeedle);
+    }
+
+    private void addMaterial(Map<String, MaterialAccumulator> accumulator, String name, String unit, double quantity) {
+        if (quantity <= 0) {
+            return;
+        }
+        MaterialAccumulator entry = accumulator.computeIfAbsent(name,
+                key -> new MaterialAccumulator(name, unit, 0.0));
+        entry.add(quantity);
+    }
+
+    private static class MaterialAccumulator {
+        private final String name;
+        private final String unit;
+        private double quantity;
+
+        MaterialAccumulator(String name, String unit, double quantity) {
+            this.name = name;
+            this.unit = unit;
+            this.quantity = quantity;
+        }
+
+        void add(double value) {
+            this.quantity += value;
+        }
+
+        String name() {
+            return name;
+        }
+
+        String unit() {
+            return unit;
+        }
+
+        double quantity() {
+            return quantity;
+        }
     }
 
     private void addCableLength(Map<String, CableLengthAccumulator> totals,
