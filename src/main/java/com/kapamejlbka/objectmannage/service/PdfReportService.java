@@ -7,8 +7,10 @@ import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.DeviceGroup;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MaterialGroup;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MaterialUsage;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MountingRequirement;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.AdditionalMaterialItem;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableFunctionSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.DeviceTypeSummary;
+import com.kapamejlbka.objectmannage.model.SurfaceType;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -29,6 +31,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -40,9 +43,12 @@ public class PdfReportService {
 
     private static final String FONT_RESOURCE_PATH = "fonts/NotoSans-Regular.ttf";
     private final Resource fontResource = new ClassPathResource(FONT_RESOURCE_PATH);
+    private final ApplicationSettingsService applicationSettingsService;
 
-    public PdfReportService(ObjectProvider<com.fasterxml.jackson.databind.ObjectMapper> ignored) {
+    public PdfReportService(ObjectProvider<com.fasterxml.jackson.databind.ObjectMapper> ignored,
+                            ApplicationSettingsService applicationSettingsService) {
         // ObjectMapper is already provided in ObjectController, no-op constructor keeps parity with other services.
+        this.applicationSettingsService = applicationSettingsService;
     }
 
     public byte[] buildObjectReport(ManagedObject object,
@@ -51,9 +57,11 @@ public class PdfReportService {
         PrimaryDataSnapshot safeSnapshot = snapshot != null ? snapshot : new PrimaryDataSnapshot();
         try (PDDocument document = new PDDocument()) {
             PDFont font = loadFont(document);
-            PdfBuilder builder = new PdfBuilder(document, font);
+            ApplicationSettingsService.CompanyLogo logo = applicationSettingsService.getCompanyLogo().orElse(null);
+            PdfBuilder builder = new PdfBuilder(document, font, logo);
             builder.addTitlePage(object, summary);
-            builder.addMountingMaterialsSection(safeSnapshot);
+            List<AdditionalMaterialItem> additional = summary != null ? summary.getAdditionalMaterials() : List.of();
+            builder.addMountingMaterialsSection(safeSnapshot, additional);
             builder.addEquipmentSection(summary);
             builder.addGroupsSection(safeSnapshot);
             builder.finish();
@@ -82,19 +90,22 @@ public class PdfReportService {
 
         private final PDDocument document;
         private final PDFont font;
+        private final PDImageXObject logoImage;
         private PDPage page;
         private PDPageContentStream contentStream;
         private float y;
         private float pageWidth;
+        private float pageHeight;
 
-        PdfBuilder(PDDocument document, PDFont font) throws IOException {
+        PdfBuilder(PDDocument document, PDFont font, ApplicationSettingsService.CompanyLogo logo) throws IOException {
             this.document = document;
             this.font = font;
-            newPage();
+            this.logoImage = createLogoImage(document, logo);
         }
 
         void addTitlePage(ManagedObject object, PrimaryDataSummary summary) throws IOException {
             newPage();
+            drawLogo();
             writeCentered("Отчёт по объекту", 28f);
             writeCentered("Object Manager", 16f);
             writeSpacing(32f);
@@ -116,7 +127,8 @@ public class PdfReportService {
             }
         }
 
-        void addMountingMaterialsSection(PrimaryDataSnapshot snapshot) throws IOException {
+        void addMountingMaterialsSection(PrimaryDataSnapshot snapshot,
+                                         List<AdditionalMaterialItem> calculatedMaterials) throws IOException {
             newPage();
             writeSectionHeading("Перечень монтажных материалов");
             List<MountingRequirement> requirements = snapshot.getMountingElements();
@@ -175,6 +187,24 @@ public class PdfReportService {
                     writeBulletList(materials, 11f);
                     writeSpacing(12f);
                 }
+            }
+
+            if (calculatedMaterials != null && !calculatedMaterials.isEmpty()) {
+                writeSpacing(18f);
+                writeSubHeading("Расчёт дополнительных материалов");
+                List<String> calculated = new ArrayList<>();
+                for (AdditionalMaterialItem item : calculatedMaterials) {
+                    if (item == null) {
+                        continue;
+                    }
+                    String unit = StringUtils.hasText(item.getUnit()) ? item.getUnit().trim() : "шт";
+                    calculated.add(String.format(Locale.getDefault(), "%s — %s %s",
+                            safeText(item.getName()), formatQuantity(item.getQuantity()), unit));
+                }
+                if (calculated.isEmpty()) {
+                    calculated.add("Дополнительные материалы не определены.");
+                }
+                writeBulletList(calculated, 11f);
             }
         }
 
@@ -252,6 +282,10 @@ public class PdfReportService {
                     }
                     if (StringUtils.hasText(group.getConnectionPoint())) {
                         builder.append(", подключение: ").append(group.getConnectionPoint().trim());
+                    }
+                    String surfaceLabel = resolveSurfaceLabel(group.getInstallSurfaceCategory());
+                    if (surfaceLabel != null) {
+                        builder.append(", поверхность: ").append(surfaceLabel);
                     }
                     if (distance > 0) {
                         builder.append(String.format(Locale.getDefault(), ", расстояние: %.2f м", distance));
@@ -383,6 +417,55 @@ public class PdfReportService {
             }
         }
 
+        private PDImageXObject createLogoImage(PDDocument document,
+                                               ApplicationSettingsService.CompanyLogo logo) throws IOException {
+            if (logo == null || logo.data() == null || logo.data().length == 0) {
+                return null;
+            }
+            try {
+                return PDImageXObject.createFromByteArray(document, logo.data(), "logo");
+            } catch (IOException ex) {
+                return null;
+            }
+        }
+
+        private void drawLogo() throws IOException {
+            if (logoImage == null) {
+                return;
+            }
+            float imageWidth = logoImage.getWidth();
+            float imageHeight = logoImage.getHeight();
+            if (imageWidth <= 0 || imageHeight <= 0) {
+                return;
+            }
+            float maxWidth = pageWidth - 2 * MARGIN;
+            float maxHeight = 80f;
+            float scale = Math.min(maxWidth / imageWidth, maxHeight / imageHeight);
+            if (scale <= 0) {
+                scale = 1f;
+            }
+            float drawWidth = imageWidth * scale;
+            float drawHeight = imageHeight * scale;
+            float x = (pageWidth - drawWidth) / 2f;
+            float topY = pageHeight - MARGIN - drawHeight;
+            contentStream.drawImage(logoImage, x, topY, drawWidth, drawHeight);
+            y = topY - 24f;
+        }
+
+        private String resolveSurfaceLabel(String category) {
+            return SurfaceType.resolve(category)
+                    .map(SurfaceType::getDisplayName)
+                    .orElse(null);
+        }
+
+        private String formatQuantity(double value) {
+            double rounded = Math.rint(value);
+            if (Math.abs(value - rounded) < 1e-3) {
+                return String.format(Locale.getDefault(), "%.0f", rounded);
+            }
+            return String.format(Locale.getDefault(), "%.2f", value);
+        }
+
         private void writeSectionHeading(String text) throws IOException {
             writeParagraph(text, 18f);
             writeSpacing(8f);
@@ -498,7 +581,8 @@ public class PdfReportService {
             document.addPage(page);
             contentStream = new PDPageContentStream(document, page);
             pageWidth = page.getMediaBox().getWidth();
-            y = page.getMediaBox().getHeight() - MARGIN;
+            pageHeight = page.getMediaBox().getHeight();
+            y = pageHeight - MARGIN;
         }
 
         void finish() throws IOException {

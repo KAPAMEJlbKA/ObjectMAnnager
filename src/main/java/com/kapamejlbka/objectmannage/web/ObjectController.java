@@ -11,6 +11,7 @@ import com.kapamejlbka.objectmannage.model.MountingElement;
 import com.kapamejlbka.objectmannage.model.ObjectChange;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary;
+import com.kapamejlbka.objectmannage.model.SurfaceType;
 import com.kapamejlbka.objectmannage.model.ProjectCustomer;
 import com.kapamejlbka.objectmannage.model.StoredFile;
 import com.kapamejlbka.objectmannage.model.UserAccount;
@@ -341,6 +342,7 @@ public class ObjectController {
         model.addAttribute("cableTypes", cableTypes);
         model.addAttribute("totalConnectionPoints", form.calculateTotalConnectionPoints());
         model.addAttribute("mapProvider", applicationSettingsService.getMapProvider());
+        model.addAttribute("surfaceTypes", SurfaceType.values());
     }
 
     private PrimaryDataSnapshot parseSnapshot(String primaryData) {
@@ -355,14 +357,26 @@ public class ObjectController {
     }
 
     private String buildReportFileName(ManagedObject managedObject) {
-        String base = managedObject != null && StringUtils.hasText(managedObject.getName())
-                ? managedObject.getName().trim()
-                : "object";
-        String normalized = base.replaceAll("[^a-zA-Z0-9._-]+", "-");
-        if (!StringUtils.hasText(normalized)) {
-            normalized = "object";
+        String objectBase = normalizeFileToken(managedObject != null ? managedObject.getName() : null, "object");
+        String customerBase = normalizeFileToken(managedObject != null && managedObject.getCustomer() != null
+                ? managedObject.getCustomer().getName() : null, null);
+        StringBuilder builder = new StringBuilder();
+        if (StringUtils.hasText(customerBase)) {
+            builder.append(customerBase).append('-');
         }
-        return normalized + "-report.pdf";
+        builder.append(objectBase).append("-report.pdf");
+        return builder.toString();
+    }
+
+    private String normalizeFileToken(String value, String fallback) {
+        if (!StringUtils.hasText(value)) {
+            return fallback != null ? fallback : null;
+        }
+        String normalized = value.trim().replaceAll("[^a-zA-Z0-9._-]+", "-");
+        if (!StringUtils.hasText(normalized)) {
+            return fallback;
+        }
+        return normalized;
     }
 
     private String formatCoordinates(Double latitude, Double longitude) {
@@ -581,6 +595,9 @@ public class ObjectController {
                     groupForm.setDeviceTypeId(group.getDeviceTypeId());
                     groupForm.setDeviceCount(group.getQuantity());
                     groupForm.setInstallLocation(group.getInstallLocation());
+                    groupForm.setInstallSurfaceCategory(group.getInstallSurfaceCategory());
+                    SurfaceType.resolve(group.getInstallSurfaceCategory())
+                            .ifPresent(surfaceType -> groupForm.setInstallSurfaceCategory(surfaceType.getCode()));
                     groupForm.setConnectionPoint(group.getConnectionPoint());
                     groupForm.setDistanceToConnectionPoint(group.getDistanceToConnectionPoint());
                     groupForm.setGroupLabel(group.getGroupLabel());
@@ -632,12 +649,40 @@ public class ObjectController {
                     groupForm.setGroupName(group.getGroupName());
                     groupForm.setGroupLabel(group.getGroupLabel());
                     groupForm.setSurface(group.getSurface());
+                    groupForm.setSurfaceCategory(group.getSurfaceCategory());
+                    if (!StringUtils.hasText(groupForm.getSurfaceCategory())) {
+                        SurfaceType.resolve(group.getSurface())
+                                .ifPresent(surfaceType -> {
+                                    groupForm.setSurfaceCategory(surfaceType.getCode());
+                                    groupForm.setSurface(surfaceType.getDisplayName());
+                                });
+                    } else {
+                        SurfaceType.resolve(groupForm.getSurfaceCategory())
+                                .ifPresent(surfaceType -> {
+                                    groupForm.setSurfaceCategory(surfaceType.getCode());
+                                    groupForm.setSurface(surfaceType.getDisplayName());
+                                });
+                    }
                     if (group.getMaterials() != null) {
                         for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
                             MaterialUsageForm usageForm = new MaterialUsageForm();
                             usageForm.setMaterialId(usage.getMaterialId());
                             usageForm.setAmount(usage.getAmount());
                             usageForm.setLayingSurface(usage.getLayingSurface());
+                            usageForm.setLayingSurfaceCategory(usage.getLayingSurfaceCategory());
+                            if (!StringUtils.hasText(usageForm.getLayingSurfaceCategory())) {
+                                SurfaceType.resolve(usage.getLayingSurface())
+                                        .ifPresent(surfaceType -> {
+                                            usageForm.setLayingSurfaceCategory(surfaceType.getCode());
+                                            usageForm.setLayingSurface(surfaceType.getDisplayName());
+                                        });
+                            } else {
+                                SurfaceType.resolve(usageForm.getLayingSurfaceCategory())
+                                        .ifPresent(surfaceType -> {
+                                            usageForm.setLayingSurfaceCategory(surfaceType.getCode());
+                                            usageForm.setLayingSurface(surfaceType.getDisplayName());
+                                        });
+                            }
                             groupForm.getMaterials().add(usageForm);
                         }
                     }
@@ -778,6 +823,9 @@ public class ObjectController {
                 group.setDeviceTypeName(type != null ? type.getName() : null);
                 group.setQuantity(form.getDeviceCount() != null ? form.getDeviceCount() : 0);
                 group.setInstallLocation(trim(form.getInstallLocation()));
+                SurfaceType.resolve(form.getInstallSurfaceCategory())
+                        .ifPresentOrElse(surfaceType -> group.setInstallSurfaceCategory(surfaceType.getCode()),
+                                () -> group.setInstallSurfaceCategory(trim(form.getInstallSurfaceCategory())));
                 group.setConnectionPoint(trim(form.getConnectionPoint()));
                 group.setDistanceToConnectionPoint(form.getDistanceToConnectionPoint());
                 group.setGroupLabel(trim(form.getGroupLabel()));
@@ -846,10 +894,16 @@ public class ObjectController {
                     }
                     usage.setAmount(trim(usageForm.getAmount()));
                     usage.setLayingSurface(trim(usageForm.getLayingSurface()));
+                    SurfaceType.resolve(usageForm.getLayingSurfaceCategory())
+                            .ifPresentOrElse(surfaceType -> {
+                                usage.setLayingSurface(surfaceType.getDisplayName());
+                                usage.setLayingSurfaceCategory(surfaceType.getCode());
+                            }, () -> usage.setLayingSurfaceCategory(trim(usageForm.getLayingSurfaceCategory())));
                     usages.add(usage);
                 }
                 boolean hasGroupData = StringUtils.hasText(groupForm.getGroupName())
                         || StringUtils.hasText(groupForm.getSurface())
+                        || StringUtils.hasText(groupForm.getSurfaceCategory())
                         || !usages.isEmpty();
                 if (!hasGroupData) {
                     continue;
@@ -857,7 +911,14 @@ public class ObjectController {
                 PrimaryDataSnapshot.MaterialGroup group = new PrimaryDataSnapshot.MaterialGroup();
                 group.setGroupName(trim(groupForm.getGroupName()));
                 group.setGroupLabel(trim(groupForm.getGroupLabel()));
-                group.setSurface(trim(groupForm.getSurface()));
+                SurfaceType.resolve(groupForm.getSurfaceCategory())
+                        .ifPresentOrElse(surfaceType -> {
+                            group.setSurface(surfaceType.getDisplayName());
+                            group.setSurfaceCategory(surfaceType.getCode());
+                        }, () -> {
+                            group.setSurface(trim(groupForm.getSurface()));
+                            group.setSurfaceCategory(trim(groupForm.getSurfaceCategory()));
+                        });
                 group.setMaterials(usages);
                 materialGroupsSnapshot.add(group);
             }
@@ -873,6 +934,7 @@ public class ObjectController {
             private UUID deviceTypeId;
             private Integer deviceCount;
             private String installLocation;
+            private String installSurfaceCategory;
             private String connectionPoint;
             private Double distanceToConnectionPoint;
             private String groupLabel;
@@ -881,6 +943,7 @@ public class ObjectController {
                 return (deviceTypeId == null)
                         && (deviceCount == null || deviceCount == 0)
                         && !StringUtils.hasText(installLocation)
+                        && !StringUtils.hasText(installSurfaceCategory)
                         && !StringUtils.hasText(connectionPoint)
                         && distanceToConnectionPoint == null
                         && !StringUtils.hasText(groupLabel);
@@ -908,6 +971,14 @@ public class ObjectController {
 
             public void setInstallLocation(String installLocation) {
                 this.installLocation = installLocation;
+            }
+
+            public String getInstallSurfaceCategory() {
+                return installSurfaceCategory;
+            }
+
+            public void setInstallSurfaceCategory(String installSurfaceCategory) {
+                this.installSurfaceCategory = installSurfaceCategory;
             }
 
             public String getConnectionPoint() {
@@ -1017,6 +1088,7 @@ public class ObjectController {
             private String groupName;
             private String groupLabel;
             private String surface;
+            private String surfaceCategory;
             @Valid
             private List<MaterialUsageForm> materials = new ArrayList<>();
 
@@ -1044,6 +1116,14 @@ public class ObjectController {
                 this.surface = surface;
             }
 
+            public String getSurfaceCategory() {
+                return surfaceCategory;
+            }
+
+            public void setSurfaceCategory(String surfaceCategory) {
+                this.surfaceCategory = surfaceCategory;
+            }
+
             public List<MaterialUsageForm> getMaterials() {
                 return materials;
             }
@@ -1060,11 +1140,13 @@ public class ObjectController {
             private UUID materialId;
             private String amount;
             private String layingSurface;
+            private String layingSurfaceCategory;
 
             public boolean isEmpty() {
                 return materialId == null
                         && !StringUtils.hasText(amount)
-                        && !StringUtils.hasText(layingSurface);
+                        && !StringUtils.hasText(layingSurface)
+                        && !StringUtils.hasText(layingSurfaceCategory);
             }
 
             public UUID getMaterialId() {
@@ -1089,6 +1171,14 @@ public class ObjectController {
 
             public void setLayingSurface(String layingSurface) {
                 this.layingSurface = layingSurface;
+            }
+
+            public String getLayingSurfaceCategory() {
+                return layingSurfaceCategory;
+            }
+
+            public void setLayingSurfaceCategory(String layingSurfaceCategory) {
+                this.layingSurfaceCategory = layingSurfaceCategory;
             }
         }
     }
