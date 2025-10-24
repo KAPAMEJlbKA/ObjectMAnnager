@@ -120,6 +120,8 @@
                                     <th>Монтажный элемент</th>
                                     <th>Расстояние до запитки</th>
                                     <th>Кабель</th>
+                                    <th>Материал прокладки</th>
+                                    <th>Поверхность</th>
                                     <th>Способ прокладки</th>
                                 </tr>
                                 </thead>
@@ -129,6 +131,12 @@
                                     <td th:text="${node.mountingElementName}"></td>
                                     <td th:text="${node.distanceToPower != null ? #numbers.formatDecimal(node.distanceToPower, 1, 2) + ' м' : '—'}"></td>
                                     <td th:text="${node.powerCableTypeName != null ? node.powerCableTypeName : '—'}"></td>
+                                    <td>
+                                        <span th:text="${node.layingMaterialName != null ? node.layingMaterialName : '—'}"></span>
+                                        <span class="muted small" th:if="${node.layingMaterialUnit != null}" th:text="${' (' + node.layingMaterialUnit + ')'}"></span>
+                                    </td>
+                                    <td th:classappend="${(!#strings.hasText(node.layingSurface) and !#strings.hasText(node.layingSurfaceCategory)) or (#strings.equalsIgnoreCase(node.layingSurfaceCategory, 'UNKNOWN')) ? 'table-warning' : ''}"
+                                        th:text="${#strings.hasText(node.layingSurface) ? node.layingSurface : (#strings.hasText(node.layingSurfaceCategory) ? (#strings.equalsIgnoreCase(node.layingSurfaceCategory, 'UNKNOWN') ? 'Уточнить' : node.layingSurfaceCategory) : 'Уточнить')}"></td>
                                     <td th:text="${node.layingMethod != null ? node.layingMethod : '—'}"></td>
                                 </tr>
                                 </tbody>
@@ -146,7 +154,7 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr th:each="item : ${primarySummary.additionalMaterials}">
+                                <tr th:each="item : ${primarySummary.additionalMaterials}" th:classappend="${#strings.containsIgnoreCase(item.name, 'уточнить')} ? 'table-warning' : ''">
                                     <td th:text="${item.name}"></td>
                                     <td th:text="${#numbers.formatDecimal(item.quantity, 0, 2)}"></td>
                                     <td th:text="${item.unit != null ? item.unit : '—'}"></td>

@@ -562,6 +562,16 @@ button:hover {
     background: #eef2ff;
 }
 
+.data-table tr.table-warning td {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.data-table td.table-warning {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
 .upload-form {
     display: grid;
     gap: 0.75rem;
