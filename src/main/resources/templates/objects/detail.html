@@ -246,9 +246,6 @@
                 <th>Дата</th>
                 <th>Пользователь</th>
                 <th>Событие</th>
-                <th>Поле</th>
-                <th>Старое значение</th>
-                <th>Новое значение</th>
             </tr>
             </thead>
             <tbody>
@@ -256,9 +253,6 @@
                 <td th:text="${change.changedAt}"></td>
                 <td th:text="${change.user != null ? change.user.username : 'Система'}"></td>
                 <td th:text="${change.summary}"></td>
-                <td th:text="${change.fieldName}"></td>
-                <td th:text="${change.oldValue}"></td>
-                <td th:text="${change.newValue}"></td>
             </tr>
             </tbody>
         </table>
