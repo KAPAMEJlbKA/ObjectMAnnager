@@ -159,9 +159,6 @@ public class PdfReportService {
                     }
                     String label = determineGroupLabel(group.getGroupLabel(), group.getGroupName());
                     writeParagraph("Группа: " + label, 12f);
-                    if (StringUtils.hasText(group.getSurface())) {
-                        writeParagraph("Поверхность прокладки: " + group.getSurface().trim(), 11f);
-                    }
                     List<String> materials = new ArrayList<>();
                     if (group.getMaterials() != null) {
                         for (MaterialUsage usage : group.getMaterials()) {
