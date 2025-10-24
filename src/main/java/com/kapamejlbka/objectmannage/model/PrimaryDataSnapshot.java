@@ -134,6 +134,11 @@ public class PrimaryDataSnapshot {
         private Double distanceToPower;
         private UUID powerCableTypeId;
         private String powerCableTypeName;
+        private UUID layingMaterialId;
+        private String layingMaterialName;
+        private String layingMaterialUnit;
+        private String layingSurface;
+        private String layingSurfaceCategory;
         private String layingMethod;
 
         public String getName() {
@@ -190,6 +195,46 @@ public class PrimaryDataSnapshot {
 
         public void setLayingMethod(String layingMethod) {
             this.layingMethod = layingMethod;
+        }
+
+        public UUID getLayingMaterialId() {
+            return layingMaterialId;
+        }
+
+        public void setLayingMaterialId(UUID layingMaterialId) {
+            this.layingMaterialId = layingMaterialId;
+        }
+
+        public String getLayingMaterialName() {
+            return layingMaterialName;
+        }
+
+        public void setLayingMaterialName(String layingMaterialName) {
+            this.layingMaterialName = layingMaterialName;
+        }
+
+        public String getLayingMaterialUnit() {
+            return layingMaterialUnit;
+        }
+
+        public void setLayingMaterialUnit(String layingMaterialUnit) {
+            this.layingMaterialUnit = layingMaterialUnit;
+        }
+
+        public String getLayingSurface() {
+            return layingSurface;
+        }
+
+        public void setLayingSurface(String layingSurface) {
+            this.layingSurface = layingSurface;
+        }
+
+        public String getLayingSurfaceCategory() {
+            return layingSurfaceCategory;
+        }
+
+        public void setLayingSurfaceCategory(String layingSurfaceCategory) {
+            this.layingSurfaceCategory = layingSurfaceCategory;
         }
     }
 

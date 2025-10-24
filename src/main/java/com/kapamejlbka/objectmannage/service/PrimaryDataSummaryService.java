@@ -157,7 +157,12 @@ public class PrimaryDataSummaryService {
                         point.getPowerCableTypeId(), cableTypeData);
                 String powerCableName = powerCable != null ? powerCable.name() : null;
                 String layingMethod = point.getLayingMethod();
-                nodeSummaries.add(new NodeSummary(name, elementName, distanceToPower, powerCableName, layingMethod));
+                String layingMaterialName = point.getLayingMaterialName();
+                String layingMaterialUnit = point.getLayingMaterialUnit();
+                String layingSurface = point.getLayingSurface();
+                String layingSurfaceCategory = point.getLayingSurfaceCategory();
+                nodeSummaries.add(new NodeSummary(name, elementName, distanceToPower, powerCableName,
+                        layingMaterialName, layingMaterialUnit, layingSurface, layingSurfaceCategory, layingMethod));
 
                 if (isBoxNode(elementName)) {
                     boxNodes++;
@@ -212,9 +217,10 @@ public class PrimaryDataSummaryService {
         }
         Integer declaredAssignments = recordedConnectionPoints > 0 ? recordedConnectionPoints : null;
 
+        MaterialLengthStats materialLengths = collectMaterialLengths(snapshot);
         accumulateCameraMaterials(additionalMaterials, cameraCountsBySurface, totalCameras);
         accumulateNodeMaterials(additionalMaterials, boxNodes);
-        accumulateCoefficientMaterials(additionalMaterials, snapshot, totalCableLength,
+        accumulateCoefficientMaterials(additionalMaterials, materialLengths, totalCableLength,
                 applicationSettingsService.getMaterialCoefficients());
 
         PrimaryDataSummary.Builder builder = PrimaryDataSummary.builder()
@@ -310,46 +316,27 @@ public class PrimaryDataSummaryService {
     }
 
     private void accumulateCoefficientMaterials(Map<String, MaterialAccumulator> accumulator,
-                                                PrimaryDataSnapshot snapshot,
+                                                MaterialLengthStats materialLengths,
                                                 double totalCableLength,
                                                 ApplicationSettingsService.MaterialCoefficients coefficients) {
         double clipsPerMeter = Math.max(coefficients.clipsPerMeter(), 0.0);
         double tiesPerMeter = Math.max(coefficients.tiesPerMeter(), 0.0);
 
         if (clipsPerMeter > 0) {
-            double corrugatedLength = estimateCorrugatedLength(snapshot);
+            double corrugatedLength = materialLengths.corrugatedLength();
             if (corrugatedLength > 0) {
                 addMaterial(accumulator, "Клипсы для гофры", "шт", Math.ceil(corrugatedLength * clipsPerMeter));
             }
         }
 
-        if (tiesPerMeter > 0 && totalCableLength > 0) {
-            addMaterial(accumulator, "Нейлоновые стяжки (по кабелю)", "шт", Math.ceil(totalCableLength * tiesPerMeter));
+        double effectiveCableLength = materialLengths.totalMaterialLength();
+        if (effectiveCableLength <= 0 && totalCableLength > 0) {
+            effectiveCableLength = totalCableLength;
         }
-    }
-
-    private double estimateCorrugatedLength(PrimaryDataSnapshot snapshot) {
-        double total = 0.0;
-        if (snapshot.getMaterialGroups() == null) {
-            return total;
+        if (tiesPerMeter > 0 && effectiveCableLength > 0) {
+            addMaterial(accumulator, "Нейлоновые стяжки (по кабелю)", "шт",
+                    Math.ceil(effectiveCableLength * tiesPerMeter));
         }
-        for (PrimaryDataSnapshot.MaterialGroup group : snapshot.getMaterialGroups()) {
-            if (group == null || group.getMaterials() == null) {
-                continue;
-            }
-            for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
-                if (usage == null) {
-                    continue;
-                }
-                if (containsIgnoreCase(usage.getMaterialName(), "гофр")) {
-                    double length = parseLength(usage.getAmount());
-                    if (length > 0) {
-                        total += length;
-                    }
-                }
-            }
-        }
-        return total;
     }
 
     private double parseLength(String value) {
@@ -373,6 +360,67 @@ public class PrimaryDataSummaryService {
         } catch (NumberFormatException ex) {
             return 0.0;
         }
+    }
+
+    private MaterialLengthStats collectMaterialLengths(PrimaryDataSnapshot snapshot) {
+        MaterialLengthStats stats = new MaterialLengthStats();
+        if (snapshot == null) {
+            return stats;
+        }
+        if (snapshot.getMaterialGroups() != null) {
+            for (PrimaryDataSnapshot.MaterialGroup group : snapshot.getMaterialGroups()) {
+                if (group == null || group.getMaterials() == null) {
+                    continue;
+                }
+                for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
+                    if (usage == null) {
+                        continue;
+                    }
+                    double length = parseLength(usage.getAmount());
+                    if (length <= 0) {
+                        continue;
+                    }
+                    if (!isMeterUnit(usage.getUnit()) && !looksLikeMeters(usage.getAmount())) {
+                        continue;
+                    }
+                    stats.addMaterialLength(usage.getMaterialName(), length);
+                    stats.addSurfaceLength(usage.getLayingSurfaceCategory(), length);
+                }
+            }
+        }
+        if (snapshot.getConnectionPoints() != null) {
+            for (PrimaryDataSnapshot.ConnectionPoint point : snapshot.getConnectionPoints()) {
+                if (point == null) {
+                    continue;
+                }
+                double length = Math.max(0.0, defaultDouble(point.getDistanceToPower()));
+                if (length <= 0) {
+                    continue;
+                }
+                if (!StringUtils.hasText(point.getLayingMaterialName())) {
+                    continue;
+                }
+                stats.addMaterialLength(point.getLayingMaterialName(), length);
+                stats.addSurfaceLength(point.getLayingSurfaceCategory(), length);
+            }
+        }
+        return stats;
+    }
+
+    private boolean looksLikeMeters(String amount) {
+        if (!StringUtils.hasText(amount)) {
+            return false;
+        }
+        String normalized = amount.toLowerCase();
+        return normalized.contains("м");
+    }
+
+    private boolean isMeterUnit(String unit) {
+        if (!StringUtils.hasText(unit)) {
+            return false;
+        }
+        String normalized = unit.trim().toLowerCase();
+        return normalized.contains("м");
     }
 
     private boolean containsIgnoreCase(String source, String needle) {
@@ -418,6 +466,41 @@ public class PrimaryDataSummaryService {
 
         double quantity() {
             return quantity;
+        }
+    }
+
+    private static class MaterialLengthStats {
+        private double total;
+        private double corrugated;
+
+        void addMaterialLength(String materialName, double length) {
+            if (length <= 0) {
+                return;
+            }
+            total += length;
+            if (containsCorrugated(materialName)) {
+                corrugated += length;
+            }
+        }
+
+        void addSurfaceLength(String surfaceCategory, double length) {
+            // reserved for future use (e.g., breakdown per surface)
+        }
+
+        double totalMaterialLength() {
+            return total;
+        }
+
+        double corrugatedLength() {
+            return corrugated;
+        }
+
+        private boolean containsCorrugated(String name) {
+            if (!StringUtils.hasText(name)) {
+                return false;
+            }
+            String normalized = Normalizer.normalize(name, Normalizer.Form.NFKD).toLowerCase();
+            return normalized.contains("гофр");
         }
     }
 

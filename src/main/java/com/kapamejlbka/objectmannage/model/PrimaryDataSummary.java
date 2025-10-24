@@ -288,17 +288,29 @@ public class PrimaryDataSummary {
         private final String mountingElementName;
         private final Double distanceToPower;
         private final String powerCableTypeName;
+        private final String layingMaterialName;
+        private final String layingMaterialUnit;
+        private final String layingSurface;
+        private final String layingSurfaceCategory;
         private final String layingMethod;
 
         public NodeSummary(String name,
                            String mountingElementName,
                            Double distanceToPower,
                            String powerCableTypeName,
+                           String layingMaterialName,
+                           String layingMaterialUnit,
+                           String layingSurface,
+                           String layingSurfaceCategory,
                            String layingMethod) {
             this.name = name;
             this.mountingElementName = mountingElementName;
             this.distanceToPower = distanceToPower;
             this.powerCableTypeName = powerCableTypeName;
+            this.layingMaterialName = layingMaterialName;
+            this.layingMaterialUnit = layingMaterialUnit;
+            this.layingSurface = layingSurface;
+            this.layingSurfaceCategory = layingSurfaceCategory;
             this.layingMethod = layingMethod;
         }
 
@@ -316,6 +328,22 @@ public class PrimaryDataSummary {
 
         public String getPowerCableTypeName() {
             return powerCableTypeName;
+        }
+
+        public String getLayingMaterialName() {
+            return layingMaterialName;
+        }
+
+        public String getLayingMaterialUnit() {
+            return layingMaterialUnit;
+        }
+
+        public String getLayingSurface() {
+            return layingSurface;
+        }
+
+        public String getLayingSurfaceCategory() {
+            return layingSurfaceCategory;
         }
 
         public String getLayingMethod() {
