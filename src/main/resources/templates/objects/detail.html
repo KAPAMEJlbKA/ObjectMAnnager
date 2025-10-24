@@ -135,8 +135,8 @@
                                         <span th:text="${node.layingMaterialName != null ? node.layingMaterialName : '—'}"></span>
                                         <span class="muted small" th:if="${node.layingMaterialUnit != null}" th:text="${' (' + node.layingMaterialUnit + ')'}"></span>
                                     </td>
-                                    <td th:classappend="${(!#strings.hasText(node.layingSurface) and !#strings.hasText(node.layingSurfaceCategory)) or (#strings.equalsIgnoreCase(node.layingSurfaceCategory, 'UNKNOWN')) ? 'table-warning' : ''}"
-                                        th:text="${#strings.hasText(node.layingSurface) ? node.layingSurface : (#strings.hasText(node.layingSurfaceCategory) ? (#strings.equalsIgnoreCase(node.layingSurfaceCategory, 'UNKNOWN') ? 'Уточнить' : node.layingSurfaceCategory) : 'Уточнить')}"></td>
+                                    <td th:classappend="${((node.layingSurface == null or node.layingSurface.isBlank()) and (node.layingSurfaceCategory == null or node.layingSurfaceCategory.isBlank())) or (node.layingSurfaceCategory != null and node.layingSurfaceCategory.equalsIgnoreCase('UNKNOWN')) ? 'table-warning' : ''}"
+                                        th:text="${(node.layingSurface != null and !node.layingSurface.isBlank()) ? node.layingSurface : ((node.layingSurfaceCategory != null and !node.layingSurfaceCategory.isBlank()) ? (node.layingSurfaceCategory.equalsIgnoreCase('UNKNOWN') ? 'Уточнить' : node.layingSurfaceCategory) : 'Уточнить')}"></td>
                                     <td th:text="${node.layingMethod != null ? node.layingMethod : '—'}"></td>
                                 </tr>
                                 </tbody>
