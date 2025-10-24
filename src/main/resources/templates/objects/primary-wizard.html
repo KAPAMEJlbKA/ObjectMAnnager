@@ -36,6 +36,10 @@
             <button type="button" class="wizard-progress-step" data-step-index="3">4. Материалы</button>
         </nav>
 
+        <div class="alert" th:if="${#fields.hasGlobalErrors()}">
+            <p th:each="error : ${#fields.globalErrors()}" th:text="${error.defaultMessage}"></p>
+        </div>
+
         <div class="wizard-panels">
             <section class="wizard-step" data-step-index="0">
                 <h3>Шаг 1. Оборудование</h3>
@@ -155,6 +159,26 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="grid">
+                            <div>
+                                <label>Материал прокладки</label>
+                                <select th:field="*{connectionPoints[__${iter.index}__].layingMaterialId}" data-field="layingMaterialId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Категория поверхности</label>
+                                <select th:field="*{connectionPoints[__${iter.index}__].layingSurfaceCategory}" data-field="layingSurfaceCategory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Доп. описание поверхности</label>
+                                <input type="text" th:field="*{connectionPoints[__${iter.index}__].layingSurface}" data-field="layingSurface" placeholder="По стене, в коробе...">
+                            </div>
+                        </div>
                         <div>
                             <label>Способ прокладки</label>
                             <input type="text" th:field="*{connectionPoints[__${iter.index}__].layingMethod}" data-field="layingMethod" placeholder="В гофре по потолку...">
@@ -189,6 +213,26 @@
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}" th:value="${cable.id}" th:text="${cable.name}"></option>
                                 </select>
+                            </div>
+                        </div>
+                        <div class="grid">
+                            <div>
+                                <label>Материал прокладки</label>
+                                <select data-field="layingMaterialId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Категория поверхности</label>
+                                <select data-field="layingSurfaceCategory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Доп. описание поверхности</label>
+                                <input type="text" data-field="layingSurface" placeholder="По стене, в коробе...">
                             </div>
                         </div>
                         <div>
@@ -273,23 +317,6 @@
                             <h4 class="group-label">Группа: <span data-role="label" th:text="${group.groupLabel}">Без названия</span></h4>
                         </header>
                         <p class="field-error capacity-warning" data-role="capacity-warning" hidden>Длина материалов превышает допустимую для этой группы.</p>
-                        <div class="grid">
-                            <div>
-                                <label>Отображаемое название</label>
-                                <input type="text" th:field="*{materialGroups[__${gIndex.index}__].groupName}" data-field="groupName" placeholder="Например, Линия 1">
-                            </div>
-                            <div>
-                                <label>Категория поверхности</label>
-                                <select th:field="*{materialGroups[__${gIndex.index}__].surfaceCategory}" data-field="surfaceCategory">
-                                    <option value="">Не выбрана</option>
-                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Дополнительное описание</label>
-                                <input type="text" th:field="*{materialGroups[__${gIndex.index}__].surface}" data-field="surface" placeholder="По потолку, в коробе...">
-                            </div>
-                        </div>
                         <div class="stack materials-container" th:id="${'material-rows-' + gIndex.index}">
                             <div class="material-row" th:each="usage, uIndex : *{materialGroups[__${gIndex.index}__].materials}" th:data-index="${uIndex.index}">
                                 <div class="grid">
@@ -329,23 +356,6 @@
                             <h4 class="group-label">Группа: <span data-role="label">Без названия</span></h4>
                         </header>
                         <p class="field-error capacity-warning" data-role="capacity-warning" hidden>Длина материалов превышает допустимую для этой группы.</p>
-                        <div class="grid">
-                            <div>
-                                <label>Отображаемое название</label>
-                                <input type="text" data-field="groupName" placeholder="Например, Линия 1">
-                            </div>
-                            <div>
-                                <label>Категория поверхности</label>
-                                <select data-field="surfaceCategory">
-                                    <option value="">Не выбрана</option>
-                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Дополнительное описание</label>
-                                <input type="text" data-field="surface" placeholder="По потолку, в коробе...">
-                            </div>
-                        </div>
                         <div class="stack materials-container">
                             <div class="material-row">
                                 <div class="grid">
@@ -393,7 +403,14 @@
                                 <input type="text" data-field="amount" placeholder="25 м, 4 шт...">
                             </div>
                             <div>
-                                <label>По чему проложены</label>
+                                <label>Категория прокладки</label>
+                                <select data-field="layingSurfaceCategory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Доп. описание прокладки</label>
                                 <input type="text" data-field="layingSurface" placeholder="По стене, в коробе...">
                             </div>
                         </div>
@@ -879,6 +896,9 @@
                 const distanceInput = row.querySelector('input[data-field="distanceToPower"]');
                 const cableSelect = row.querySelector('select[data-field="powerCableTypeId"]');
                 const layingInput = row.querySelector('[data-field="layingMethod"]');
+                const materialSelect = row.querySelector('select[data-field="layingMaterialId"]');
+                const surfaceCategorySelect = row.querySelector('select[data-field="layingSurfaceCategory"]');
+                const surfaceInput = row.querySelector('input[data-field="layingSurface"]');
                 row.dataset.index = index.toString();
                 if (nameInput) {
                     nameInput.setAttribute('name', `connectionPoints[${index}].name`);
@@ -892,6 +912,15 @@
                 }
                 if (cableSelect) {
                     cableSelect.setAttribute('name', `connectionPoints[${index}].powerCableTypeId`);
+                }
+                if (materialSelect) {
+                    materialSelect.setAttribute('name', `connectionPoints[${index}].layingMaterialId`);
+                }
+                if (surfaceCategorySelect) {
+                    surfaceCategorySelect.setAttribute('name', `connectionPoints[${index}].layingSurfaceCategory`);
+                }
+                if (surfaceInput) {
+                    surfaceInput.setAttribute('name', `connectionPoints[${index}].layingSurface`);
                 }
                 if (layingInput) {
                     layingInput.setAttribute('name', `connectionPoints[${index}].layingMethod`);
@@ -1050,21 +1079,9 @@
             groups.forEach((group, groupIndex) => {
                 group.dataset.index = groupIndex.toString();
                 const labelInput = group.querySelector('input[data-field="groupLabel"]');
-                const nameInput = group.querySelector('input[data-field="groupName"]');
-                const surfaceInput = group.querySelector('input[data-field="surface"]');
-                const surfaceCategorySelect = group.querySelector('[data-field="surfaceCategory"]');
                 if (labelInput) {
                     labelInput.setAttribute('name', `materialGroups[${groupIndex}].groupLabel`);
                     group.dataset.groupLabel = labelInput.value.trim();
-                }
-                if (nameInput) {
-                    nameInput.setAttribute('name', `materialGroups[${groupIndex}].groupName`);
-                }
-                if (surfaceInput) {
-                    surfaceInput.setAttribute('name', `materialGroups[${groupIndex}].surface`);
-                }
-                if (surfaceCategorySelect) {
-                    surfaceCategorySelect.setAttribute('name', `materialGroups[${groupIndex}].surfaceCategory`);
                 }
                 const rows = Array.from(group.querySelectorAll('.material-row'));
                 rows.forEach((row, rowIndex) => {
