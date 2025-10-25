@@ -80,6 +80,20 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="grid camera-settings" data-role="camera-fields"
+                             th:classappend="${group.cameraAccessory} == null and ${group.cameraViewingDepth} == null ? ' is-hidden' : ''">
+                            <div>
+                                <label>Комплектация камеры</label>
+                                <select th:field="*{deviceGroups[__${iter.index}__].cameraAccessory}" data-field="cameraAccessory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="option : ${cameraOptions}" th:value="${option.code}" th:text="${option.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Глубина просмотра (м)</label>
+                                <input type="number" min="0" step="0.1" th:field="*{deviceGroups[__${iter.index}__].cameraViewingDepth}" data-field="cameraViewingDepth" placeholder="Например, 40">
+                            </div>
+                        </div>
                         <button type="button" class="link-button danger remove-device" th:if="${iter.index > 0}">Удалить</button>
                     </div>
                 </div>
@@ -117,6 +131,19 @@
                                     <option value="">Не выбрана</option>
                                     <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
                                 </select>
+                            </div>
+                        </div>
+                        <div class="grid camera-settings is-hidden" data-role="camera-fields">
+                            <div>
+                                <label>Комплектация камеры</label>
+                                <select data-field="cameraAccessory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="option : ${cameraOptions}" th:value="${option.code}" th:text="${option.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Глубина просмотра (м)</label>
+                                <input type="number" min="0" step="0.1" data-field="cameraViewingDepth" placeholder="Например, 40">
                             </div>
                         </div>
                         <button type="button" class="link-button danger remove-device">Удалить</button>
@@ -528,6 +555,41 @@
             return Array.from(deviceContainer?.querySelectorAll('.device-group') ?? []);
         }
 
+        function isCameraDevice(select) {
+            if (!(select instanceof HTMLSelectElement)) {
+                return false;
+            }
+            const option = select.options[select.selectedIndex];
+            const label = option?.text?.toLowerCase() ?? '';
+            return label.includes('камера');
+        }
+
+        function updateCameraFieldsForGroup(group) {
+            if (!group) {
+                return;
+            }
+            const typeSelect = group.querySelector('select[data-field="deviceTypeId"]');
+            const accessorySelect = group.querySelector('select[data-field="cameraAccessory"]');
+            const depthInput = group.querySelector('input[data-field="cameraViewingDepth"]');
+            const cameraFields = group.querySelector('[data-role="camera-fields"]');
+            const cameraSelected = isCameraDevice(typeSelect);
+            if (cameraFields) {
+                cameraFields.classList.toggle('is-hidden', !cameraSelected);
+            }
+            if (accessorySelect) {
+                accessorySelect.disabled = !cameraSelected;
+                if (!cameraSelected) {
+                    accessorySelect.value = '';
+                }
+            }
+            if (depthInput) {
+                depthInput.disabled = !cameraSelected;
+                if (!cameraSelected) {
+                    depthInput.value = '';
+                }
+            }
+        }
+
         function getMountingRows() {
             return Array.from(document.querySelectorAll('.mounting-row'));
         }
@@ -560,6 +622,7 @@
                 if (removeButton) {
                     removeButton.style.display = index === 0 ? 'none' : '';
                 }
+                updateCameraFieldsForGroup(group);
             });
             updateTotalConnectionPoints();
             ensureDeviceCards();
@@ -748,6 +811,8 @@
             const installInput = group.querySelector('input[data-field="installLocation"]');
             const connectionInput = group.querySelector('input[data-field="connectionPoint"]');
             const distanceInput = group.querySelector('input[data-field="distanceToConnectionPoint"]');
+            const accessorySelect = group.querySelector('select[data-field="cameraAccessory"]');
+            const viewingDepthInput = group.querySelector('input[data-field="cameraViewingDepth"]');
             const typeName = typeSelect instanceof HTMLSelectElement
                 ? typeSelect.options[typeSelect.selectedIndex]?.text?.trim()
                 : '';
@@ -756,7 +821,12 @@
                 count: countInput?.value.trim() || '',
                 installLocation: installInput?.value.trim() || '',
                 connectionPoint: connectionInput?.value.trim() || '',
-                distance: distanceInput?.value.trim() || ''
+                distance: distanceInput?.value.trim() || '',
+                accessory: accessorySelect instanceof HTMLSelectElement
+                    ? accessorySelect.options[accessorySelect.selectedIndex]?.text?.trim() || ''
+                    : '',
+                viewingDepth: viewingDepthInput?.value.trim() || '',
+                isCamera: isCameraDevice(typeSelect)
             };
         }
 
@@ -788,6 +858,14 @@
                 }
                 if (data.distance) {
                     parts.push(`Расстояние: ${data.distance} м`);
+                }
+                if (data.isCamera && data.accessory) {
+                    parts.push(`Комплектация: ${data.accessory}`);
+                }
+                if (data.isCamera && data.viewingDepth) {
+                    const hasUnit = /[a-zа-я]/i.test(data.viewingDepth);
+                    const depthLabel = hasUnit ? data.viewingDepth : `${data.viewingDepth} м`;
+                    parts.push(`Глубина: ${depthLabel}`);
                 }
                 summary.textContent = parts.length > 0
                     ? parts.join(' • ')
@@ -1189,15 +1267,25 @@
                 updateDeviceSummaries();
                 updateGroupCapacities();
                 validateMaterialCapacity();
+            } else if (field === 'cameraViewingDepth') {
+                updateDeviceSummaries();
             }
         });
 
         deviceContainer?.addEventListener('change', event => {
             const target = event.target;
-            if (target instanceof HTMLSelectElement && target.getAttribute('data-field') === 'deviceTypeId') {
+            if (!(target instanceof HTMLSelectElement)) {
+                return;
+            }
+            const field = target.getAttribute('data-field');
+            if (field === 'deviceTypeId') {
+                const group = target.closest('.device-group');
+                updateCameraFieldsForGroup(group);
                 updateDeviceSummaries();
                 updateGroupCapacities();
                 validateMaterialCapacity();
+            } else if (field === 'cameraAccessory') {
+                updateDeviceSummaries();
             }
         });
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kapamejlbka.objectmannage.model.CableFunction;
 import com.kapamejlbka.objectmannage.model.CableType;
+import com.kapamejlbka.objectmannage.model.CameraInstallationOption;
 import com.kapamejlbka.objectmannage.model.DeviceCableProfile;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary;
@@ -74,6 +75,9 @@ public class PrimaryDataSummaryService {
         List<NodeSummary> nodeSummaries = new ArrayList<>();
         Map<String, MaterialAccumulator> additionalMaterials = new LinkedHashMap<>();
         EnumMap<SurfaceType, Integer> cameraCountsBySurface = new EnumMap<>(SurfaceType.class);
+        EnumMap<SurfaceType, Integer> adapterCountsBySurface = new EnumMap<>(SurfaceType.class);
+        EnumMap<SurfaceType, Integer> plasticBoxCountsBySurface = new EnumMap<>(SurfaceType.class);
+        List<PrimaryDataSummary.CameraDetail> cameraDetails = new ArrayList<>();
 
         Map<UUID, List<DeviceCableProfile>> cableProfiles = groupProfilesByDeviceType();
         Map<UUID, CableTypeData> cableTypeData = loadCableTypeData();
@@ -85,6 +89,8 @@ public class PrimaryDataSummaryService {
         Set<String> assignedConnectionPoints = new HashSet<>();
         Set<String> definedConnectionPoints = new HashSet<>();
         int totalCameras = 0;
+        int adapterCameras = 0;
+        int plasticBoxCameras = 0;
         int boxNodes = 0;
 
         if (snapshot.getDeviceGroups() != null) {
@@ -104,6 +110,26 @@ public class PrimaryDataSummaryService {
                     SurfaceType surfaceType = SurfaceType.resolve(group.getInstallSurfaceCategory())
                             .orElse(SurfaceType.UNKNOWN);
                     cameraCountsBySurface.merge(surfaceType, cameraCount, Integer::sum);
+                    CameraInstallationOption option = CameraInstallationOption.fromCode(group.getCameraAccessory())
+                            .orElse(null);
+                    if (option == CameraInstallationOption.ADAPTER) {
+                        adapterCameras += cameraCount;
+                        adapterCountsBySurface.merge(surfaceType, cameraCount, Integer::sum);
+                    } else if (option == CameraInstallationOption.PLASTIC_BOX) {
+                        plasticBoxCameras += cameraCount;
+                        plasticBoxCountsBySurface.merge(surfaceType, cameraCount, Integer::sum);
+                    }
+                    if (cameraCount > 0) {
+                        String surfaceLabel = resolveSurfaceLabel(surfaceType, group.getInstallSurfaceCategory());
+                        cameraDetails.add(new PrimaryDataSummary.CameraDetail(
+                                typeName,
+                                cameraCount,
+                                group.getInstallLocation(),
+                                group.getConnectionPoint(),
+                                surfaceLabel,
+                                resolveAccessoryLabel(option),
+                                group.getCameraViewingDepth()));
+                    }
                 }
 
                 if (!StringUtils.hasText(group.getConnectionPoint())) {
@@ -218,7 +244,13 @@ public class PrimaryDataSummaryService {
         Integer declaredAssignments = recordedConnectionPoints > 0 ? recordedConnectionPoints : null;
 
         MaterialLengthStats materialLengths = collectMaterialLengths(snapshot);
-        accumulateCameraMaterials(additionalMaterials, cameraCountsBySurface, totalCameras);
+        accumulateCameraMaterials(additionalMaterials,
+                cameraCountsBySurface,
+                adapterCountsBySurface,
+                plasticBoxCountsBySurface,
+                totalCameras,
+                adapterCameras,
+                plasticBoxCameras);
         accumulateNodeMaterials(additionalMaterials, boxNodes);
         accumulateCoefficientMaterials(additionalMaterials, materialLengths, totalCableLength,
                 applicationSettingsService.getMaterialCoefficients());
@@ -236,6 +268,15 @@ public class PrimaryDataSummaryService {
         cableSummaries.forEach(builder::addCableLengthSummary);
         functionSummaries.forEach(builder::addCableFunctionSummary);
         nodeSummaries.forEach(builder::addNodeSummary);
+        cameraDetails.stream()
+                .sorted(Comparator
+                        .comparing((PrimaryDataSummary.CameraDetail detail) -> detail.getDeviceTypeName(),
+                                Comparator.nullsLast(String::compareToIgnoreCase))
+                        .thenComparing(detail -> detail.getInstallLocation(),
+                                Comparator.nullsLast(String::compareToIgnoreCase))
+                        .thenComparing(detail -> detail.getConnectionPoint(),
+                                Comparator.nullsLast(String::compareToIgnoreCase)))
+                .forEach(builder::addCameraDetail);
         additionalMaterials.values().stream()
                 .sorted(Comparator.comparing(MaterialAccumulator::name, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .map(acc -> new AdditionalMaterialItem(acc.name(), acc.unit(), acc.quantity()))
@@ -285,14 +326,36 @@ public class PrimaryDataSummaryService {
         return normalized.contains("ящ");
     }
 
+    private String resolveSurfaceLabel(SurfaceType surfaceType, String fallback) {
+        if (surfaceType != null && surfaceType != SurfaceType.UNKNOWN) {
+            return surfaceType.getDisplayName();
+        }
+        if (StringUtils.hasText(fallback)) {
+            return fallback.trim();
+        }
+        return null;
+    }
+
+    private String resolveAccessoryLabel(CameraInstallationOption option) {
+        return option != null ? option.getDisplayName() : "Не указано";
+    }
+
     private void accumulateCameraMaterials(Map<String, MaterialAccumulator> accumulator,
                                            EnumMap<SurfaceType, Integer> countsBySurface,
-                                           int totalCameras) {
+                                           EnumMap<SurfaceType, Integer> adapterCountsBySurface,
+                                           EnumMap<SurfaceType, Integer> plasticBoxCountsBySurface,
+                                           int totalCameras,
+                                           int adapterCameras,
+                                           int plasticBoxCameras) {
         if (totalCameras <= 0) {
             return;
         }
-        addMaterial(accumulator, "Распределительная коробка 100×100×50 (опция)", "шт", totalCameras);
-        addMaterial(accumulator, "Монтажный кронштейн для камеры (опция)", "шт", totalCameras);
+        if (plasticBoxCameras > 0) {
+            addMaterial(accumulator, "Пластиковая коробка для камеры (опция)", "шт", plasticBoxCameras);
+        }
+        if (adapterCameras > 0) {
+            addMaterial(accumulator, "Адаптер для камеры (опция)", "шт", adapterCameras);
+        }
         addMaterial(accumulator, "Разъём RJ-45 (8P8C)", "шт", totalCameras * 2L);
         countsBySurface.forEach((surface, count) -> {
             if (count == null || count <= 0) {
@@ -301,8 +364,22 @@ public class PrimaryDataSummaryService {
             SurfaceType effective = surface != null ? surface : SurfaceType.UNKNOWN;
             String fastener = effective.getFastenerName();
             addMaterial(accumulator, "Крепёж для камер — " + fastener, "шт", count * 4L);
+        });
+        plasticBoxCountsBySurface.forEach((surface, count) -> {
+            if (count == null || count <= 0) {
+                return;
+            }
+            SurfaceType effective = surface != null ? surface : SurfaceType.UNKNOWN;
+            String fastener = effective.getFastenerName();
             addMaterial(accumulator, "Крепёж для коробок (опция) — " + fastener, "шт", count * 4L);
-            addMaterial(accumulator, "Крепёж для кронштейнов (опция) — " + fastener, "шт", count * 4L);
+        });
+        adapterCountsBySurface.forEach((surface, count) -> {
+            if (count == null || count <= 0) {
+                return;
+            }
+            SurfaceType effective = surface != null ? surface : SurfaceType.UNKNOWN;
+            String fastener = effective.getFastenerName();
+            addMaterial(accumulator, "Крепёж для адаптеров (опция) — " + fastener, "шт", count * 4L);
         });
     }
 

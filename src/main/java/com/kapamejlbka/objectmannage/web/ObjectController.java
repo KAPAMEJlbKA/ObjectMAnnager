@@ -3,6 +3,7 @@ package com.kapamejlbka.objectmannage.web;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kapamejlbka.objectmannage.model.CableType;
+import com.kapamejlbka.objectmannage.model.CameraInstallationOption;
 import com.kapamejlbka.objectmannage.model.DeviceType;
 import com.kapamejlbka.objectmannage.model.InstallationMaterial;
 import com.kapamejlbka.objectmannage.model.ManagedObject;
@@ -351,6 +352,7 @@ public class ObjectController {
         model.addAttribute("totalConnectionPoints", form.calculateTotalConnectionPoints());
         model.addAttribute("mapProvider", applicationSettingsService.getMapProvider());
         model.addAttribute("surfaceTypes", SurfaceType.values());
+        model.addAttribute("cameraOptions", CameraInstallationOption.values());
     }
 
     private PrimaryDataSnapshot parseSnapshot(String primaryData) {
@@ -611,6 +613,8 @@ public class ObjectController {
                     groupForm.setConnectionPoint(group.getConnectionPoint());
                     groupForm.setDistanceToConnectionPoint(group.getDistanceToConnectionPoint());
                     groupForm.setGroupLabel(group.getGroupLabel());
+                    groupForm.setCameraAccessory(group.getCameraAccessory());
+                    groupForm.setCameraViewingDepth(group.getCameraViewingDepth());
                     form.deviceGroups.add(groupForm);
                 }
             }
@@ -885,6 +889,12 @@ public class ObjectController {
                 group.setConnectionPoint(trim(form.getConnectionPoint()));
                 group.setDistanceToConnectionPoint(form.getDistanceToConnectionPoint());
                 group.setGroupLabel(trim(form.getGroupLabel()));
+                if (StringUtils.hasText(form.getCameraAccessory())) {
+                    group.setCameraAccessory(form.getCameraAccessory().trim());
+                } else {
+                    group.setCameraAccessory(null);
+                }
+                group.setCameraViewingDepth(form.getCameraViewingDepth());
                 snapshotGroups.add(group);
             }
             snapshot.setDeviceGroups(snapshotGroups);
@@ -1017,6 +1027,8 @@ public class ObjectController {
             private String connectionPoint;
             private Double distanceToConnectionPoint;
             private String groupLabel;
+            private String cameraAccessory;
+            private Double cameraViewingDepth;
 
             public boolean isEmpty() {
                 return (deviceTypeId == null)
@@ -1025,7 +1037,9 @@ public class ObjectController {
                         && !StringUtils.hasText(installSurfaceCategory)
                         && !StringUtils.hasText(connectionPoint)
                         && distanceToConnectionPoint == null
-                        && !StringUtils.hasText(groupLabel);
+                        && !StringUtils.hasText(groupLabel)
+                        && !StringUtils.hasText(cameraAccessory)
+                        && cameraViewingDepth == null;
             }
 
             public UUID getDeviceTypeId() {
@@ -1082,6 +1096,22 @@ public class ObjectController {
 
             public void setGroupLabel(String groupLabel) {
                 this.groupLabel = groupLabel;
+            }
+
+            public String getCameraAccessory() {
+                return cameraAccessory;
+            }
+
+            public void setCameraAccessory(String cameraAccessory) {
+                this.cameraAccessory = cameraAccessory;
+            }
+
+            public Double getCameraViewingDepth() {
+                return cameraViewingDepth;
+            }
+
+            public void setCameraViewingDepth(Double cameraViewingDepth) {
+                this.cameraViewingDepth = cameraViewingDepth;
             }
         }
 

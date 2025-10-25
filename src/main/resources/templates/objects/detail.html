@@ -90,6 +90,34 @@
                             </table>
                         </div>
                         <div>
+                            <h4>Камеры</h4>
+                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.cameraDetails)}">Камеры не указаны.</p>
+                            <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.cameraDetails)}">
+                                <thead>
+                                <tr>
+                                    <th>Тип</th>
+                                    <th>Количество</th>
+                                    <th>Место установки</th>
+                                    <th>Точка подключения</th>
+                                    <th>Поверхность</th>
+                                    <th>Комплектация</th>
+                                    <th>Глубина просмотра</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="camera : ${primarySummary.cameraDetails}">
+                                    <td th:text="${camera.deviceTypeName}"></td>
+                                    <td th:text="${camera.quantity}"></td>
+                                    <td th:text="${camera.installLocation != null ? camera.installLocation : '—'}"></td>
+                                    <td th:text="${camera.connectionPoint != null ? camera.connectionPoint : '—'}"></td>
+                                    <td th:text="${camera.surfaceLabel != null ? camera.surfaceLabel : 'Не указано'}"></td>
+                                    <td th:text="${camera.accessoryLabel != null ? camera.accessoryLabel : 'Не указано'}"></td>
+                                    <td th:text="${camera.viewingDepth != null ? #numbers.formatDecimal(camera.viewingDepth, 1, 2) + ' м' : '—'}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
                             <h4>Кабельные линии</h4>
                             <p class="muted" th:if="${#lists.isEmpty(primarySummary.cableLengthSummaries)}">Кабели не указаны.</p>
                             <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.cableLengthSummaries)}">

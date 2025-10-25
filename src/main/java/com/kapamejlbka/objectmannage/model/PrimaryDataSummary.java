@@ -13,6 +13,7 @@ public class PrimaryDataSummary {
     private final List<CableLengthSummary> cableLengthSummaries;
     private final List<CableFunctionSummary> cableFunctionSummaries;
     private final List<NodeSummary> nodeSummaries;
+    private final List<CameraDetail> cameraDetails;
     private final List<AdditionalMaterialItem> additionalMaterials;
     private final int totalDeviceCount;
     private final int totalNodes;
@@ -29,6 +30,7 @@ public class PrimaryDataSummary {
         this.cableLengthSummaries = Collections.unmodifiableList(new ArrayList<>(builder.cableLengthSummaries));
         this.cableFunctionSummaries = Collections.unmodifiableList(new ArrayList<>(builder.cableFunctionSummaries));
         this.nodeSummaries = Collections.unmodifiableList(new ArrayList<>(builder.nodeSummaries));
+        this.cameraDetails = Collections.unmodifiableList(new ArrayList<>(builder.cameraDetails));
         this.additionalMaterials = Collections.unmodifiableList(new ArrayList<>(builder.additionalMaterials));
         this.totalDeviceCount = builder.totalDeviceCount;
         this.totalNodes = builder.totalNodes;
@@ -81,6 +83,10 @@ public class PrimaryDataSummary {
         return nodeSummaries;
     }
 
+    public List<CameraDetail> getCameraDetails() {
+        return cameraDetails;
+    }
+
     public List<AdditionalMaterialItem> getAdditionalMaterials() {
         return additionalMaterials;
     }
@@ -117,6 +123,7 @@ public class PrimaryDataSummary {
         private final List<CableLengthSummary> cableLengthSummaries = new ArrayList<>();
         private final List<CableFunctionSummary> cableFunctionSummaries = new ArrayList<>();
         private final List<NodeSummary> nodeSummaries = new ArrayList<>();
+        private final List<CameraDetail> cameraDetails = new ArrayList<>();
         private final List<AdditionalMaterialItem> additionalMaterials = new ArrayList<>();
         private int totalDeviceCount;
         private int totalNodes;
@@ -168,6 +175,13 @@ public class PrimaryDataSummary {
             return this;
         }
 
+        public Builder addCameraDetail(CameraDetail detail) {
+            if (detail != null) {
+                this.cameraDetails.add(detail);
+            }
+            return this;
+        }
+
         public Builder withTotalDeviceCount(int totalDeviceCount) {
             this.totalDeviceCount = totalDeviceCount;
             return this;
@@ -211,6 +225,7 @@ public class PrimaryDataSummary {
                 this.cableLengthSummaries.clear();
                 this.cableFunctionSummaries.clear();
                 this.nodeSummaries.clear();
+                this.cameraDetails.clear();
                 this.additionalMaterials.clear();
                 this.totalDeviceCount = 0;
                 this.totalNodes = 0;
@@ -348,6 +363,60 @@ public class PrimaryDataSummary {
 
         public String getLayingMethod() {
             return layingMethod;
+        }
+    }
+
+    public static class CameraDetail {
+        private final String deviceTypeName;
+        private final int quantity;
+        private final String installLocation;
+        private final String connectionPoint;
+        private final String surfaceLabel;
+        private final String accessoryLabel;
+        private final Double viewingDepth;
+
+        public CameraDetail(String deviceTypeName,
+                            int quantity,
+                            String installLocation,
+                            String connectionPoint,
+                            String surfaceLabel,
+                            String accessoryLabel,
+                            Double viewingDepth) {
+            this.deviceTypeName = deviceTypeName;
+            this.quantity = quantity;
+            this.installLocation = installLocation;
+            this.connectionPoint = connectionPoint;
+            this.surfaceLabel = surfaceLabel;
+            this.accessoryLabel = accessoryLabel;
+            this.viewingDepth = viewingDepth;
+        }
+
+        public String getDeviceTypeName() {
+            return deviceTypeName;
+        }
+
+        public int getQuantity() {
+            return quantity;
+        }
+
+        public String getInstallLocation() {
+            return installLocation;
+        }
+
+        public String getConnectionPoint() {
+            return connectionPoint;
+        }
+
+        public String getSurfaceLabel() {
+            return surfaceLabel;
+        }
+
+        public String getAccessoryLabel() {
+            return accessoryLabel;
+        }
+
+        public Double getViewingDepth() {
+            return viewingDepth;
         }
     }
 

@@ -61,6 +61,8 @@ public class PrimaryDataSnapshot {
         private Double distanceToConnectionPoint;
         private String groupLabel;
         private String installSurfaceCategory;
+        private String cameraAccessory;
+        private Double cameraViewingDepth;
 
         public UUID getDeviceTypeId() {
             return deviceTypeId;
@@ -124,6 +126,22 @@ public class PrimaryDataSnapshot {
 
         public void setInstallSurfaceCategory(String installSurfaceCategory) {
             this.installSurfaceCategory = installSurfaceCategory;
+        }
+
+        public String getCameraAccessory() {
+            return cameraAccessory;
+        }
+
+        public void setCameraAccessory(String cameraAccessory) {
+            this.cameraAccessory = cameraAccessory;
+        }
+
+        public Double getCameraViewingDepth() {
+            return cameraViewingDepth;
+        }
+
+        public void setCameraViewingDepth(Double cameraViewingDepth) {
+            this.cameraViewingDepth = cameraViewingDepth;
         }
     }
 
