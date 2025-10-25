@@ -93,6 +93,7 @@ public class PrimaryDataSummaryService {
         int adapterCameras = 0;
         int plasticBoxCameras = 0;
         int boxNodes = 0;
+        double structureLengthWithoutMaterial = 0.0;
 
         if (snapshot.getDeviceGroups() != null) {
             for (PrimaryDataSnapshot.DeviceGroup group : snapshot.getDeviceGroups()) {
@@ -215,6 +216,13 @@ public class PrimaryDataSummaryService {
                     addCableLength(cableLengthMap, powerCableName != null ? powerCableName : UNKNOWN_CABLE_TYPE,
                             powerLength, missingClassification, function, functionTotals);
                     totalCableLength += powerLength;
+                    boolean hasMaterial = point.getLayingMaterialId() != null
+                            || StringUtils.hasText(point.getLayingMaterialName());
+                    SurfaceType surfaceType = SurfaceType.resolve(point.getLayingSurfaceCategory())
+                            .orElseGet(() -> SurfaceType.resolve(point.getLayingSurface()).orElse(null));
+                    if (!hasMaterial && surfaceType == SurfaceType.EXISTING_STRUCTURES) {
+                        structureLengthWithoutMaterial += powerLength;
+                    }
                 }
             }
         }
@@ -265,7 +273,9 @@ public class PrimaryDataSummaryService {
                 adapterCameras,
                 plasticBoxCameras);
         accumulateNodeMaterials(additionalMaterials, boxNodes);
-        accumulateCoefficientMaterials(additionalMaterials, materialLengths, totalCableLength,
+        accumulateCoefficientMaterials(additionalMaterials,
+                materialLengths,
+                structureLengthWithoutMaterial,
                 applicationSettingsService.getMaterialCoefficients());
 
         PrimaryDataSummary.Builder builder = PrimaryDataSummary.builder()
@@ -444,7 +454,7 @@ public class PrimaryDataSummaryService {
 
     private void accumulateCoefficientMaterials(Map<String, MaterialAccumulator> accumulator,
                                                 MaterialLengthStats materialLengths,
-                                                double totalCableLength,
+                                                double structureLengthWithoutMaterial,
                                                 ApplicationSettingsService.MaterialCoefficients coefficients) {
         double clipsPerMeter = Math.max(coefficients.clipsPerMeter(), 0.0);
         double tiesPerMeter = Math.max(coefficients.tiesPerMeter(), 0.0);
@@ -456,13 +466,10 @@ public class PrimaryDataSummaryService {
             }
         }
 
-        double effectiveCableLength = materialLengths.totalMaterialLength();
-        if (effectiveCableLength <= 0 && totalCableLength > 0) {
-            effectiveCableLength = totalCableLength;
-        }
-        if (tiesPerMeter > 0 && effectiveCableLength > 0) {
+        double tiesBaseLength = Math.max(structureLengthWithoutMaterial, 0.0);
+        if (tiesPerMeter > 0 && tiesBaseLength > 0) {
             addMaterial(accumulator, "Нейлоновые стяжки (по кабелю)", "шт",
-                    Math.ceil(effectiveCableLength * tiesPerMeter));
+                    Math.ceil(tiesBaseLength * tiesPerMeter));
         }
     }
 

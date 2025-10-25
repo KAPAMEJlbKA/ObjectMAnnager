@@ -54,7 +54,8 @@
                                     <option th:each="type : ${deviceTypes}"
                                             th:value="${type.id}"
                                             th:text="${type.name}"
-                                            th:attr="data-required-cables=${deviceTypeRequirements[type.id]} != null ? deviceTypeRequirements[type.id] : ''"></option>
+                                            th:attr="data-required-cables=${deviceTypeRequirements[type.id]} != null ? deviceTypeRequirements[type.id] : ''"
+                                            th:data-camera="${cameraDeviceFlags[type.id]} ? 'true' : 'false'"></option>
                                 </select>
                             </div>
                             <div>
@@ -84,10 +85,14 @@
                             </div>
                         </div>
                         <div class="grid camera-settings" data-role="camera-fields"
-                             th:classappend="${group.cameraAccessory} == null and ${group.cameraViewingDepth} == null ? ' is-hidden' : ''">
+                             th:classappend="${!(group.deviceTypeId != null and cameraDeviceFlags[group.deviceTypeId])
+                                                and #strings.isEmpty(group.cameraAccessory)
+                                                and group.cameraViewingDepth == null} ? ' is-hidden' : ''">
                             <div>
                                 <label>Комплектация камеры (адаптер или пластиковая коробка)</label>
-                                <select th:field="*{deviceGroups[__${iter.index}__].cameraAccessory}" data-field="cameraAccessory">
+                                <select th:field="*{deviceGroups[__${iter.index}__].cameraAccessory}"
+                                        data-field="cameraAccessory"
+                                        th:disabled="${!(group.deviceTypeId != null and cameraDeviceFlags[group.deviceTypeId])}">
                                     <option value="">Не выбрана</option>
                                     <option th:each="option : ${cameraOptions}" th:value="${option.code}" th:text="${option.displayName}"></option>
                                 </select>
@@ -97,7 +102,11 @@
                             </div>
                             <div>
                                 <label>Глубина просмотра (м)</label>
-                                <input type="number" min="0" step="0.1" th:field="*{deviceGroups[__${iter.index}__].cameraViewingDepth}" data-field="cameraViewingDepth" placeholder="Например, 40">
+                                <input type="number" min="0" step="0.1"
+                                       th:field="*{deviceGroups[__${iter.index}__].cameraViewingDepth}"
+                                       data-field="cameraViewingDepth"
+                                       th:disabled="${!(group.deviceTypeId != null and cameraDeviceFlags[group.deviceTypeId])}"
+                                       placeholder="Например, 40">
                                 <p class="field-error"
                                    th:if="${#fields.hasErrors('deviceGroups[' + iter.index + '].cameraViewingDepth')}"
                                    th:errors="*{deviceGroups[__${iter.index}__].cameraViewingDepth}"></p>
@@ -145,7 +154,8 @@
                                     <option th:each="type : ${deviceTypes}"
                                             th:value="${type.id}"
                                             th:text="${type.name}"
-                                            th:attr="data-required-cables=${deviceTypeRequirements[type.id]} != null ? deviceTypeRequirements[type.id] : ''"></option>
+                                            th:attr="data-required-cables=${deviceTypeRequirements[type.id]} != null ? deviceTypeRequirements[type.id] : ''"
+                                            th:data-camera="${cameraDeviceFlags[type.id]} ? 'true' : 'false'"></option>
                                 </select>
                             </div>
                             <div>
@@ -391,7 +401,7 @@
                                     <label>Монтажный короб / ящик</label>
                                     <div class="mounting-element-display" th:if="${element.autoAssigned}">
                                         <input type="hidden" th:field="*{mountingElements[__${iter.index}__].elementId}" data-field="elementId">
-                                        <p class="muted" data-role="element-name" th:text="${#strings.hasText(element.elementName) ? element.elementName : 'Не выбран'}">Не выбран</p>
+                                        <p class="muted" data-role="element-name" th:text="${#strings.isEmpty(element.elementName) ? 'Не выбран' : element.elementName}">Не выбран</p>
                                         <p class="muted small">Назначен на шаге точек подключения.</p>
                                     </div>
                                     <select th:unless="${element.autoAssigned}" th:field="*{mountingElements[__${iter.index}__].elementId}" data-field="elementId">
@@ -717,7 +727,13 @@
                 return false;
             }
             const option = select.options[select.selectedIndex];
-            const label = option?.text?.toLowerCase() ?? '';
+            if (!option) {
+                return false;
+            }
+            if (option.dataset && typeof option.dataset.camera !== 'undefined') {
+                return option.dataset.camera === 'true';
+            }
+            const label = option.text?.toLowerCase() ?? '';
             return label.includes('камера');
         }
 
