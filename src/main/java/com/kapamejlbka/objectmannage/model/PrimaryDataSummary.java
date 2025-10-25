@@ -307,7 +307,6 @@ public class PrimaryDataSummary {
         private final String layingMaterialUnit;
         private final String layingSurface;
         private final String layingSurfaceCategory;
-        private final String layingMethod;
 
         public NodeSummary(String name,
                            String mountingElementName,
@@ -316,8 +315,7 @@ public class PrimaryDataSummary {
                            String layingMaterialName,
                            String layingMaterialUnit,
                            String layingSurface,
-                           String layingSurfaceCategory,
-                           String layingMethod) {
+                           String layingSurfaceCategory) {
             this.name = name;
             this.mountingElementName = mountingElementName;
             this.distanceToPower = distanceToPower;
@@ -326,7 +324,6 @@ public class PrimaryDataSummary {
             this.layingMaterialUnit = layingMaterialUnit;
             this.layingSurface = layingSurface;
             this.layingSurfaceCategory = layingSurfaceCategory;
-            this.layingMethod = layingMethod;
         }
 
         public String getName() {
@@ -361,9 +358,6 @@ public class PrimaryDataSummary {
             return layingSurfaceCategory;
         }
 
-        public String getLayingMethod() {
-            return layingMethod;
-        }
     }
 
     public static class CameraDetail {

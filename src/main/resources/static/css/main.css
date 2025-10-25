@@ -693,6 +693,12 @@ button:hover {
     box-shadow: 0 0 0 2px rgba(47, 91, 234, 0.2);
 }
 
+.group-dropzone.is-incompatible {
+    border-color: #fca5a5;
+    background: #fef2f2;
+    opacity: 0.75;
+}
+
 .grouping-columns {
     display: grid;
     gap: 1rem;
