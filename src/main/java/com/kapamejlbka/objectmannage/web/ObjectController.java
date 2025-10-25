@@ -660,7 +660,6 @@ public class ObjectController {
                                                   List<InstallationMaterial> materials) {
             PrimaryDataWizardForm form = new PrimaryDataWizardForm();
             form.mountingElements.clear();
-            form.mountingElements.add(new MountingSelectionForm());
             form.connectionPoints = new ArrayList<>();
             form.connectionPoints.add(new ConnectionPointForm());
             ensureMaterialRows(form.materialGroups);
@@ -719,9 +718,6 @@ public class ObjectController {
                     selection.ensureMaterialRows();
                     form.mountingElements.add(selection);
                 }
-            }
-            if (form.mountingElements.isEmpty()) {
-                form.mountingElements.add(new MountingSelectionForm());
             }
             ensureMountingMaterialRows(form.mountingElements);
 
@@ -882,10 +878,6 @@ public class ObjectController {
                 ordered.add(selection);
             }
 
-            if (ordered.isEmpty()) {
-                ordered.add(new MountingSelectionForm());
-            }
-
             mountingElements.clear();
             mountingElements.addAll(ordered);
         }
@@ -932,9 +924,6 @@ public class ObjectController {
 
         public void setMountingElements(List<MountingSelectionForm> mountingElements) {
             this.mountingElements = mountingElements == null ? new ArrayList<>() : mountingElements;
-            if (this.mountingElements.isEmpty()) {
-                this.mountingElements.add(new MountingSelectionForm());
-            }
             ensureMountingMaterialRows(this.mountingElements);
         }
 
