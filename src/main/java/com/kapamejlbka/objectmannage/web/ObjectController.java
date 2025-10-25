@@ -358,6 +358,7 @@ public class ObjectController {
         model.addAttribute("wizardForm", form);
         model.addAttribute("deviceTypes", deviceTypes);
         model.addAttribute("mountingElements", mountingElements);
+        model.addAttribute("mountingElementOptions", mountingElements);
         model.addAttribute("installationMaterials", materials);
         model.addAttribute("cableTypes", cableTypes);
         model.addAttribute("wizardActiveStep", Math.max(0, Math.min(activeStep, 3)));
@@ -366,7 +367,11 @@ public class ObjectController {
                 .collect(Collectors.toMap(DeviceType::getId,
                         type -> DeviceTypeRules.encodeFunctions(DeviceTypeRules.requiredCables(type.getName()))));
         model.addAttribute("deviceTypeRequirements", deviceTypeRequirements);
-        model.addAttribute("cableFunctionLabels", DeviceTypeRules.getFunctionLabels());
+        Map<CableFunction, String> cableFunctionLabels = DeviceTypeRules.getFunctionLabels();
+        model.addAttribute("cableFunctionLabels", cableFunctionLabels);
+        model.addAttribute("signalCableFunction", CableFunction.SIGNAL);
+        model.addAttribute("lowVoltageCableFunction", CableFunction.LOW_VOLTAGE_POWER);
+        model.addAttribute("powerCableFunction", CableFunction.POWER);
         model.addAttribute("totalConnectionPoints", form.calculateTotalConnectionPoints());
         model.addAttribute("mapProvider", applicationSettingsService.getMapProvider());
         model.addAttribute("surfaceTypes", SurfaceType.values());
@@ -640,7 +645,8 @@ public class ObjectController {
         public static PrimaryDataWizardForm empty(List<MountingElement> mountingElements,
                                                   List<InstallationMaterial> materials) {
             PrimaryDataWizardForm form = new PrimaryDataWizardForm();
-            form.mountingElements = createMountingSelectionForms(Collections.emptyMap(), mountingElements);
+            form.mountingElements.clear();
+            form.mountingElements.add(new MountingSelectionForm());
             form.connectionPoints = new ArrayList<>();
             form.connectionPoints.add(new ConnectionPointForm());
             ensureMaterialRows(form.materialGroups);
@@ -668,22 +674,25 @@ public class ObjectController {
                     groupForm.setCameraViewingDepth(group.getCameraViewingDepth());
                     groupForm.setSignalCableTypeId(group.getSignalCableTypeId());
                     groupForm.setLowVoltageCableTypeId(group.getLowVoltageCableTypeId());
-                    groupForm.setPowerCableTypeId(group.getPowerCableTypeId());
                     form.deviceGroups.add(groupForm);
                 }
             }
             if (form.deviceGroups.isEmpty()) {
                 form.deviceGroups.add(new DeviceGroupForm());
             }
-            Map<UUID, PrimaryDataSnapshot.MountingRequirement> existingMounting = new HashMap<>();
+            form.mountingElements.clear();
             if (snapshot != null && snapshot.getMountingElements() != null) {
                 for (PrimaryDataSnapshot.MountingRequirement requirement : snapshot.getMountingElements()) {
-                    if (requirement.getElementId() != null) {
-                        existingMounting.put(requirement.getElementId(), requirement);
-                    }
+                    MountingSelectionForm selection = new MountingSelectionForm();
+                    selection.setElementId(requirement.getElementId());
+                    selection.setElementName(requirement.getElementName());
+                    selection.setQuantity(requirement.getQuantity());
+                    form.mountingElements.add(selection);
                 }
             }
-            form.mountingElements = createMountingSelectionForms(existingMounting, mountingElements);
+            if (form.mountingElements.isEmpty()) {
+                form.mountingElements.add(new MountingSelectionForm());
+            }
 
             form.connectionPoints.clear();
             if (snapshot != null && snapshot.getConnectionPoints() != null) {
@@ -693,7 +702,6 @@ public class ObjectController {
                     pointForm.setMountingElementId(point.getMountingElementId());
                     pointForm.setDistanceToPower(point.getDistanceToPower());
                     pointForm.setPowerCableTypeId(point.getPowerCableTypeId());
-                    pointForm.setLayingMethod(point.getLayingMethod());
                     pointForm.setLayingMaterialId(point.getLayingMaterialId());
                     pointForm.setLayingSurface(point.getLayingSurface());
                     pointForm.setLayingSurfaceCategory(point.getLayingSurfaceCategory());
@@ -764,23 +772,6 @@ public class ObjectController {
             return form;
         }
 
-        private static List<MountingSelectionForm> createMountingSelectionForms(
-                Map<UUID, PrimaryDataSnapshot.MountingRequirement> existing,
-                List<MountingElement> mountingElements) {
-            List<MountingSelectionForm> forms = new ArrayList<>();
-            for (MountingElement element : mountingElements) {
-                MountingSelectionForm selection = new MountingSelectionForm();
-                selection.setElementId(element.getId());
-                selection.setElementName(element.getName());
-                PrimaryDataSnapshot.MountingRequirement stored = existing.get(element.getId());
-                if (stored != null) {
-                    selection.setQuantity(stored.getQuantity());
-                }
-                forms.add(selection);
-            }
-            return forms;
-        }
-
         private static void ensureMaterialRows(List<MaterialGroupForm> groups) {
             for (MaterialGroupForm group : groups) {
                 if (group.getMaterials().isEmpty()) {
@@ -831,6 +822,9 @@ public class ObjectController {
 
         public void setMountingElements(List<MountingSelectionForm> mountingElements) {
             this.mountingElements = mountingElements == null ? new ArrayList<>() : mountingElements;
+            if (this.mountingElements.isEmpty()) {
+                this.mountingElements.add(new MountingSelectionForm());
+            }
         }
 
         public List<MaterialGroupForm> getMaterialGroups() {
@@ -889,12 +883,6 @@ public class ObjectController {
                                     "deviceGroups.lowVoltageCableTypeId.required",
                                     String.format(Locale.getDefault(),
                                             "Выберите кабель для слаботочного питания для \"%s\"",
-                                            typeName != null ? typeName : "устройства"));
-                        } else if (function == CableFunction.POWER && group.getPowerCableTypeId() == null) {
-                            bindingResult.rejectValue(String.format("deviceGroups[%d].powerCableTypeId", groupIndex),
-                                    "deviceGroups.powerCableTypeId.required",
-                                    String.format(Locale.getDefault(),
-                                            "Выберите силовой кабель для \"%s\"",
                                             typeName != null ? typeName : "устройства"));
                         }
                     }
@@ -1011,13 +999,6 @@ public class ObjectController {
                         group.setLowVoltageCableTypeName(cableType.getName());
                     }
                 }
-                group.setPowerCableTypeId(form.getPowerCableTypeId());
-                if (form.getPowerCableTypeId() != null) {
-                    CableType cableType = cableTypeMap.get(form.getPowerCableTypeId());
-                    if (cableType != null) {
-                        group.setPowerCableTypeName(cableType.getName());
-                    }
-                }
                 snapshotGroups.add(group);
             }
             snapshot.setDeviceGroups(snapshotGroups);
@@ -1062,14 +1043,13 @@ public class ObjectController {
                                     snapshotPoint.setLayingSurface(trim(connectionPoint.getLayingSurface()));
                                     snapshotPoint.setLayingSurfaceCategory(trim(connectionPoint.getLayingSurfaceCategory()));
                                 });
-                snapshotPoint.setLayingMethod(trim(connectionPoint.getLayingMethod()));
                 connectionPointSnapshots.add(snapshotPoint);
             }
             snapshot.setConnectionPoints(connectionPointSnapshots);
 
             List<PrimaryDataSnapshot.MountingRequirement> requirements = new ArrayList<>();
             for (MountingSelectionForm form : this.mountingElements) {
-                if (form == null || !StringUtils.hasText(form.getQuantity())) {
+                if (form == null || form.getElementId() == null || !StringUtils.hasText(form.getQuantity())) {
                     continue;
                 }
                 PrimaryDataSnapshot.MountingRequirement requirement = new PrimaryDataSnapshot.MountingRequirement();
@@ -1154,7 +1134,6 @@ public class ObjectController {
             private Double cameraViewingDepth;
             private UUID signalCableTypeId;
             private UUID lowVoltageCableTypeId;
-            private UUID powerCableTypeId;
 
             public boolean isEmpty() {
                 return (deviceTypeId == null)
@@ -1167,8 +1146,7 @@ public class ObjectController {
                         && !StringUtils.hasText(cameraAccessory)
                         && cameraViewingDepth == null
                         && signalCableTypeId == null
-                        && lowVoltageCableTypeId == null
-                        && powerCableTypeId == null;
+                        && lowVoltageCableTypeId == null;
             }
 
             public UUID getDeviceTypeId() {
@@ -1259,13 +1237,6 @@ public class ObjectController {
                 this.lowVoltageCableTypeId = lowVoltageCableTypeId;
             }
 
-            public UUID getPowerCableTypeId() {
-                return powerCableTypeId;
-            }
-
-            public void setPowerCableTypeId(UUID powerCableTypeId) {
-                this.powerCableTypeId = powerCableTypeId;
-            }
         }
 
         public static class ConnectionPointForm {
@@ -1273,7 +1244,6 @@ public class ObjectController {
             private UUID mountingElementId;
             private Double distanceToPower;
             private UUID powerCableTypeId;
-            private String layingMethod;
             private UUID layingMaterialId;
             private String layingSurface;
             private String layingSurfaceCategory;
@@ -1308,14 +1278,6 @@ public class ObjectController {
 
             public void setPowerCableTypeId(UUID powerCableTypeId) {
                 this.powerCableTypeId = powerCableTypeId;
-            }
-
-            public String getLayingMethod() {
-                return layingMethod;
-            }
-
-            public void setLayingMethod(String layingMethod) {
-                this.layingMethod = layingMethod;
             }
 
             public UUID getLayingMaterialId() {

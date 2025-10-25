@@ -196,13 +196,12 @@ public class PrimaryDataSummaryService {
                 CableTypeData powerCable = resolveCable(point.getPowerCableTypeName(),
                         point.getPowerCableTypeId(), cableTypeData);
                 String powerCableName = powerCable != null ? powerCable.name() : null;
-                String layingMethod = point.getLayingMethod();
                 String layingMaterialName = point.getLayingMaterialName();
                 String layingMaterialUnit = point.getLayingMaterialUnit();
                 String layingSurface = point.getLayingSurface();
                 String layingSurfaceCategory = point.getLayingSurfaceCategory();
                 nodeSummaries.add(new NodeSummary(name, elementName, distanceToPower, powerCableName,
-                        layingMaterialName, layingMaterialUnit, layingSurface, layingSurfaceCategory, layingMethod));
+                        layingMaterialName, layingMaterialUnit, layingSurface, layingSurfaceCategory));
 
                 if (isBoxNode(elementName)) {
                     boxNodes++;
@@ -310,8 +309,6 @@ public class PrimaryDataSummaryService {
         total += addExplicitCable(group.getSignalCableTypeName(), group.getSignalCableTypeId(), segmentLength,
                 cableLengthMap, cableTypeData, functionTotals);
         total += addExplicitCable(group.getLowVoltageCableTypeName(), group.getLowVoltageCableTypeId(), segmentLength,
-                cableLengthMap, cableTypeData, functionTotals);
-        total += addExplicitCable(group.getPowerCableTypeName(), group.getPowerCableTypeId(), segmentLength,
                 cableLengthMap, cableTypeData, functionTotals);
         return total;
     }

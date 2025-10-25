@@ -67,8 +67,6 @@ public class PrimaryDataSnapshot {
         private String signalCableTypeName;
         private UUID lowVoltageCableTypeId;
         private String lowVoltageCableTypeName;
-        private UUID powerCableTypeId;
-        private String powerCableTypeName;
 
         public UUID getDeviceTypeId() {
             return deviceTypeId;
@@ -182,21 +180,6 @@ public class PrimaryDataSnapshot {
             this.lowVoltageCableTypeName = lowVoltageCableTypeName;
         }
 
-        public UUID getPowerCableTypeId() {
-            return powerCableTypeId;
-        }
-
-        public void setPowerCableTypeId(UUID powerCableTypeId) {
-            this.powerCableTypeId = powerCableTypeId;
-        }
-
-        public String getPowerCableTypeName() {
-            return powerCableTypeName;
-        }
-
-        public void setPowerCableTypeName(String powerCableTypeName) {
-            this.powerCableTypeName = powerCableTypeName;
-        }
     }
 
     public static class ConnectionPoint {
@@ -211,7 +194,6 @@ public class PrimaryDataSnapshot {
         private String layingMaterialUnit;
         private String layingSurface;
         private String layingSurfaceCategory;
-        private String layingMethod;
 
         public String getName() {
             return name;
@@ -259,14 +241,6 @@ public class PrimaryDataSnapshot {
 
         public void setPowerCableTypeName(String powerCableTypeName) {
             this.powerCableTypeName = powerCableTypeName;
-        }
-
-        public String getLayingMethod() {
-            return layingMethod;
-        }
-
-        public void setLayingMethod(String layingMethod) {
-            this.layingMethod = layingMethod;
         }
 
         public UUID getLayingMaterialId() {
