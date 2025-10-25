@@ -105,25 +105,25 @@
                         </div>
                         <div class="grid cable-settings" data-role="cable-fields">
                             <div class="cable-field" data-cable-function="SIGNAL">
-                                <label th:attr="data-default-label=${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL]}"
-                                       th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL]}">Сигнальный кабель</label>
+                                <label th:attr="data-default-label=${cableFunctionLabels[signalCableFunction]}"
+                                       th:text="${cableFunctionLabels[signalCableFunction]}">Сигнальный кабель</label>
                                 <select th:field="*{deviceGroups[__${iter.index}__].signalCableTypeId}" data-field="signalCableTypeId">
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL}"
+                                            th:if="${cable.function == signalCableFunction}"
                                             th:value="${cable.id}"
                                             th:text="${cable.name}"></option>
                                 </select>
                                 <p class="field-error"
                                    th:if="${#fields.hasErrors('deviceGroups[' + iter.index + '].signalCableTypeId')}"
-                                   th:errors="*{deviceGroups[__${iter.index}__].signalCableTypeId}"></p>
+                                    th:errors="*{deviceGroups[__${iter.index}__].signalCableTypeId}"></p>
                             </div>
                             <div class="cable-field" data-cable-function="LOW_VOLTAGE_POWER">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER]}">Кабель для слаботочного питания</label>
+                                <label th:text="${cableFunctionLabels[lowVoltageCableFunction]}">Кабель для слаботочного питания</label>
                                 <select th:field="*{deviceGroups[__${iter.index}__].lowVoltageCableTypeId}" data-field="lowVoltageCableTypeId">
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER}"
+                                            th:if="${cable.function == lowVoltageCableFunction}"
                                             th:value="${cable.id}"
                                             th:text="${cable.name}"></option>
                                 </select>
@@ -189,22 +189,22 @@
                         </div>
                         <div class="grid cable-settings is-hidden" data-role="cable-fields">
                             <div class="cable-field" data-cable-function="SIGNAL">
-                                <label th:attr="data-default-label=${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL]}"
-                                       th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL]}">Сигнальный кабель</label>
+                                <label th:attr="data-default-label=${cableFunctionLabels[signalCableFunction]}"
+                                       th:text="${cableFunctionLabels[signalCableFunction]}">Сигнальный кабель</label>
                                 <select data-field="signalCableTypeId">
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL}"
+                                            th:if="${cable.function == signalCableFunction}"
                                             th:value="${cable.id}"
                                             th:text="${cable.name}"></option>
                                 </select>
                             </div>
                             <div class="cable-field" data-cable-function="LOW_VOLTAGE_POWER">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER]}">Кабель для слаботочного питания</label>
+                                <label th:text="${cableFunctionLabels[lowVoltageCableFunction]}">Кабель для слаботочного питания</label>
                                 <select data-field="lowVoltageCableTypeId">
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER}"
+                                            th:if="${cable.function == lowVoltageCableFunction}"
                                             th:value="${cable.id}"
                                             th:text="${cable.name}"></option>
                                 </select>
@@ -247,7 +247,7 @@
                                 <select th:field="*{connectionPoints[__${iter.index}__].powerCableTypeId}" data-field="powerCableTypeId">
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).POWER}"
+                                            th:if="${cable.function == powerCableFunction}"
                                             th:value="${cable.id}"
                                             th:text="${cable.name}"></option>
                                 </select>
@@ -302,7 +302,7 @@
                                 <select data-field="powerCableTypeId">
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).POWER}"
+                                            th:if="${cable.function == powerCableFunction}"
                                             th:value="${cable.id}"
                                             th:text="${cable.name}"></option>
                                 </select>

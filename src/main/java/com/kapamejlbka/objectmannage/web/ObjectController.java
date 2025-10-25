@@ -367,7 +367,11 @@ public class ObjectController {
                 .collect(Collectors.toMap(DeviceType::getId,
                         type -> DeviceTypeRules.encodeFunctions(DeviceTypeRules.requiredCables(type.getName()))));
         model.addAttribute("deviceTypeRequirements", deviceTypeRequirements);
-        model.addAttribute("cableFunctionLabels", DeviceTypeRules.getFunctionLabels());
+        Map<CableFunction, String> cableFunctionLabels = DeviceTypeRules.getFunctionLabels();
+        model.addAttribute("cableFunctionLabels", cableFunctionLabels);
+        model.addAttribute("signalCableFunction", CableFunction.SIGNAL);
+        model.addAttribute("lowVoltageCableFunction", CableFunction.LOW_VOLTAGE_POWER);
+        model.addAttribute("powerCableFunction", CableFunction.POWER);
         model.addAttribute("totalConnectionPoints", form.calculateTotalConnectionPoints());
         model.addAttribute("mapProvider", applicationSettingsService.getMapProvider());
         model.addAttribute("surfaceTypes", SurfaceType.values());
