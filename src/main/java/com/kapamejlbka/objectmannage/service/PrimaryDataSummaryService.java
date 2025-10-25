@@ -6,6 +6,7 @@ import com.kapamejlbka.objectmannage.model.CableFunction;
 import com.kapamejlbka.objectmannage.model.CableType;
 import com.kapamejlbka.objectmannage.model.CameraInstallationOption;
 import com.kapamejlbka.objectmannage.model.DeviceCableProfile;
+import com.kapamejlbka.objectmannage.model.DeviceTypeRules;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.AdditionalMaterialItem;
@@ -104,6 +105,13 @@ public class PrimaryDataSummaryService {
                 deviceTypeCounts.merge(typeName, group.getQuantity(), Integer::sum);
                 totalDevices += Math.max(group.getQuantity(), 0);
 
+                DeviceTypeRules.lookup(typeName).ifPresent(requirements -> {
+                    for (DeviceTypeRules.MaterialRequirement requirement : requirements.materialRequirements()) {
+                        addMaterial(additionalMaterials, requirement.name(), requirement.unit(),
+                                Math.max(group.getQuantity(), 0) * requirement.quantityPerDevice());
+                    }
+                });
+
                 if (isCameraType(group.getDeviceTypeName())) {
                     int cameraCount = Math.max(group.getQuantity(), 0);
                     totalCameras += cameraCount;
@@ -144,25 +152,31 @@ public class PrimaryDataSummaryService {
                 double segmentLength = Math.max(0.0, defaultDouble(group.getDistanceToConnectionPoint()))
                         * Math.max(group.getQuantity(), 0);
 
-                List<DeviceCableProfile> profiles = cableProfiles.get(group.getDeviceTypeId());
-                if (profiles == null || profiles.isEmpty()) {
-                    addCableLength(cableLengthMap, UNKNOWN_CABLE_TYPE, segmentLength, true,
-                            CableFunction.UNKNOWN, functionTotals);
-                    totalCableLength += segmentLength;
-                } else {
-                    for (DeviceCableProfile profile : profiles) {
-                        if (profile == null || profile.getCableType() == null) {
-                            continue;
-                        }
-                        CableType type = profile.getCableType();
-                        String cableName = type.getName();
-                        CableFunction function = type.getFunction();
-                        if (function == null) {
-                            function = CableFunction.SIGNAL;
-                        }
-                        addCableLength(cableLengthMap, cableName, segmentLength, false, function, functionTotals);
+                double explicitLength = accumulateExplicitDeviceCables(group, segmentLength, cableLengthMap,
+                        cableTypeData, functionTotals);
+                if (explicitLength <= 0) {
+                    List<DeviceCableProfile> profiles = cableProfiles.get(group.getDeviceTypeId());
+                    if (profiles == null || profiles.isEmpty()) {
+                        addCableLength(cableLengthMap, UNKNOWN_CABLE_TYPE, segmentLength, true,
+                                CableFunction.UNKNOWN, functionTotals);
                         totalCableLength += segmentLength;
+                    } else {
+                        for (DeviceCableProfile profile : profiles) {
+                            if (profile == null || profile.getCableType() == null) {
+                                continue;
+                            }
+                            CableType type = profile.getCableType();
+                            String cableName = type.getName();
+                            CableFunction function = type.getFunction();
+                            if (function == null) {
+                                function = CableFunction.SIGNAL;
+                            }
+                            addCableLength(cableLengthMap, cableName, segmentLength, false, function, functionTotals);
+                            totalCableLength += segmentLength;
+                        }
                     }
+                } else {
+                    totalCableLength += explicitLength;
                 }
             }
         }
@@ -284,6 +298,42 @@ public class PrimaryDataSummaryService {
         return builder.build();
     }
 
+    private double accumulateExplicitDeviceCables(PrimaryDataSnapshot.DeviceGroup group,
+                                                  double segmentLength,
+                                                  Map<String, CableLengthAccumulator> cableLengthMap,
+                                                  Map<UUID, CableTypeData> cableTypeData,
+                                                  EnumMap<CableFunction, Double> functionTotals) {
+        if (segmentLength <= 0 || group == null) {
+            return 0.0;
+        }
+        double total = 0.0;
+        total += addExplicitCable(group.getSignalCableTypeName(), group.getSignalCableTypeId(), segmentLength,
+                cableLengthMap, cableTypeData, functionTotals);
+        total += addExplicitCable(group.getLowVoltageCableTypeName(), group.getLowVoltageCableTypeId(), segmentLength,
+                cableLengthMap, cableTypeData, functionTotals);
+        total += addExplicitCable(group.getPowerCableTypeName(), group.getPowerCableTypeId(), segmentLength,
+                cableLengthMap, cableTypeData, functionTotals);
+        return total;
+    }
+
+    private double addExplicitCable(String storedName,
+                                    UUID cableTypeId,
+                                    double segmentLength,
+                                    Map<String, CableLengthAccumulator> cableLengthMap,
+                                    Map<UUID, CableTypeData> cableTypeData,
+                                    EnumMap<CableFunction, Double> functionTotals) {
+        if (cableTypeId == null && !StringUtils.hasText(storedName)) {
+            return 0.0;
+        }
+        CableTypeData cable = resolveCable(storedName, cableTypeId, cableTypeData);
+        String name = cable != null ? cable.name() : (StringUtils.hasText(storedName) ? storedName : UNKNOWN_CABLE_TYPE);
+        CableFunction function = cable != null && cable.function() != null ? cable.function() : CableFunction.UNKNOWN;
+        boolean missingClassification = cable == null || cable.function() == null
+                || cable.function() == CableFunction.UNKNOWN;
+        addCableLength(cableLengthMap, name, segmentLength, missingClassification, function, functionTotals);
+        return segmentLength;
+    }
+
     private Map<UUID, List<DeviceCableProfile>> groupProfilesByDeviceType() {
         Map<UUID, List<DeviceCableProfile>> map = new HashMap<>();
         deviceCableProfileRepository.findAll().forEach(profile -> {
@@ -313,6 +363,9 @@ public class PrimaryDataSummaryService {
     private boolean isCameraType(String typeName) {
         if (!StringUtils.hasText(typeName)) {
             return false;
+        }
+        if (DeviceTypeRules.isCamera(typeName)) {
+            return true;
         }
         String normalized = Normalizer.normalize(typeName, Normalizer.Form.NFKD).toLowerCase();
         return normalized.contains("камера");

@@ -85,7 +85,7 @@
                                 <span th:class="${connection.initialized} ? 'badge success' : 'badge danger'"
                                       th:text="${connection.statusMessage}"></span>
                             </td>
-                            <td th:text="${connection.lastVerifiedAt}"></td>
+                            <td th:text="${connection.lastVerifiedAt != null ? #temporals.format(connection.lastVerifiedAt, 'HH:mm dd:MM:yyyy') : '—'}"></td>
                         </tr>
                         </tbody>
                     </table>
@@ -162,7 +162,7 @@
                         <article class="stack-item" th:each="object : ${pendingObjects}">
                             <header>
                                 <h3 th:text="${object.name}"></h3>
-                                <span class="badge warning">Удаление запрошено <span th:text="${object.deletionRequestedAt}"></span></span>
+                            <span class="badge warning">Удаление запрошено <span th:text="${object.deletionRequestedAt != null ? #temporals.format(object.deletionRequestedAt, 'HH:mm dd:MM:yyyy') : '—'}"></span></span>
                             </header>
                             <p>Заказчик: <strong th:text="${object.customer.name}"></strong></p>
                             <p th:text="${object.description}"></p>
@@ -237,7 +237,7 @@
                             <td th:text="${user.username}"></td>
                             <td th:text="${#strings.listJoin(user.roles, ', ')}"></td>
                             <td th:text="${user.enabled ? 'Да' : 'Нет'}"></td>
-                            <td th:text="${user.createdAt}"></td>
+                            <td th:text="${user.createdAt != null ? #temporals.format(user.createdAt, 'HH:mm dd:MM:yyyy') : '—'}"></td>
                         </tr>
                         </tbody>
                     </table>
@@ -248,7 +248,7 @@
                     <h2>Справочники для первичных данных</h2>
                     <div class="grid">
                         <div>
-                            <h3>Типы устройств</h3>
+                            <h3>Типы конечных устройств</h3>
                             <form method="post" action="/admin/device-types" class="inline-form" th:object="${deviceTypeForm}">
                                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                 <input type="text" th:field="*{name}" placeholder="Видеокамера" required>
@@ -314,6 +314,7 @@
                     <div class="grid">
                         <div>
                             <h3>Типы кабелей</h3>
+                            <p class="muted">Категории: сигнальный, кабель для слаботочного питания, силовой.</p>
                             <form method="post" action="/admin/cable-types" class="inline-form" th:object="${cableTypeForm}">
                                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                 <input type="text" th:field="*{name}" placeholder="UTP 5e" required>
@@ -396,12 +397,49 @@
     document.addEventListener('DOMContentLoaded', () => {
         const tabLinks = Array.from(document.querySelectorAll('.tab-link'));
         const panels = Array.from(document.querySelectorAll('.tab-panel'));
+        const STORAGE_TAB_KEY = 'admin-active-tab';
+        const STORAGE_SCROLL_KEY = 'admin-scroll-position';
+        let currentTab = localStorage.getItem(STORAGE_TAB_KEY) || '';
+
+        function activateTab(tab) {
+            if (!tabLinks.length) {
+                return;
+            }
+            let targetTab = tab;
+            let targetLink = tabLinks.find(link => link.dataset.tab === targetTab);
+            if (!targetLink) {
+                targetLink = tabLinks[0];
+                targetTab = targetLink?.dataset.tab || '';
+            }
+            if (!targetLink) {
+                return;
+            }
+            tabLinks.forEach(link => link.classList.toggle('active', link === targetLink));
+            panels.forEach(panel => panel.classList.toggle('active', panel.dataset.tab === targetTab));
+            currentTab = targetTab;
+            if (currentTab) {
+                localStorage.setItem(STORAGE_TAB_KEY, currentTab);
+            }
+        }
+
+        activateTab(currentTab);
+
         tabLinks.forEach(link => {
             link.addEventListener('click', () => {
-                const target = link.dataset.tab;
-                tabLinks.forEach(button => button.classList.toggle('active', button === link));
-                panels.forEach(panel => panel.classList.toggle('active', panel.dataset.tab === target));
+                activateTab(link.dataset.tab || '');
             });
+        });
+
+        const savedScroll = Number.parseInt(localStorage.getItem(STORAGE_SCROLL_KEY) || '', 10);
+        if (!Number.isNaN(savedScroll)) {
+            window.scrollTo({ top: savedScroll });
+        }
+
+        window.addEventListener('beforeunload', () => {
+            localStorage.setItem(STORAGE_SCROLL_KEY, String(window.scrollY));
+            if (currentTab) {
+                localStorage.setItem(STORAGE_TAB_KEY, currentTab);
+            }
         });
     });
 </script>

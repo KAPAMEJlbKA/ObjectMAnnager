@@ -31,7 +31,7 @@
                 <h3><a th:href="@{'/objects/' + ${object.id}}" th:text="${object.name}"></a></h3>
                 <p th:text="${object.description}"></p>
                 <p class="meta">Заказчик: <strong th:text="${object.customer.name}"></strong></p>
-                <span class="meta">Создан: <span th:text="${object.createdAt}"></span></span>
+                <span class="meta">Создан: <span th:text="${object.createdAt != null ? #temporals.format(object.createdAt, 'HH:mm dd:MM:yyyy') : '—'}"></span></span>
             </li>
         </ul>
     </section>

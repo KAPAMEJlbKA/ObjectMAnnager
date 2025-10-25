@@ -2,7 +2,8 @@ package com.kapamejlbka.objectmannage.model;
 
 public enum CableFunction {
     SIGNAL("Сигнальный"),
-    POWER("Питающий"),
+    LOW_VOLTAGE_POWER("Слаботочный (питание)"),
+    POWER("Силовой"),
     UNKNOWN("Не указан");
 
     private final String displayName;

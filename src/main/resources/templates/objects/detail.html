@@ -30,7 +30,7 @@
                 </form>
             </div>
             <div class="badge warning" th:if="${object.deletionRequested}">
-                Запрошено удаление <span th:text="${object.deletionRequestedAt}"></span>
+                Запрошено удаление <span th:text="${object.deletionRequestedAt != null ? #temporals.format(object.deletionRequestedAt, 'HH:mm dd:MM:yyyy') : '—'}"></span>
             </div>
         </div>
         <p class="meta">Заказчик: <strong th:text="${object.customer.name}"></strong></p>
@@ -73,7 +73,7 @@
                         </ul>
                         <div>
                             <h4>Оборудование по типам</h4>
-                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.deviceTypeSummaries)}">Типы устройств не указаны.</p>
+                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.deviceTypeSummaries)}">Типы конечных устройств не указаны.</p>
                             <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.deviceTypeSummaries)}">
                                 <thead>
                                 <tr>
@@ -197,8 +197,8 @@
         <div class="form-row">
             <a class="button secondary" th:href="@{'/objects/' + ${object.id} + '/primary-data/wizard'}">Заполнить первичные данные</a>
         </div>
-        <p class="meta">Создан: <span th:text="${object.createdAt}"></span></p>
-        <p class="meta">Обновлён: <span th:text="${object.updatedAt}"></span></p>
+        <p class="meta">Создан: <span th:text="${object.createdAt != null ? #temporals.format(object.createdAt, 'HH:mm dd:MM:yyyy') : '—'}"></span></p>
+        <p class="meta">Обновлён: <span th:text="${object.updatedAt != null ? #temporals.format(object.updatedAt, 'HH:mm dd:MM:yyyy') : '—'}"></span></p>
     </section>
 
     <section class="card">
@@ -238,7 +238,7 @@
                 <div class="file-details">
                     <p class="file-name" th:text="${file.originalFilename}"></p>
                     <p class="file-meta">Размер: <span th:text="${#numbers.formatDecimal(file.size / 1024.0, 1, 2)} + ' КБ'"></span></p>
-                    <p class="file-meta">Загружен: <span th:text="${file.uploadedAt}"></span></p>
+                    <p class="file-meta">Загружен: <span th:text="${file.uploadedAt != null ? #temporals.format(file.uploadedAt, 'HH:mm dd:MM:yyyy') : '—'}"></span></p>
                     <div class="file-actions">
                         <a href="#"
                            class="button secondary open-preview"
@@ -278,7 +278,7 @@
             </thead>
             <tbody>
             <tr th:each="change : ${history}">
-                <td th:text="${change.changedAt}"></td>
+                <td th:text="${change.changedAt != null ? #temporals.format(change.changedAt, 'HH:mm dd:MM:yyyy') : '—'}"></td>
                 <td th:text="${change.user != null ? change.user.username : 'Система'}"></td>
                 <td th:text="${change.summary}"></td>
             </tr>
