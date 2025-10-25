@@ -54,7 +54,8 @@
                                     <option th:each="type : ${deviceTypes}"
                                             th:value="${type.id}"
                                             th:text="${type.name}"
-                                            th:attr="data-required-cables=${deviceTypeRequirements[type.id]} != null ? deviceTypeRequirements[type.id] : ''"></option>
+                                            th:attr="data-required-cables=${deviceTypeRequirements[type.id]} != null ? deviceTypeRequirements[type.id] : ''"
+                                            th:data-camera="${cameraDeviceFlags[type.id]} ? 'true' : 'false'"></option>
                                 </select>
                             </div>
                             <div>
@@ -153,7 +154,8 @@
                                     <option th:each="type : ${deviceTypes}"
                                             th:value="${type.id}"
                                             th:text="${type.name}"
-                                            th:attr="data-required-cables=${deviceTypeRequirements[type.id]} != null ? deviceTypeRequirements[type.id] : ''"></option>
+                                            th:attr="data-required-cables=${deviceTypeRequirements[type.id]} != null ? deviceTypeRequirements[type.id] : ''"
+                                            th:data-camera="${cameraDeviceFlags[type.id]} ? 'true' : 'false'"></option>
                                 </select>
                             </div>
                             <div>
@@ -725,7 +727,13 @@
                 return false;
             }
             const option = select.options[select.selectedIndex];
-            const label = option?.text?.toLowerCase() ?? '';
+            if (!option) {
+                return false;
+            }
+            if (option.dataset && typeof option.dataset.camera !== 'undefined') {
+                return option.dataset.camera === 'true';
+            }
+            const label = option.text?.toLowerCase() ?? '';
             return label.includes('камера');
         }
 
