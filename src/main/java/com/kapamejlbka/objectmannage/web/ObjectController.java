@@ -365,14 +365,21 @@ public class ObjectController {
         model.addAttribute("wizardForm", form);
         model.addAttribute("deviceTypes", deviceTypes);
         model.addAttribute("mountingElements", mountingElements);
-        model.addAttribute("mountingElementOptions", mountingElements);
+        model.addAttribute("availableMountingElements", mountingElements);
         model.addAttribute("installationMaterials", materials);
         model.addAttribute("cableTypes", cableTypes);
         model.addAttribute("wizardActiveStep", Math.max(0, Math.min(activeStep, 3)));
         Map<UUID, String> deviceTypeRequirements = deviceTypes.stream()
                 .filter(type -> type.getId() != null)
-                .collect(Collectors.toMap(DeviceType::getId,
-                        type -> DeviceTypeRules.encodeFunctions(DeviceTypeRules.requiredCables(type.getName()))));
+                .collect(Collectors.toMap(DeviceType::getId, type -> {
+                    List<DeviceTypeRules.CableRequirement> requirements = DeviceTypeRules.requiredCables(type.getName());
+                    if (requirements.isEmpty()) {
+                        return String.join(",",
+                                CableFunction.SIGNAL.name(),
+                                CableFunction.LOW_VOLTAGE_POWER.name());
+                    }
+                    return DeviceTypeRules.encodeFunctions(requirements);
+                }));
         model.addAttribute("deviceTypeRequirements", deviceTypeRequirements);
         Map<CableFunction, String> cableFunctionLabels = DeviceTypeRules.getFunctionLabels();
         model.addAttribute("cableFunctionLabels", cableFunctionLabels);
@@ -972,7 +979,8 @@ public class ObjectController {
                 final int groupIndex = index;
                 DeviceType type = group.getDeviceTypeId() != null ? typeMap.get(group.getDeviceTypeId()) : null;
                 String typeName = type != null ? type.getName() : null;
-                DeviceTypeRules.lookup(typeName).ifPresent(requirements -> {
+                DeviceTypeRules.DeviceRequirements requirements = DeviceTypeRules.lookup(typeName).orElse(null);
+                if (requirements != null) {
                     for (DeviceTypeRules.CableRequirement requirement : requirements.cableRequirements()) {
                         CableFunction function = requirement.function();
                         if (function == CableFunction.SIGNAL && group.getSignalCableTypeId() == null) {
@@ -1003,7 +1011,22 @@ public class ObjectController {
                                     "Укажите глубину просмотра для камеры");
                         }
                     }
-                });
+                } else {
+                    if (group.getSignalCableTypeId() == null) {
+                        bindingResult.rejectValue(String.format("deviceGroups[%d].signalCableTypeId", groupIndex),
+                                "deviceGroups.signalCableTypeId.required",
+                                String.format(Locale.getDefault(),
+                                        "Выберите сигнальный кабель для \"%s\"",
+                                        typeName != null ? typeName : "устройства"));
+                    }
+                    if (group.getLowVoltageCableTypeId() == null) {
+                        bindingResult.rejectValue(String.format("deviceGroups[%d].lowVoltageCableTypeId", groupIndex),
+                                "deviceGroups.lowVoltageCableTypeId.required",
+                                String.format(Locale.getDefault(),
+                                        "Выберите кабель для слаботочного питания для \"%s\"",
+                                        typeName != null ? typeName : "устройства"));
+                    }
+                }
 
                 String label = trim(group.getGroupLabel());
                 if (!StringUtils.hasText(label)) {

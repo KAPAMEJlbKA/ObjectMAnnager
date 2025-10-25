@@ -816,6 +816,165 @@
             return Array.from(document.querySelectorAll('.mounting-row'));
         }
 
+        function getMountingRowElementId(row) {
+            if (!row) {
+                return '';
+            }
+            const hidden = row.querySelector('input[data-field="elementId"]');
+            if (hidden instanceof HTMLInputElement) {
+                return hidden.value.trim();
+            }
+            const select = row.querySelector('select[data-field="elementId"]');
+            if (select instanceof HTMLSelectElement) {
+                return select.value.trim();
+            }
+            return '';
+        }
+
+        function updateAutoMountingRow(row, elementId, elementName) {
+            if (!row) {
+                return;
+            }
+            row.classList.add('is-locked');
+            row.dataset.autoElementId = elementId;
+            const idInput = row.querySelector('input[data-field="elementId"]');
+            if (idInput instanceof HTMLInputElement) {
+                idInput.value = elementId;
+            }
+            const nameInput = row.querySelector('input[data-field="elementName"]');
+            if (nameInput instanceof HTMLInputElement) {
+                nameInput.value = elementName || '';
+            }
+            const displayName = row.querySelector('[data-role="element-name"]');
+            if (displayName) {
+                displayName.textContent = elementName || 'Не выбран';
+            }
+        }
+
+        function createAutoMountingRow(elementId, elementName) {
+            const row = document.createElement('div');
+            row.classList.add('mounting-row', 'is-locked');
+
+            const elementNameInput = document.createElement('input');
+            elementNameInput.type = 'hidden';
+            elementNameInput.setAttribute('data-field', 'elementName');
+            row.appendChild(elementNameInput);
+
+            const header = document.createElement('div');
+            header.classList.add('grid', 'mounting-row-header');
+            row.appendChild(header);
+
+            const elementColumn = document.createElement('div');
+            header.appendChild(elementColumn);
+            const label = document.createElement('label');
+            label.textContent = 'Монтажный короб / ящик';
+            elementColumn.appendChild(label);
+
+            const display = document.createElement('div');
+            display.classList.add('mounting-element-display');
+            elementColumn.appendChild(display);
+
+            const elementIdInput = document.createElement('input');
+            elementIdInput.type = 'hidden';
+            elementIdInput.setAttribute('data-field', 'elementId');
+            display.appendChild(elementIdInput);
+
+            const nameParagraph = document.createElement('p');
+            nameParagraph.classList.add('muted');
+            nameParagraph.setAttribute('data-role', 'element-name');
+            display.appendChild(nameParagraph);
+
+            const noteParagraph = document.createElement('p');
+            noteParagraph.classList.add('muted', 'small');
+            noteParagraph.textContent = 'Назначен на шаге точек подключения.';
+            display.appendChild(noteParagraph);
+
+            const quantityColumn = document.createElement('div');
+            header.appendChild(quantityColumn);
+            const quantityLabel = document.createElement('label');
+            quantityLabel.textContent = 'Количество / примечание';
+            quantityColumn.appendChild(quantityLabel);
+            const quantityInput = document.createElement('input');
+            quantityInput.type = 'text';
+            quantityInput.placeholder = '2 шт, 1 комплект...';
+            quantityInput.setAttribute('data-field', 'quantity');
+            quantityColumn.appendChild(quantityInput);
+
+            const materialsContainer = document.createElement('div');
+            materialsContainer.classList.add('stack', 'mounting-materials');
+            materialsContainer.setAttribute('data-role', 'materials');
+            row.appendChild(materialsContainer);
+
+            if (mountingMaterialTemplate instanceof HTMLTemplateElement) {
+                const materialClone = mountingMaterialTemplate.content.firstElementChild.cloneNode(true);
+                materialsContainer.appendChild(materialClone);
+            } else {
+                const materialRow = document.createElement('div');
+                materialRow.classList.add('mounting-material-row');
+                materialsContainer.appendChild(materialRow);
+            }
+
+            const addMaterialButton = document.createElement('button');
+            addMaterialButton.type = 'button';
+            addMaterialButton.classList.add('button', 'tertiary');
+            addMaterialButton.dataset.action = 'add-mounting-material';
+            addMaterialButton.textContent = 'Добавить материал';
+            row.appendChild(addMaterialButton);
+
+            updateAutoMountingRow(row, elementId, elementName);
+            return row;
+        }
+
+        function syncAutoMountingRows() {
+            if (!mountingList) {
+                return;
+            }
+            const assignments = new Map();
+            const connectionRows = Array.from(connectionContainer?.querySelectorAll('.connection-point') ?? []);
+            connectionRows.forEach(row => {
+                const select = row.querySelector('select[data-field="mountingElementId"]');
+                if (!(select instanceof HTMLSelectElement)) {
+                    return;
+                }
+                const value = select.value.trim();
+                if (!value) {
+                    return;
+                }
+                if (!assignments.has(value)) {
+                    const option = select.options[select.selectedIndex];
+                    const name = option?.text?.trim() || '';
+                    assignments.set(value, name);
+                }
+            });
+
+            const rows = Array.from(mountingList.querySelectorAll('.mounting-row'));
+            const manualRows = [];
+            rows.forEach(row => {
+                const elementId = getMountingRowElementId(row);
+                if (row.classList.contains('is-locked')) {
+                    if (!assignments.has(elementId)) {
+                        row.remove();
+                    } else {
+                        updateAutoMountingRow(row, elementId, assignments.get(elementId) || '');
+                        assignments.delete(elementId);
+                    }
+                } else {
+                    manualRows.push(row);
+                }
+            });
+
+            assignments.forEach((name, id) => {
+                const newRow = createAutoMountingRow(id, name);
+                if (manualRows.length > 0) {
+                    mountingList.insertBefore(newRow, manualRows[0]);
+                } else {
+                    mountingList.appendChild(newRow);
+                }
+            });
+
+            reindexMountingRows();
+        }
+
         function reindexMountingRows() {
             const rows = getMountingRows();
             rows.forEach((row, index) => {
@@ -1451,6 +1610,7 @@
             });
             reindexConnectionPoints();
             updateConnectionPointUsage(usageMap);
+            syncAutoMountingRows();
         }
 
         function updateConnectionPointUsage(usageMap) {
@@ -1745,6 +1905,16 @@
             validateMaterialCapacity();
         });
 
+        connectionContainer?.addEventListener('change', event => {
+            const target = event.target;
+            if (!(target instanceof HTMLSelectElement)) {
+                return;
+            }
+            if (target.getAttribute('data-field') === 'mountingElementId') {
+                syncAutoMountingRows();
+            }
+        });
+
         addGroupButton?.addEventListener('click', () => {
             const labels = collectGroupLabels();
             let counter = labels.length + 1;
@@ -1979,6 +2149,7 @@
 
         reindexMountingRows();
         reindexDeviceGroups();
+        syncAutoMountingRows();
         showStep(initialStep);
     });
 </script>
