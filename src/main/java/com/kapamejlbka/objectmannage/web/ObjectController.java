@@ -390,6 +390,12 @@ public class ObjectController {
         model.addAttribute("mapProvider", applicationSettingsService.getMapProvider());
         model.addAttribute("surfaceTypes", SurfaceType.values());
         model.addAttribute("cameraOptions", CameraInstallationOption.values());
+        Map<UUID, Boolean> cameraDeviceFlags = deviceTypes.stream()
+                .filter(type -> type.getId() != null)
+                .collect(Collectors.toMap(DeviceType::getId,
+                        type -> type.getName() != null
+                                && type.getName().toLowerCase(Locale.ROOT).contains("камера")));
+        model.addAttribute("cameraDeviceFlags", cameraDeviceFlags);
     }
 
     private int determineWizardErrorStep(BindingResult bindingResult) {

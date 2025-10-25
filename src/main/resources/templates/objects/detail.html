@@ -193,7 +193,11 @@
             </div>
         </section>
         <div class="form-row">
-            <a class="button secondary" th:href="@{'/objects/' + ${object.id} + '/primary-data/wizard'}">Заполнить первичные данные</a>
+            <a class="button secondary"
+               th:href="@{'/objects/' + ${object.id} + '/primary-data/wizard'}"
+               th:text="${primarySummary != null and primarySummary.hasData} ? 'Редактировать данные' : 'Заполнить первичные данные'">
+                Заполнить первичные данные
+            </a>
         </div>
         <p class="meta">Создан: <span th:text="${object.createdAt != null ? #temporals.format(object.createdAt, 'HH:mm dd:MM:yyyy') : '—'}"></span></p>
         <p class="meta">Обновлён: <span th:text="${object.updatedAt != null ? #temporals.format(object.updatedAt, 'HH:mm dd:MM:yyyy') : '—'}"></span></p>
