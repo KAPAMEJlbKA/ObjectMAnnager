@@ -58,6 +58,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.ObjectError;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -300,7 +302,7 @@ public class ObjectController {
                                   Model model) {
         ManagedObject managedObject = managedObjectService.getById(id);
         if (bindingResult.hasErrors()) {
-            prepareWizardModel(model, managedObject, form);
+            prepareWizardModel(model, managedObject, form, determineWizardErrorStep(bindingResult));
             return "objects/primary-wizard";
         }
         List<DeviceType> deviceTypes = deviceTypeRepository.findAll();
@@ -309,7 +311,7 @@ public class ObjectController {
         List<CableType> cableTypes = cableTypeRepository.findAll();
         form.validate(bindingResult, deviceTypes);
         if (bindingResult.hasErrors()) {
-            prepareWizardModel(model, managedObject, form);
+            prepareWizardModel(model, managedObject, form, determineWizardErrorStep(bindingResult));
             return "objects/primary-wizard";
         }
         PrimaryDataSnapshot snapshot = form.toSnapshot(deviceTypes, mountingElements, materials, cableTypes);
@@ -318,7 +320,7 @@ public class ObjectController {
             json = objectMapper.writeValueAsString(snapshot);
         } catch (JsonProcessingException e) {
             bindingResult.reject("primaryData", "Не удалось сохранить первичные данные: " + e.getMessage());
-            prepareWizardModel(model, managedObject, form);
+            prepareWizardModel(model, managedObject, form, determineWizardErrorStep(bindingResult));
             return "objects/primary-wizard";
         }
         UserAccount editor = userService.findByUsername(principal.getName());
@@ -341,6 +343,13 @@ public class ObjectController {
     }
 
     private void prepareWizardModel(Model model, ManagedObject managedObject, PrimaryDataWizardForm form) {
+        prepareWizardModel(model, managedObject, form, 0);
+    }
+
+    private void prepareWizardModel(Model model,
+                                    ManagedObject managedObject,
+                                    PrimaryDataWizardForm form,
+                                    int activeStep) {
         List<DeviceType> deviceTypes = deviceTypeRepository.findAll();
         List<MountingElement> mountingElements = mountingElementRepository.findAll();
         List<InstallationMaterial> materials = installationMaterialRepository.findAll();
@@ -351,6 +360,7 @@ public class ObjectController {
         model.addAttribute("mountingElements", mountingElements);
         model.addAttribute("installationMaterials", materials);
         model.addAttribute("cableTypes", cableTypes);
+        model.addAttribute("wizardActiveStep", Math.max(0, Math.min(activeStep, 3)));
         Map<UUID, String> deviceTypeRequirements = deviceTypes.stream()
                 .filter(type -> type.getId() != null)
                 .collect(Collectors.toMap(DeviceType::getId,
@@ -361,6 +371,39 @@ public class ObjectController {
         model.addAttribute("mapProvider", applicationSettingsService.getMapProvider());
         model.addAttribute("surfaceTypes", SurfaceType.values());
         model.addAttribute("cameraOptions", CameraInstallationOption.values());
+    }
+
+    private int determineWizardErrorStep(BindingResult bindingResult) {
+        if (bindingResult == null) {
+            return 0;
+        }
+        int step = 0;
+        for (FieldError error : bindingResult.getFieldErrors()) {
+            String field = error.getField();
+            if (field == null) {
+                continue;
+            }
+            if (field.startsWith("materialGroups") || field.startsWith("mountingElements")) {
+                step = Math.max(step, 3);
+            } else if (field.startsWith("connectionPoints")) {
+                step = Math.max(step, 1);
+            } else if (field.startsWith("deviceGroups")) {
+                if (field.contains("groupLabel")) {
+                    step = Math.max(step, 2);
+                } else {
+                    step = Math.max(step, 0);
+                }
+            }
+        }
+        if (step < 3) {
+            for (ObjectError error : bindingResult.getGlobalErrors()) {
+                String code = error.getCode();
+                if (code != null && code.startsWith("materialGroups")) {
+                    step = Math.max(step, 3);
+                }
+            }
+        }
+        return step;
     }
 
     private PrimaryDataSnapshot parseSnapshot(String primaryData) {
