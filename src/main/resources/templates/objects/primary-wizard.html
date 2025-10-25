@@ -771,7 +771,14 @@
             }
             const option = select.options[select.selectedIndex];
             const datasetValue = option?.dataset?.requiredCables || '';
-            return datasetValue.split(',').map(item => item.trim()).filter(Boolean);
+            const functions = datasetValue
+                .split(',')
+                .map(item => item.trim().toUpperCase())
+                .filter(Boolean);
+            if (select.value && !functions.includes('SIGNAL')) {
+                functions.push('SIGNAL');
+            }
+            return functions;
         }
 
         function updateCableFieldsForGroup(group) {
@@ -786,12 +793,13 @@
             }
             const fields = Array.from(container.querySelectorAll('.cable-field'));
             fields.forEach(field => {
-                const functionName = field.dataset.cableFunction || '';
+                const functionName = (field.dataset.cableFunction || '').toUpperCase();
                 const required = requiredFunctions.includes(functionName);
                 field.classList.toggle('is-hidden', !required);
                 const select = field.querySelector('select');
                 if (select) {
                     select.disabled = !required;
+                    select.required = required;
                     if (!required) {
                         select.value = '';
                     }

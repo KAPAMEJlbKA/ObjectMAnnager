@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 public final class DeviceTypeRules {
 
     private static final Map<String, DeviceRequirements> RULES = new ConcurrentHashMap<>();
+    private static final List<String> REGISTERED_ALIASES = new ArrayList<>();
     private static final Map<CableFunction, String> FUNCTION_LABELS = new EnumMap<>(CableFunction.class);
 
     static {
@@ -44,7 +45,7 @@ public final class DeviceTypeRules {
                         .addMaterial(new MaterialRequirement("Сетевая розетка", "шт", 1))
                         .build());
 
-        register(List.of("контроллер считыватель", "контроллер считывателя", "контроллер доступа"),
+        register(List.of("контроллер", "контроллер считыватель", "контроллер считывателя", "контроллер доступа"),
                 DeviceRequirements.builder()
                         .addCableRequirement(new CableRequirement(CableFunction.SIGNAL, FUNCTION_LABELS.get(CableFunction.SIGNAL)))
                         .addCableRequirement(new CableRequirement(CableFunction.LOW_VOLTAGE_POWER,
@@ -68,7 +69,11 @@ public final class DeviceTypeRules {
 
     private static void register(List<String> aliases, DeviceRequirements requirements) {
         for (String alias : aliases) {
-            RULES.put(normalize(alias), requirements);
+            String normalizedAlias = normalize(alias);
+            RULES.put(normalizedAlias, requirements);
+            if (!normalizedAlias.isEmpty() && !REGISTERED_ALIASES.contains(normalizedAlias)) {
+                REGISTERED_ALIASES.add(normalizedAlias);
+            }
         }
     }
 
@@ -89,8 +94,22 @@ public final class DeviceTypeRules {
             return Optional.empty();
         }
         String normalized = normalize(deviceTypeName);
+        if (normalized.isEmpty()) {
+            return Optional.empty();
+        }
         if (RULES.containsKey(normalized)) {
-            return Optional.of(RULES.get(normalized));
+            return Optional.ofNullable(RULES.get(normalized));
+        }
+        for (String alias : REGISTERED_ALIASES) {
+            if (alias.isEmpty()) {
+                continue;
+            }
+            if (normalized.contains(alias) || alias.contains(normalized)) {
+                DeviceRequirements requirements = RULES.get(alias);
+                if (requirements != null) {
+                    return Optional.of(requirements);
+                }
+            }
         }
         return Optional.empty();
     }
