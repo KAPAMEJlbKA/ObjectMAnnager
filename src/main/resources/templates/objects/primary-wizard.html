@@ -84,10 +84,14 @@
                             </div>
                         </div>
                         <div class="grid camera-settings" data-role="camera-fields"
-                             th:classappend="${group.cameraAccessory} == null and ${group.cameraViewingDepth} == null ? ' is-hidden' : ''">
+                             th:classappend="${!(group.deviceTypeId != null and cameraDeviceFlags[group.deviceTypeId])
+                                                and !#strings.hasText(group.cameraAccessory)
+                                                and group.cameraViewingDepth == null} ? ' is-hidden' : ''">
                             <div>
                                 <label>Комплектация камеры (адаптер или пластиковая коробка)</label>
-                                <select th:field="*{deviceGroups[__${iter.index}__].cameraAccessory}" data-field="cameraAccessory">
+                                <select th:field="*{deviceGroups[__${iter.index}__].cameraAccessory}"
+                                        data-field="cameraAccessory"
+                                        th:disabled="${!(group.deviceTypeId != null and cameraDeviceFlags[group.deviceTypeId])}">
                                     <option value="">Не выбрана</option>
                                     <option th:each="option : ${cameraOptions}" th:value="${option.code}" th:text="${option.displayName}"></option>
                                 </select>
@@ -97,7 +101,11 @@
                             </div>
                             <div>
                                 <label>Глубина просмотра (м)</label>
-                                <input type="number" min="0" step="0.1" th:field="*{deviceGroups[__${iter.index}__].cameraViewingDepth}" data-field="cameraViewingDepth" placeholder="Например, 40">
+                                <input type="number" min="0" step="0.1"
+                                       th:field="*{deviceGroups[__${iter.index}__].cameraViewingDepth}"
+                                       data-field="cameraViewingDepth"
+                                       th:disabled="${!(group.deviceTypeId != null and cameraDeviceFlags[group.deviceTypeId])}"
+                                       placeholder="Например, 40">
                                 <p class="field-error"
                                    th:if="${#fields.hasErrors('deviceGroups[' + iter.index + '].cameraViewingDepth')}"
                                    th:errors="*{deviceGroups[__${iter.index}__].cameraViewingDepth}"></p>
