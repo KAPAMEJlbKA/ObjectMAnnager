@@ -315,7 +315,7 @@ public class ObjectController {
         PrimaryDataSnapshot snapshot = form.toSnapshot(deviceTypes, mountingElements, materials, cableTypes);
         String json;
         try {
-            json = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(snapshot);
+            json = objectMapper.writeValueAsString(snapshot);
         } catch (JsonProcessingException e) {
             bindingResult.reject("primaryData", "Не удалось сохранить первичные данные: " + e.getMessage());
             prepareWizardModel(model, managedObject, form);
