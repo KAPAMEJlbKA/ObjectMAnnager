@@ -63,6 +63,12 @@ public class PrimaryDataSnapshot {
         private String installSurfaceCategory;
         private String cameraAccessory;
         private Double cameraViewingDepth;
+        private UUID signalCableTypeId;
+        private String signalCableTypeName;
+        private UUID lowVoltageCableTypeId;
+        private String lowVoltageCableTypeName;
+        private UUID powerCableTypeId;
+        private String powerCableTypeName;
 
         public UUID getDeviceTypeId() {
             return deviceTypeId;
@@ -142,6 +148,54 @@ public class PrimaryDataSnapshot {
 
         public void setCameraViewingDepth(Double cameraViewingDepth) {
             this.cameraViewingDepth = cameraViewingDepth;
+        }
+
+        public UUID getSignalCableTypeId() {
+            return signalCableTypeId;
+        }
+
+        public void setSignalCableTypeId(UUID signalCableTypeId) {
+            this.signalCableTypeId = signalCableTypeId;
+        }
+
+        public String getSignalCableTypeName() {
+            return signalCableTypeName;
+        }
+
+        public void setSignalCableTypeName(String signalCableTypeName) {
+            this.signalCableTypeName = signalCableTypeName;
+        }
+
+        public UUID getLowVoltageCableTypeId() {
+            return lowVoltageCableTypeId;
+        }
+
+        public void setLowVoltageCableTypeId(UUID lowVoltageCableTypeId) {
+            this.lowVoltageCableTypeId = lowVoltageCableTypeId;
+        }
+
+        public String getLowVoltageCableTypeName() {
+            return lowVoltageCableTypeName;
+        }
+
+        public void setLowVoltageCableTypeName(String lowVoltageCableTypeName) {
+            this.lowVoltageCableTypeName = lowVoltageCableTypeName;
+        }
+
+        public UUID getPowerCableTypeId() {
+            return powerCableTypeId;
+        }
+
+        public void setPowerCableTypeId(UUID powerCableTypeId) {
+            this.powerCableTypeId = powerCableTypeId;
+        }
+
+        public String getPowerCableTypeName() {
+            return powerCableTypeName;
+        }
+
+        public void setPowerCableTypeName(String powerCableTypeName) {
+            this.powerCableTypeName = powerCableTypeName;
         }
     }
 
