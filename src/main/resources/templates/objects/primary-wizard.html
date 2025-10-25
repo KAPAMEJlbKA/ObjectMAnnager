@@ -51,7 +51,10 @@
                                 <label>Тип устройства</label>
                                 <select th:field="*{deviceGroups[__${iter.index}__].deviceTypeId}" data-field="deviceTypeId">
                                     <option value="">Не выбрано</option>
-                                    <option th:each="type : ${deviceTypes}" th:value="${type.id}" th:text="${type.name}"></option>
+                                    <option th:each="type : ${deviceTypes}"
+                                            th:value="${type.id}"
+                                            th:text="${type.name}"
+                                            th:attr="data-required-cables=${deviceTypeRequirements[type.id]} != null ? deviceTypeRequirements[type.id] : ''"></option>
                                 </select>
                             </div>
                             <div>
@@ -83,7 +86,7 @@
                         <div class="grid camera-settings" data-role="camera-fields"
                              th:classappend="${group.cameraAccessory} == null and ${group.cameraViewingDepth} == null ? ' is-hidden' : ''">
                             <div>
-                                <label>Комплектация камеры</label>
+                                <label>Комплектация камеры (адаптер или пластиковая коробка)</label>
                                 <select th:field="*{deviceGroups[__${iter.index}__].cameraAccessory}" data-field="cameraAccessory">
                                     <option value="">Не выбрана</option>
                                     <option th:each="option : ${cameraOptions}" th:value="${option.code}" th:text="${option.displayName}"></option>
@@ -92,6 +95,38 @@
                             <div>
                                 <label>Глубина просмотра (м)</label>
                                 <input type="number" min="0" step="0.1" th:field="*{deviceGroups[__${iter.index}__].cameraViewingDepth}" data-field="cameraViewingDepth" placeholder="Например, 40">
+                            </div>
+                        </div>
+                        <div class="grid cable-settings" data-role="cable-fields">
+                            <div class="cable-field" data-cable-function="SIGNAL">
+                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL]}">Сигнальный кабель</label>
+                                <select th:field="*{deviceGroups[__${iter.index}__].signalCableTypeId}" data-field="signalCableTypeId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="cable : ${cableTypes}"
+                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL}"
+                                            th:value="${cable.id}"
+                                            th:text="${cable.name}"></option>
+                                </select>
+                            </div>
+                            <div class="cable-field" data-cable-function="LOW_VOLTAGE_POWER">
+                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER]}">Кабель для слаботочного питания</label>
+                                <select th:field="*{deviceGroups[__${iter.index}__].lowVoltageCableTypeId}" data-field="lowVoltageCableTypeId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="cable : ${cableTypes}"
+                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER}"
+                                            th:value="${cable.id}"
+                                            th:text="${cable.name}"></option>
+                                </select>
+                            </div>
+                            <div class="cable-field" data-cable-function="POWER">
+                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).POWER]}">Силовой кабель</label>
+                                <select th:field="*{deviceGroups[__${iter.index}__].powerCableTypeId}" data-field="powerCableTypeId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="cable : ${cableTypes}"
+                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).POWER}"
+                                            th:value="${cable.id}"
+                                            th:text="${cable.name}"></option>
+                                </select>
                             </div>
                         </div>
                         <button type="button" class="link-button danger remove-device" th:if="${iter.index > 0}">Удалить</button>
@@ -104,7 +139,10 @@
                                 <label>Тип устройства</label>
                                 <select data-field="deviceTypeId">
                                     <option value="">Не выбрано</option>
-                                    <option th:each="type : ${deviceTypes}" th:value="${type.id}" th:text="${type.name}"></option>
+                                    <option th:each="type : ${deviceTypes}"
+                                            th:value="${type.id}"
+                                            th:text="${type.name}"
+                                            th:attr="data-required-cables=${deviceTypeRequirements[type.id]} != null ? deviceTypeRequirements[type.id] : ''"></option>
                                 </select>
                             </div>
                             <div>
@@ -135,7 +173,7 @@
                         </div>
                         <div class="grid camera-settings is-hidden" data-role="camera-fields">
                             <div>
-                                <label>Комплектация камеры</label>
+                                <label>Комплектация камеры (адаптер или пластиковая коробка)</label>
                                 <select data-field="cameraAccessory">
                                     <option value="">Не выбрана</option>
                                     <option th:each="option : ${cameraOptions}" th:value="${option.code}" th:text="${option.displayName}"></option>
@@ -144,6 +182,38 @@
                             <div>
                                 <label>Глубина просмотра (м)</label>
                                 <input type="number" min="0" step="0.1" data-field="cameraViewingDepth" placeholder="Например, 40">
+                            </div>
+                        </div>
+                        <div class="grid cable-settings is-hidden" data-role="cable-fields">
+                            <div class="cable-field" data-cable-function="SIGNAL">
+                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL]}">Сигнальный кабель</label>
+                                <select data-field="signalCableTypeId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="cable : ${cableTypes}"
+                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL}"
+                                            th:value="${cable.id}"
+                                            th:text="${cable.name}"></option>
+                                </select>
+                            </div>
+                            <div class="cable-field" data-cable-function="LOW_VOLTAGE_POWER">
+                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER]}">Кабель для слаботочного питания</label>
+                                <select data-field="lowVoltageCableTypeId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="cable : ${cableTypes}"
+                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER}"
+                                            th:value="${cable.id}"
+                                            th:text="${cable.name}"></option>
+                                </select>
+                            </div>
+                            <div class="cable-field" data-cable-function="POWER">
+                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).POWER]}">Силовой кабель</label>
+                                <select data-field="powerCableTypeId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="cable : ${cableTypes}"
+                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).POWER}"
+                                            th:value="${cable.id}"
+                                            th:text="${cable.name}"></option>
+                                </select>
                             </div>
                         </div>
                         <button type="button" class="link-button danger remove-device">Удалить</button>
@@ -590,6 +660,41 @@
             }
         }
 
+        function getRequiredCableFunctions(select) {
+            if (!(select instanceof HTMLSelectElement)) {
+                return [];
+            }
+            const option = select.options[select.selectedIndex];
+            const datasetValue = option?.dataset?.requiredCables || '';
+            return datasetValue.split(',').map(item => item.trim()).filter(Boolean);
+        }
+
+        function updateCableFieldsForGroup(group) {
+            if (!group) {
+                return;
+            }
+            const typeSelect = group.querySelector('select[data-field="deviceTypeId"]');
+            const requiredFunctions = getRequiredCableFunctions(typeSelect);
+            const container = group.querySelector('[data-role="cable-fields"]');
+            if (!container) {
+                return;
+            }
+            const fields = Array.from(container.querySelectorAll('.cable-field'));
+            fields.forEach(field => {
+                const functionName = field.dataset.cableFunction || '';
+                const required = requiredFunctions.includes(functionName);
+                field.classList.toggle('is-hidden', !required);
+                const select = field.querySelector('select');
+                if (select) {
+                    select.disabled = !required;
+                    if (!required) {
+                        select.value = '';
+                    }
+                }
+            });
+            container.classList.toggle('is-hidden', requiredFunctions.length === 0);
+        }
+
         function getMountingRows() {
             return Array.from(document.querySelectorAll('.mounting-row'));
         }
@@ -623,6 +728,7 @@
                     removeButton.style.display = index === 0 ? 'none' : '';
                 }
                 updateCameraFieldsForGroup(group);
+                updateCableFieldsForGroup(group);
             });
             updateTotalConnectionPoints();
             ensureDeviceCards();
@@ -813,6 +919,9 @@
             const distanceInput = group.querySelector('input[data-field="distanceToConnectionPoint"]');
             const accessorySelect = group.querySelector('select[data-field="cameraAccessory"]');
             const viewingDepthInput = group.querySelector('input[data-field="cameraViewingDepth"]');
+            const signalCableSelect = group.querySelector('select[data-field="signalCableTypeId"]');
+            const lowVoltageCableSelect = group.querySelector('select[data-field="lowVoltageCableTypeId"]');
+            const powerCableSelect = group.querySelector('select[data-field="powerCableTypeId"]');
             const typeName = typeSelect instanceof HTMLSelectElement
                 ? typeSelect.options[typeSelect.selectedIndex]?.text?.trim()
                 : '';
@@ -826,6 +935,15 @@
                     ? accessorySelect.options[accessorySelect.selectedIndex]?.text?.trim() || ''
                     : '',
                 viewingDepth: viewingDepthInput?.value.trim() || '',
+                signalCable: signalCableSelect instanceof HTMLSelectElement
+                    ? signalCableSelect.options[signalCableSelect.selectedIndex]?.text?.trim() || ''
+                    : '',
+                lowVoltageCable: lowVoltageCableSelect instanceof HTMLSelectElement
+                    ? lowVoltageCableSelect.options[lowVoltageCableSelect.selectedIndex]?.text?.trim() || ''
+                    : '',
+                powerCable: powerCableSelect instanceof HTMLSelectElement
+                    ? powerCableSelect.options[powerCableSelect.selectedIndex]?.text?.trim() || ''
+                    : '',
                 isCamera: isCameraDevice(typeSelect)
             };
         }
@@ -866,6 +984,19 @@
                     const hasUnit = /[a-zа-я]/i.test(data.viewingDepth);
                     const depthLabel = hasUnit ? data.viewingDepth : `${data.viewingDepth} м`;
                     parts.push(`Глубина: ${depthLabel}`);
+                }
+                const cableDescriptions = [];
+                if (data.signalCable) {
+                    cableDescriptions.push(`Сигнал: ${data.signalCable}`);
+                }
+                if (data.lowVoltageCable) {
+                    cableDescriptions.push(`Питание: ${data.lowVoltageCable}`);
+                }
+                if (data.powerCable) {
+                    cableDescriptions.push(`Силовой: ${data.powerCable}`);
+                }
+                if (cableDescriptions.length > 0) {
+                    parts.push(`Кабели: ${cableDescriptions.join(', ')}`);
                 }
                 summary.textContent = parts.length > 0
                     ? parts.join(' • ')
@@ -1281,10 +1412,14 @@
             if (field === 'deviceTypeId') {
                 const group = target.closest('.device-group');
                 updateCameraFieldsForGroup(group);
+                updateCableFieldsForGroup(group);
                 updateDeviceSummaries();
                 updateGroupCapacities();
                 validateMaterialCapacity();
             } else if (field === 'cameraAccessory') {
+                updateDeviceSummaries();
+            } else if (field === 'signalCableTypeId' || field === 'lowVoltageCableTypeId'
+                    || field === 'powerCableTypeId') {
                 updateDeviceSummaries();
             }
         });

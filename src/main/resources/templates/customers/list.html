@@ -91,7 +91,7 @@
                         <li th:each="phone : ${customer.contactPhones}" th:text="${phone}"></li>
                     </ul>
                 </td>
-                <td th:text="${customer.createdAt}"></td>
+                <td th:text="${customer.createdAt != null ? #temporals.format(customer.createdAt, 'HH:mm dd:MM:yyyy') : '—'}"></td>
                 <td th:text="${#lists.size(customer.objects)}"></td>
             </tr>
             </tbody>

@@ -2,9 +2,11 @@ package com.kapamejlbka.objectmannage.web;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kapamejlbka.objectmannage.model.CableFunction;
 import com.kapamejlbka.objectmannage.model.CableType;
 import com.kapamejlbka.objectmannage.model.CameraInstallationOption;
 import com.kapamejlbka.objectmannage.model.DeviceType;
+import com.kapamejlbka.objectmannage.model.DeviceTypeRules;
 import com.kapamejlbka.objectmannage.model.InstallationMaterial;
 import com.kapamejlbka.objectmannage.model.ManagedObject;
 import com.kapamejlbka.objectmannage.model.MapProvider;
@@ -38,14 +40,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Locale;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
@@ -305,7 +307,7 @@ public class ObjectController {
         List<MountingElement> mountingElements = mountingElementRepository.findAll();
         List<InstallationMaterial> materials = installationMaterialRepository.findAll();
         List<CableType> cableTypes = cableTypeRepository.findAll();
-        form.validate(bindingResult);
+        form.validate(bindingResult, deviceTypes);
         if (bindingResult.hasErrors()) {
             prepareWizardModel(model, managedObject, form);
             return "objects/primary-wizard";
@@ -349,6 +351,12 @@ public class ObjectController {
         model.addAttribute("mountingElements", mountingElements);
         model.addAttribute("installationMaterials", materials);
         model.addAttribute("cableTypes", cableTypes);
+        Map<UUID, String> deviceTypeRequirements = deviceTypes.stream()
+                .filter(type -> type.getId() != null)
+                .collect(Collectors.toMap(DeviceType::getId,
+                        type -> DeviceTypeRules.encodeFunctions(DeviceTypeRules.requiredCables(type.getName()))));
+        model.addAttribute("deviceTypeRequirements", deviceTypeRequirements);
+        model.addAttribute("cableFunctionLabels", DeviceTypeRules.getFunctionLabels());
         model.addAttribute("totalConnectionPoints", form.calculateTotalConnectionPoints());
         model.addAttribute("mapProvider", applicationSettingsService.getMapProvider());
         model.addAttribute("surfaceTypes", SurfaceType.values());
@@ -615,6 +623,9 @@ public class ObjectController {
                     groupForm.setGroupLabel(group.getGroupLabel());
                     groupForm.setCameraAccessory(group.getCameraAccessory());
                     groupForm.setCameraViewingDepth(group.getCameraViewingDepth());
+                    groupForm.setSignalCableTypeId(group.getSignalCableTypeId());
+                    groupForm.setLowVoltageCableTypeId(group.getLowVoltageCableTypeId());
+                    groupForm.setPowerCableTypeId(group.getPowerCableTypeId());
                     form.deviceGroups.add(groupForm);
                 }
             }
@@ -805,12 +816,60 @@ public class ObjectController {
             return unique.size();
         }
 
-        public void validate(BindingResult bindingResult) {
+        public void validate(BindingResult bindingResult, List<DeviceType> deviceTypes) {
+            Map<UUID, DeviceType> typeMap = deviceTypes == null ? Collections.emptyMap()
+                    : deviceTypes.stream()
+                    .filter(type -> type != null && type.getId() != null)
+                    .collect(Collectors.toMap(DeviceType::getId, Function.identity()));
+
             Map<String, Double> capacities = new HashMap<>();
-            for (DeviceGroupForm group : deviceGroups) {
+            for (int index = 0; index < deviceGroups.size(); index++) {
+                DeviceGroupForm group = deviceGroups.get(index);
                 if (group == null) {
                     continue;
                 }
+                final int groupIndex = index;
+                DeviceType type = group.getDeviceTypeId() != null ? typeMap.get(group.getDeviceTypeId()) : null;
+                String typeName = type != null ? type.getName() : null;
+                DeviceTypeRules.lookup(typeName).ifPresent(requirements -> {
+                    for (DeviceTypeRules.CableRequirement requirement : requirements.cableRequirements()) {
+                        CableFunction function = requirement.function();
+                        if (function == CableFunction.SIGNAL && group.getSignalCableTypeId() == null) {
+                            bindingResult.rejectValue(String.format("deviceGroups[%d].signalCableTypeId", groupIndex),
+                                    "deviceGroups.signalCableTypeId.required",
+                                    String.format(Locale.getDefault(),
+                                            "Выберите сигнальный кабель для \"%s\"",
+                                            typeName != null ? typeName : "устройства"));
+                        } else if (function == CableFunction.LOW_VOLTAGE_POWER
+                                && group.getLowVoltageCableTypeId() == null) {
+                            bindingResult.rejectValue(String.format("deviceGroups[%d].lowVoltageCableTypeId", groupIndex),
+                                    "deviceGroups.lowVoltageCableTypeId.required",
+                                    String.format(Locale.getDefault(),
+                                            "Выберите кабель для слаботочного питания для \"%s\"",
+                                            typeName != null ? typeName : "устройства"));
+                        } else if (function == CableFunction.POWER && group.getPowerCableTypeId() == null) {
+                            bindingResult.rejectValue(String.format("deviceGroups[%d].powerCableTypeId", groupIndex),
+                                    "deviceGroups.powerCableTypeId.required",
+                                    String.format(Locale.getDefault(),
+                                            "Выберите силовой кабель для \"%s\"",
+                                            typeName != null ? typeName : "устройства"));
+                        }
+                    }
+                    if (requirements.requireAccessorySelection() && !StringUtils.hasText(group.getCameraAccessory())) {
+                        bindingResult.rejectValue(String.format("deviceGroups[%d].cameraAccessory", groupIndex),
+                                "deviceGroups.cameraAccessory.required",
+                                "Выберите комплектацию для камеры");
+                    }
+                    if (requirements.requireViewingDepth()) {
+                        Double depth = group.getCameraViewingDepth();
+                        if (depth == null || depth <= 0) {
+                            bindingResult.rejectValue(String.format("deviceGroups[%d].cameraViewingDepth", groupIndex),
+                                    "deviceGroups.cameraViewingDepth.required",
+                                    "Укажите глубину просмотра для камеры");
+                        }
+                    }
+                });
+
                 String label = trim(group.getGroupLabel());
                 if (!StringUtils.hasText(label)) {
                     continue;
@@ -895,6 +954,27 @@ public class ObjectController {
                     group.setCameraAccessory(null);
                 }
                 group.setCameraViewingDepth(form.getCameraViewingDepth());
+                group.setSignalCableTypeId(form.getSignalCableTypeId());
+                if (form.getSignalCableTypeId() != null) {
+                    CableType cableType = cableTypeMap.get(form.getSignalCableTypeId());
+                    if (cableType != null) {
+                        group.setSignalCableTypeName(cableType.getName());
+                    }
+                }
+                group.setLowVoltageCableTypeId(form.getLowVoltageCableTypeId());
+                if (form.getLowVoltageCableTypeId() != null) {
+                    CableType cableType = cableTypeMap.get(form.getLowVoltageCableTypeId());
+                    if (cableType != null) {
+                        group.setLowVoltageCableTypeName(cableType.getName());
+                    }
+                }
+                group.setPowerCableTypeId(form.getPowerCableTypeId());
+                if (form.getPowerCableTypeId() != null) {
+                    CableType cableType = cableTypeMap.get(form.getPowerCableTypeId());
+                    if (cableType != null) {
+                        group.setPowerCableTypeName(cableType.getName());
+                    }
+                }
                 snapshotGroups.add(group);
             }
             snapshot.setDeviceGroups(snapshotGroups);
@@ -1029,6 +1109,9 @@ public class ObjectController {
             private String groupLabel;
             private String cameraAccessory;
             private Double cameraViewingDepth;
+            private UUID signalCableTypeId;
+            private UUID lowVoltageCableTypeId;
+            private UUID powerCableTypeId;
 
             public boolean isEmpty() {
                 return (deviceTypeId == null)
@@ -1039,7 +1122,10 @@ public class ObjectController {
                         && distanceToConnectionPoint == null
                         && !StringUtils.hasText(groupLabel)
                         && !StringUtils.hasText(cameraAccessory)
-                        && cameraViewingDepth == null;
+                        && cameraViewingDepth == null
+                        && signalCableTypeId == null
+                        && lowVoltageCableTypeId == null
+                        && powerCableTypeId == null;
             }
 
             public UUID getDeviceTypeId() {
@@ -1112,6 +1198,30 @@ public class ObjectController {
 
             public void setCameraViewingDepth(Double cameraViewingDepth) {
                 this.cameraViewingDepth = cameraViewingDepth;
+            }
+
+            public UUID getSignalCableTypeId() {
+                return signalCableTypeId;
+            }
+
+            public void setSignalCableTypeId(UUID signalCableTypeId) {
+                this.signalCableTypeId = signalCableTypeId;
+            }
+
+            public UUID getLowVoltageCableTypeId() {
+                return lowVoltageCableTypeId;
+            }
+
+            public void setLowVoltageCableTypeId(UUID lowVoltageCableTypeId) {
+                this.lowVoltageCableTypeId = lowVoltageCableTypeId;
+            }
+
+            public UUID getPowerCableTypeId() {
+                return powerCableTypeId;
+            }
+
+            public void setPowerCableTypeId(UUID powerCableTypeId) {
+                this.powerCableTypeId = powerCableTypeId;
             }
         }
 
