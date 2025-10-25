@@ -90,6 +90,34 @@
                             </table>
                         </div>
                         <div>
+                            <h4>Камеры</h4>
+                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.cameraDetails)}">Камеры не указаны.</p>
+                            <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.cameraDetails)}">
+                                <thead>
+                                <tr>
+                                    <th>Тип</th>
+                                    <th>Количество</th>
+                                    <th>Место установки</th>
+                                    <th>Точка подключения</th>
+                                    <th>Поверхность</th>
+                                    <th>Комплектация</th>
+                                    <th>Глубина просмотра</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="camera : ${primarySummary.cameraDetails}">
+                                    <td th:text="${camera.deviceTypeName}"></td>
+                                    <td th:text="${camera.quantity}"></td>
+                                    <td th:text="${camera.installLocation != null ? camera.installLocation : '—'}"></td>
+                                    <td th:text="${camera.connectionPoint != null ? camera.connectionPoint : '—'}"></td>
+                                    <td th:text="${camera.surfaceLabel != null ? camera.surfaceLabel : 'Не указано'}"></td>
+                                    <td th:text="${camera.accessoryLabel != null ? camera.accessoryLabel : 'Не указано'}"></td>
+                                    <td th:text="${camera.viewingDepth != null ? #numbers.formatDecimal(camera.viewingDepth, 1, 2) + ' м' : '—'}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
                             <h4>Кабельные линии</h4>
                             <p class="muted" th:if="${#lists.isEmpty(primarySummary.cableLengthSummaries)}">Кабели не указаны.</p>
                             <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.cableLengthSummaries)}">
@@ -120,6 +148,8 @@
                                     <th>Монтажный элемент</th>
                                     <th>Расстояние до запитки</th>
                                     <th>Кабель</th>
+                                    <th>Материал прокладки</th>
+                                    <th>Поверхность</th>
                                     <th>Способ прокладки</th>
                                 </tr>
                                 </thead>
@@ -129,6 +159,12 @@
                                     <td th:text="${node.mountingElementName}"></td>
                                     <td th:text="${node.distanceToPower != null ? #numbers.formatDecimal(node.distanceToPower, 1, 2) + ' м' : '—'}"></td>
                                     <td th:text="${node.powerCableTypeName != null ? node.powerCableTypeName : '—'}"></td>
+                                    <td>
+                                        <span th:text="${node.layingMaterialName != null ? node.layingMaterialName : '—'}"></span>
+                                        <span class="muted small" th:if="${node.layingMaterialUnit != null}" th:text="${' (' + node.layingMaterialUnit + ')'}"></span>
+                                    </td>
+                                    <td th:classappend="${((node.layingSurface == null or node.layingSurface.isBlank()) and (node.layingSurfaceCategory == null or node.layingSurfaceCategory.isBlank())) or (node.layingSurfaceCategory != null and node.layingSurfaceCategory.equalsIgnoreCase('UNKNOWN')) ? 'table-warning' : ''}"
+                                        th:text="${(node.layingSurface != null and !node.layingSurface.isBlank()) ? node.layingSurface : ((node.layingSurfaceCategory != null and !node.layingSurfaceCategory.isBlank()) ? (node.layingSurfaceCategory.equalsIgnoreCase('UNKNOWN') ? 'Уточнить' : node.layingSurfaceCategory) : 'Уточнить')}"></td>
                                     <td th:text="${node.layingMethod != null ? node.layingMethod : '—'}"></td>
                                 </tr>
                                 </tbody>
@@ -146,7 +182,7 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <tr th:each="item : ${primarySummary.additionalMaterials}">
+                                <tr th:each="item : ${primarySummary.additionalMaterials}" th:classappend="${#strings.containsIgnoreCase(item.name, 'уточнить')} ? 'table-warning' : ''">
                                     <td th:text="${item.name}"></td>
                                     <td th:text="${#numbers.formatDecimal(item.quantity, 0, 2)}"></td>
                                     <td th:text="${item.unit != null ? item.unit : '—'}"></td>
@@ -238,9 +274,6 @@
                 <th>Дата</th>
                 <th>Пользователь</th>
                 <th>Событие</th>
-                <th>Поле</th>
-                <th>Старое значение</th>
-                <th>Новое значение</th>
             </tr>
             </thead>
             <tbody>
@@ -248,9 +281,6 @@
                 <td th:text="${change.changedAt}"></td>
                 <td th:text="${change.user != null ? change.user.username : 'Система'}"></td>
                 <td th:text="${change.summary}"></td>
-                <td th:text="${change.fieldName}"></td>
-                <td th:text="${change.oldValue}"></td>
-                <td th:text="${change.newValue}"></td>
             </tr>
             </tbody>
         </table>

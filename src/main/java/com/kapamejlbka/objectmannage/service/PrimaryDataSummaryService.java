@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kapamejlbka.objectmannage.model.CableFunction;
 import com.kapamejlbka.objectmannage.model.CableType;
+import com.kapamejlbka.objectmannage.model.CameraInstallationOption;
 import com.kapamejlbka.objectmannage.model.DeviceCableProfile;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary;
@@ -74,6 +75,9 @@ public class PrimaryDataSummaryService {
         List<NodeSummary> nodeSummaries = new ArrayList<>();
         Map<String, MaterialAccumulator> additionalMaterials = new LinkedHashMap<>();
         EnumMap<SurfaceType, Integer> cameraCountsBySurface = new EnumMap<>(SurfaceType.class);
+        EnumMap<SurfaceType, Integer> adapterCountsBySurface = new EnumMap<>(SurfaceType.class);
+        EnumMap<SurfaceType, Integer> plasticBoxCountsBySurface = new EnumMap<>(SurfaceType.class);
+        List<PrimaryDataSummary.CameraDetail> cameraDetails = new ArrayList<>();
 
         Map<UUID, List<DeviceCableProfile>> cableProfiles = groupProfilesByDeviceType();
         Map<UUID, CableTypeData> cableTypeData = loadCableTypeData();
@@ -85,6 +89,8 @@ public class PrimaryDataSummaryService {
         Set<String> assignedConnectionPoints = new HashSet<>();
         Set<String> definedConnectionPoints = new HashSet<>();
         int totalCameras = 0;
+        int adapterCameras = 0;
+        int plasticBoxCameras = 0;
         int boxNodes = 0;
 
         if (snapshot.getDeviceGroups() != null) {
@@ -104,6 +110,26 @@ public class PrimaryDataSummaryService {
                     SurfaceType surfaceType = SurfaceType.resolve(group.getInstallSurfaceCategory())
                             .orElse(SurfaceType.UNKNOWN);
                     cameraCountsBySurface.merge(surfaceType, cameraCount, Integer::sum);
+                    CameraInstallationOption option = CameraInstallationOption.fromCode(group.getCameraAccessory())
+                            .orElse(null);
+                    if (option == CameraInstallationOption.ADAPTER) {
+                        adapterCameras += cameraCount;
+                        adapterCountsBySurface.merge(surfaceType, cameraCount, Integer::sum);
+                    } else if (option == CameraInstallationOption.PLASTIC_BOX) {
+                        plasticBoxCameras += cameraCount;
+                        plasticBoxCountsBySurface.merge(surfaceType, cameraCount, Integer::sum);
+                    }
+                    if (cameraCount > 0) {
+                        String surfaceLabel = resolveSurfaceLabel(surfaceType, group.getInstallSurfaceCategory());
+                        cameraDetails.add(new PrimaryDataSummary.CameraDetail(
+                                typeName,
+                                cameraCount,
+                                group.getInstallLocation(),
+                                group.getConnectionPoint(),
+                                surfaceLabel,
+                                resolveAccessoryLabel(option),
+                                group.getCameraViewingDepth()));
+                    }
                 }
 
                 if (!StringUtils.hasText(group.getConnectionPoint())) {
@@ -157,7 +183,12 @@ public class PrimaryDataSummaryService {
                         point.getPowerCableTypeId(), cableTypeData);
                 String powerCableName = powerCable != null ? powerCable.name() : null;
                 String layingMethod = point.getLayingMethod();
-                nodeSummaries.add(new NodeSummary(name, elementName, distanceToPower, powerCableName, layingMethod));
+                String layingMaterialName = point.getLayingMaterialName();
+                String layingMaterialUnit = point.getLayingMaterialUnit();
+                String layingSurface = point.getLayingSurface();
+                String layingSurfaceCategory = point.getLayingSurfaceCategory();
+                nodeSummaries.add(new NodeSummary(name, elementName, distanceToPower, powerCableName,
+                        layingMaterialName, layingMaterialUnit, layingSurface, layingSurfaceCategory, layingMethod));
 
                 if (isBoxNode(elementName)) {
                     boxNodes++;
@@ -212,9 +243,16 @@ public class PrimaryDataSummaryService {
         }
         Integer declaredAssignments = recordedConnectionPoints > 0 ? recordedConnectionPoints : null;
 
-        accumulateCameraMaterials(additionalMaterials, cameraCountsBySurface, totalCameras);
+        MaterialLengthStats materialLengths = collectMaterialLengths(snapshot);
+        accumulateCameraMaterials(additionalMaterials,
+                cameraCountsBySurface,
+                adapterCountsBySurface,
+                plasticBoxCountsBySurface,
+                totalCameras,
+                adapterCameras,
+                plasticBoxCameras);
         accumulateNodeMaterials(additionalMaterials, boxNodes);
-        accumulateCoefficientMaterials(additionalMaterials, snapshot, totalCableLength,
+        accumulateCoefficientMaterials(additionalMaterials, materialLengths, totalCableLength,
                 applicationSettingsService.getMaterialCoefficients());
 
         PrimaryDataSummary.Builder builder = PrimaryDataSummary.builder()
@@ -230,6 +268,15 @@ public class PrimaryDataSummaryService {
         cableSummaries.forEach(builder::addCableLengthSummary);
         functionSummaries.forEach(builder::addCableFunctionSummary);
         nodeSummaries.forEach(builder::addNodeSummary);
+        cameraDetails.stream()
+                .sorted(Comparator
+                        .comparing((PrimaryDataSummary.CameraDetail detail) -> detail.getDeviceTypeName(),
+                                Comparator.nullsLast(String::compareToIgnoreCase))
+                        .thenComparing(detail -> detail.getInstallLocation(),
+                                Comparator.nullsLast(String::compareToIgnoreCase))
+                        .thenComparing(detail -> detail.getConnectionPoint(),
+                                Comparator.nullsLast(String::compareToIgnoreCase)))
+                .forEach(builder::addCameraDetail);
         additionalMaterials.values().stream()
                 .sorted(Comparator.comparing(MaterialAccumulator::name, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .map(acc -> new AdditionalMaterialItem(acc.name(), acc.unit(), acc.quantity()))
@@ -279,14 +326,36 @@ public class PrimaryDataSummaryService {
         return normalized.contains("ящ");
     }
 
+    private String resolveSurfaceLabel(SurfaceType surfaceType, String fallback) {
+        if (surfaceType != null && surfaceType != SurfaceType.UNKNOWN) {
+            return surfaceType.getDisplayName();
+        }
+        if (StringUtils.hasText(fallback)) {
+            return fallback.trim();
+        }
+        return null;
+    }
+
+    private String resolveAccessoryLabel(CameraInstallationOption option) {
+        return option != null ? option.getDisplayName() : "Не указано";
+    }
+
     private void accumulateCameraMaterials(Map<String, MaterialAccumulator> accumulator,
                                            EnumMap<SurfaceType, Integer> countsBySurface,
-                                           int totalCameras) {
+                                           EnumMap<SurfaceType, Integer> adapterCountsBySurface,
+                                           EnumMap<SurfaceType, Integer> plasticBoxCountsBySurface,
+                                           int totalCameras,
+                                           int adapterCameras,
+                                           int plasticBoxCameras) {
         if (totalCameras <= 0) {
             return;
         }
-        addMaterial(accumulator, "Распределительная коробка 100×100×50 (опция)", "шт", totalCameras);
-        addMaterial(accumulator, "Монтажный кронштейн для камеры (опция)", "шт", totalCameras);
+        if (plasticBoxCameras > 0) {
+            addMaterial(accumulator, "Пластиковая коробка для камеры (опция)", "шт", plasticBoxCameras);
+        }
+        if (adapterCameras > 0) {
+            addMaterial(accumulator, "Адаптер для камеры (опция)", "шт", adapterCameras);
+        }
         addMaterial(accumulator, "Разъём RJ-45 (8P8C)", "шт", totalCameras * 2L);
         countsBySurface.forEach((surface, count) -> {
             if (count == null || count <= 0) {
@@ -295,8 +364,22 @@ public class PrimaryDataSummaryService {
             SurfaceType effective = surface != null ? surface : SurfaceType.UNKNOWN;
             String fastener = effective.getFastenerName();
             addMaterial(accumulator, "Крепёж для камер — " + fastener, "шт", count * 4L);
+        });
+        plasticBoxCountsBySurface.forEach((surface, count) -> {
+            if (count == null || count <= 0) {
+                return;
+            }
+            SurfaceType effective = surface != null ? surface : SurfaceType.UNKNOWN;
+            String fastener = effective.getFastenerName();
             addMaterial(accumulator, "Крепёж для коробок (опция) — " + fastener, "шт", count * 4L);
-            addMaterial(accumulator, "Крепёж для кронштейнов (опция) — " + fastener, "шт", count * 4L);
+        });
+        adapterCountsBySurface.forEach((surface, count) -> {
+            if (count == null || count <= 0) {
+                return;
+            }
+            SurfaceType effective = surface != null ? surface : SurfaceType.UNKNOWN;
+            String fastener = effective.getFastenerName();
+            addMaterial(accumulator, "Крепёж для адаптеров (опция) — " + fastener, "шт", count * 4L);
         });
     }
 
@@ -310,46 +393,27 @@ public class PrimaryDataSummaryService {
     }
 
     private void accumulateCoefficientMaterials(Map<String, MaterialAccumulator> accumulator,
-                                                PrimaryDataSnapshot snapshot,
+                                                MaterialLengthStats materialLengths,
                                                 double totalCableLength,
                                                 ApplicationSettingsService.MaterialCoefficients coefficients) {
         double clipsPerMeter = Math.max(coefficients.clipsPerMeter(), 0.0);
         double tiesPerMeter = Math.max(coefficients.tiesPerMeter(), 0.0);
 
         if (clipsPerMeter > 0) {
-            double corrugatedLength = estimateCorrugatedLength(snapshot);
+            double corrugatedLength = materialLengths.corrugatedLength();
             if (corrugatedLength > 0) {
                 addMaterial(accumulator, "Клипсы для гофры", "шт", Math.ceil(corrugatedLength * clipsPerMeter));
             }
         }
 
-        if (tiesPerMeter > 0 && totalCableLength > 0) {
-            addMaterial(accumulator, "Нейлоновые стяжки (по кабелю)", "шт", Math.ceil(totalCableLength * tiesPerMeter));
+        double effectiveCableLength = materialLengths.totalMaterialLength();
+        if (effectiveCableLength <= 0 && totalCableLength > 0) {
+            effectiveCableLength = totalCableLength;
         }
-    }
-
-    private double estimateCorrugatedLength(PrimaryDataSnapshot snapshot) {
-        double total = 0.0;
-        if (snapshot.getMaterialGroups() == null) {
-            return total;
+        if (tiesPerMeter > 0 && effectiveCableLength > 0) {
+            addMaterial(accumulator, "Нейлоновые стяжки (по кабелю)", "шт",
+                    Math.ceil(effectiveCableLength * tiesPerMeter));
         }
-        for (PrimaryDataSnapshot.MaterialGroup group : snapshot.getMaterialGroups()) {
-            if (group == null || group.getMaterials() == null) {
-                continue;
-            }
-            for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
-                if (usage == null) {
-                    continue;
-                }
-                if (containsIgnoreCase(usage.getMaterialName(), "гофр")) {
-                    double length = parseLength(usage.getAmount());
-                    if (length > 0) {
-                        total += length;
-                    }
-                }
-            }
-        }
-        return total;
     }
 
     private double parseLength(String value) {
@@ -373,6 +437,67 @@ public class PrimaryDataSummaryService {
         } catch (NumberFormatException ex) {
             return 0.0;
         }
+    }
+
+    private MaterialLengthStats collectMaterialLengths(PrimaryDataSnapshot snapshot) {
+        MaterialLengthStats stats = new MaterialLengthStats();
+        if (snapshot == null) {
+            return stats;
+        }
+        if (snapshot.getMaterialGroups() != null) {
+            for (PrimaryDataSnapshot.MaterialGroup group : snapshot.getMaterialGroups()) {
+                if (group == null || group.getMaterials() == null) {
+                    continue;
+                }
+                for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
+                    if (usage == null) {
+                        continue;
+                    }
+                    double length = parseLength(usage.getAmount());
+                    if (length <= 0) {
+                        continue;
+                    }
+                    if (!isMeterUnit(usage.getUnit()) && !looksLikeMeters(usage.getAmount())) {
+                        continue;
+                    }
+                    stats.addMaterialLength(usage.getMaterialName(), length);
+                    stats.addSurfaceLength(usage.getLayingSurfaceCategory(), length);
+                }
+            }
+        }
+        if (snapshot.getConnectionPoints() != null) {
+            for (PrimaryDataSnapshot.ConnectionPoint point : snapshot.getConnectionPoints()) {
+                if (point == null) {
+                    continue;
+                }
+                double length = Math.max(0.0, defaultDouble(point.getDistanceToPower()));
+                if (length <= 0) {
+                    continue;
+                }
+                if (!StringUtils.hasText(point.getLayingMaterialName())) {
+                    continue;
+                }
+                stats.addMaterialLength(point.getLayingMaterialName(), length);
+                stats.addSurfaceLength(point.getLayingSurfaceCategory(), length);
+            }
+        }
+        return stats;
+    }
+
+    private boolean looksLikeMeters(String amount) {
+        if (!StringUtils.hasText(amount)) {
+            return false;
+        }
+        String normalized = amount.toLowerCase();
+        return normalized.contains("м");
+    }
+
+    private boolean isMeterUnit(String unit) {
+        if (!StringUtils.hasText(unit)) {
+            return false;
+        }
+        String normalized = unit.trim().toLowerCase();
+        return normalized.contains("м");
     }
 
     private boolean containsIgnoreCase(String source, String needle) {
@@ -418,6 +543,41 @@ public class PrimaryDataSummaryService {
 
         double quantity() {
             return quantity;
+        }
+    }
+
+    private static class MaterialLengthStats {
+        private double total;
+        private double corrugated;
+
+        void addMaterialLength(String materialName, double length) {
+            if (length <= 0) {
+                return;
+            }
+            total += length;
+            if (containsCorrugated(materialName)) {
+                corrugated += length;
+            }
+        }
+
+        void addSurfaceLength(String surfaceCategory, double length) {
+            // reserved for future use (e.g., breakdown per surface)
+        }
+
+        double totalMaterialLength() {
+            return total;
+        }
+
+        double corrugatedLength() {
+            return corrugated;
+        }
+
+        private boolean containsCorrugated(String name) {
+            if (!StringUtils.hasText(name)) {
+                return false;
+            }
+            String normalized = Normalizer.normalize(name, Normalizer.Form.NFKD).toLowerCase();
+            return normalized.contains("гофр");
         }
     }
 

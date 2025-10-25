@@ -10,6 +10,7 @@ import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MountingRequireme
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.AdditionalMaterialItem;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableFunctionSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.DeviceTypeSummary;
+import com.kapamejlbka.objectmannage.model.CameraInstallationOption;
 import com.kapamejlbka.objectmannage.model.SurfaceType;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
@@ -159,9 +160,6 @@ public class PdfReportService {
                     }
                     String label = determineGroupLabel(group.getGroupLabel(), group.getGroupName());
                     writeParagraph("Группа: " + label, 12f);
-                    if (StringUtils.hasText(group.getSurface())) {
-                        writeParagraph("Поверхность прокладки: " + group.getSurface().trim(), 11f);
-                    }
                     List<String> materials = new ArrayList<>();
                     if (group.getMaterials() != null) {
                         for (MaterialUsage usage : group.getMaterials()) {
@@ -289,6 +287,12 @@ public class PdfReportService {
                     }
                     if (distance > 0) {
                         builder.append(String.format(Locale.getDefault(), ", расстояние: %.2f м", distance));
+                    }
+                    CameraInstallationOption.fromCode(group.getCameraAccessory())
+                            .ifPresent(option -> builder.append(", комплектация: ").append(option.getDisplayName()));
+                    Double viewingDepth = group.getCameraViewingDepth();
+                    if (viewingDepth != null && viewingDepth > 0) {
+                        builder.append(String.format(Locale.getDefault(), ", глубина просмотра: %.1f м", viewingDepth));
                     }
                     deviceLines.add(builder.toString());
                 }

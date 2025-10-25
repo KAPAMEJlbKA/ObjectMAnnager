@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.UUID;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
@@ -193,7 +194,7 @@ public class ManagedObjectService {
         } else if (type == ObjectChangeType.DELETED) {
             summary = newValue;
         } else {
-            summary = "Поле " + field + " изменено";
+            summary = buildChangeSummary(user, field);
         }
         String effectiveField = field;
         String effectiveOldValue = oldValue;
@@ -203,6 +204,9 @@ public class ManagedObjectService {
             effectiveField = effectiveField == null ? "objectId" : effectiveField;
             effectiveOldValue = managedObject.getId() != null ? managedObject.getId().toString() : null;
             effectiveNewValue = managedObject.getName();
+        } else if ("primaryData".equals(field)) {
+            effectiveOldValue = null;
+            effectiveNewValue = null;
         }
 
         ObjectChange change = new ObjectChange(type, effectiveField, effectiveOldValue, effectiveNewValue, summary);
@@ -211,5 +215,25 @@ public class ManagedObjectService {
         }
         change.setUser(user);
         objectChangeRepository.save(change);
+    }
+
+    private String buildChangeSummary(UserAccount user, String field) {
+        String username = user != null ? user.getUsername() : "Система";
+        String section = describeSection(field);
+        return username + " изменил " + section;
+    }
+
+    private String describeSection(String field) {
+        if (!StringUtils.hasText(field)) {
+            return "данные объекта";
+        }
+        return switch (field) {
+            case "name" -> "название объекта";
+            case "description" -> "описание объекта";
+            case "primaryData" -> "раздел \"Первичные данные\"";
+            case "customer" -> "раздел \"Заказчик\"";
+            case "latitude", "longitude" -> "координаты объекта";
+            default -> "поле \"" + field + "\"";
+        };
     }
 }

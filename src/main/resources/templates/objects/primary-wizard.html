@@ -36,6 +36,10 @@
             <button type="button" class="wizard-progress-step" data-step-index="3">4. Материалы</button>
         </nav>
 
+        <div class="alert" th:if="${#fields.hasGlobalErrors()}">
+            <p th:each="error : ${#fields.globalErrors()}" th:text="${error.defaultMessage}"></p>
+        </div>
+
         <div class="wizard-panels">
             <section class="wizard-step" data-step-index="0">
                 <h3>Шаг 1. Оборудование</h3>
@@ -76,6 +80,20 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="grid camera-settings" data-role="camera-fields"
+                             th:classappend="${group.cameraAccessory} == null and ${group.cameraViewingDepth} == null ? ' is-hidden' : ''">
+                            <div>
+                                <label>Комплектация камеры</label>
+                                <select th:field="*{deviceGroups[__${iter.index}__].cameraAccessory}" data-field="cameraAccessory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="option : ${cameraOptions}" th:value="${option.code}" th:text="${option.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Глубина просмотра (м)</label>
+                                <input type="number" min="0" step="0.1" th:field="*{deviceGroups[__${iter.index}__].cameraViewingDepth}" data-field="cameraViewingDepth" placeholder="Например, 40">
+                            </div>
+                        </div>
                         <button type="button" class="link-button danger remove-device" th:if="${iter.index > 0}">Удалить</button>
                     </div>
                 </div>
@@ -113,6 +131,19 @@
                                     <option value="">Не выбрана</option>
                                     <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
                                 </select>
+                            </div>
+                        </div>
+                        <div class="grid camera-settings is-hidden" data-role="camera-fields">
+                            <div>
+                                <label>Комплектация камеры</label>
+                                <select data-field="cameraAccessory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="option : ${cameraOptions}" th:value="${option.code}" th:text="${option.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Глубина просмотра (м)</label>
+                                <input type="number" min="0" step="0.1" data-field="cameraViewingDepth" placeholder="Например, 40">
                             </div>
                         </div>
                         <button type="button" class="link-button danger remove-device">Удалить</button>
@@ -155,6 +186,26 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="grid">
+                            <div>
+                                <label>Материал прокладки</label>
+                                <select th:field="*{connectionPoints[__${iter.index}__].layingMaterialId}" data-field="layingMaterialId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Категория поверхности</label>
+                                <select th:field="*{connectionPoints[__${iter.index}__].layingSurfaceCategory}" data-field="layingSurfaceCategory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Доп. описание поверхности</label>
+                                <input type="text" th:field="*{connectionPoints[__${iter.index}__].layingSurface}" data-field="layingSurface" placeholder="По стене, в коробе...">
+                            </div>
+                        </div>
                         <div>
                             <label>Способ прокладки</label>
                             <input type="text" th:field="*{connectionPoints[__${iter.index}__].layingMethod}" data-field="layingMethod" placeholder="В гофре по потолку...">
@@ -189,6 +240,26 @@
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}" th:value="${cable.id}" th:text="${cable.name}"></option>
                                 </select>
+                            </div>
+                        </div>
+                        <div class="grid">
+                            <div>
+                                <label>Материал прокладки</label>
+                                <select data-field="layingMaterialId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Категория поверхности</label>
+                                <select data-field="layingSurfaceCategory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Доп. описание поверхности</label>
+                                <input type="text" data-field="layingSurface" placeholder="По стене, в коробе...">
                             </div>
                         </div>
                         <div>
@@ -273,23 +344,6 @@
                             <h4 class="group-label">Группа: <span data-role="label" th:text="${group.groupLabel}">Без названия</span></h4>
                         </header>
                         <p class="field-error capacity-warning" data-role="capacity-warning" hidden>Длина материалов превышает допустимую для этой группы.</p>
-                        <div class="grid">
-                            <div>
-                                <label>Отображаемое название</label>
-                                <input type="text" th:field="*{materialGroups[__${gIndex.index}__].groupName}" data-field="groupName" placeholder="Например, Линия 1">
-                            </div>
-                            <div>
-                                <label>Категория поверхности</label>
-                                <select th:field="*{materialGroups[__${gIndex.index}__].surfaceCategory}" data-field="surfaceCategory">
-                                    <option value="">Не выбрана</option>
-                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Дополнительное описание</label>
-                                <input type="text" th:field="*{materialGroups[__${gIndex.index}__].surface}" data-field="surface" placeholder="По потолку, в коробе...">
-                            </div>
-                        </div>
                         <div class="stack materials-container" th:id="${'material-rows-' + gIndex.index}">
                             <div class="material-row" th:each="usage, uIndex : *{materialGroups[__${gIndex.index}__].materials}" th:data-index="${uIndex.index}">
                                 <div class="grid">
@@ -329,23 +383,6 @@
                             <h4 class="group-label">Группа: <span data-role="label">Без названия</span></h4>
                         </header>
                         <p class="field-error capacity-warning" data-role="capacity-warning" hidden>Длина материалов превышает допустимую для этой группы.</p>
-                        <div class="grid">
-                            <div>
-                                <label>Отображаемое название</label>
-                                <input type="text" data-field="groupName" placeholder="Например, Линия 1">
-                            </div>
-                            <div>
-                                <label>Категория поверхности</label>
-                                <select data-field="surfaceCategory">
-                                    <option value="">Не выбрана</option>
-                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
-                                </select>
-                            </div>
-                            <div>
-                                <label>Дополнительное описание</label>
-                                <input type="text" data-field="surface" placeholder="По потолку, в коробе...">
-                            </div>
-                        </div>
                         <div class="stack materials-container">
                             <div class="material-row">
                                 <div class="grid">
@@ -393,7 +430,14 @@
                                 <input type="text" data-field="amount" placeholder="25 м, 4 шт...">
                             </div>
                             <div>
-                                <label>По чему проложены</label>
+                                <label>Категория прокладки</label>
+                                <select data-field="layingSurfaceCategory">
+                                    <option value="">Не выбрана</option>
+                                    <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Доп. описание прокладки</label>
                                 <input type="text" data-field="layingSurface" placeholder="По стене, в коробе...">
                             </div>
                         </div>
@@ -511,6 +555,41 @@
             return Array.from(deviceContainer?.querySelectorAll('.device-group') ?? []);
         }
 
+        function isCameraDevice(select) {
+            if (!(select instanceof HTMLSelectElement)) {
+                return false;
+            }
+            const option = select.options[select.selectedIndex];
+            const label = option?.text?.toLowerCase() ?? '';
+            return label.includes('камера');
+        }
+
+        function updateCameraFieldsForGroup(group) {
+            if (!group) {
+                return;
+            }
+            const typeSelect = group.querySelector('select[data-field="deviceTypeId"]');
+            const accessorySelect = group.querySelector('select[data-field="cameraAccessory"]');
+            const depthInput = group.querySelector('input[data-field="cameraViewingDepth"]');
+            const cameraFields = group.querySelector('[data-role="camera-fields"]');
+            const cameraSelected = isCameraDevice(typeSelect);
+            if (cameraFields) {
+                cameraFields.classList.toggle('is-hidden', !cameraSelected);
+            }
+            if (accessorySelect) {
+                accessorySelect.disabled = !cameraSelected;
+                if (!cameraSelected) {
+                    accessorySelect.value = '';
+                }
+            }
+            if (depthInput) {
+                depthInput.disabled = !cameraSelected;
+                if (!cameraSelected) {
+                    depthInput.value = '';
+                }
+            }
+        }
+
         function getMountingRows() {
             return Array.from(document.querySelectorAll('.mounting-row'));
         }
@@ -543,6 +622,7 @@
                 if (removeButton) {
                     removeButton.style.display = index === 0 ? 'none' : '';
                 }
+                updateCameraFieldsForGroup(group);
             });
             updateTotalConnectionPoints();
             ensureDeviceCards();
@@ -731,6 +811,8 @@
             const installInput = group.querySelector('input[data-field="installLocation"]');
             const connectionInput = group.querySelector('input[data-field="connectionPoint"]');
             const distanceInput = group.querySelector('input[data-field="distanceToConnectionPoint"]');
+            const accessorySelect = group.querySelector('select[data-field="cameraAccessory"]');
+            const viewingDepthInput = group.querySelector('input[data-field="cameraViewingDepth"]');
             const typeName = typeSelect instanceof HTMLSelectElement
                 ? typeSelect.options[typeSelect.selectedIndex]?.text?.trim()
                 : '';
@@ -739,7 +821,12 @@
                 count: countInput?.value.trim() || '',
                 installLocation: installInput?.value.trim() || '',
                 connectionPoint: connectionInput?.value.trim() || '',
-                distance: distanceInput?.value.trim() || ''
+                distance: distanceInput?.value.trim() || '',
+                accessory: accessorySelect instanceof HTMLSelectElement
+                    ? accessorySelect.options[accessorySelect.selectedIndex]?.text?.trim() || ''
+                    : '',
+                viewingDepth: viewingDepthInput?.value.trim() || '',
+                isCamera: isCameraDevice(typeSelect)
             };
         }
 
@@ -771,6 +858,14 @@
                 }
                 if (data.distance) {
                     parts.push(`Расстояние: ${data.distance} м`);
+                }
+                if (data.isCamera && data.accessory) {
+                    parts.push(`Комплектация: ${data.accessory}`);
+                }
+                if (data.isCamera && data.viewingDepth) {
+                    const hasUnit = /[a-zа-я]/i.test(data.viewingDepth);
+                    const depthLabel = hasUnit ? data.viewingDepth : `${data.viewingDepth} м`;
+                    parts.push(`Глубина: ${depthLabel}`);
                 }
                 summary.textContent = parts.length > 0
                     ? parts.join(' • ')
@@ -879,6 +974,9 @@
                 const distanceInput = row.querySelector('input[data-field="distanceToPower"]');
                 const cableSelect = row.querySelector('select[data-field="powerCableTypeId"]');
                 const layingInput = row.querySelector('[data-field="layingMethod"]');
+                const materialSelect = row.querySelector('select[data-field="layingMaterialId"]');
+                const surfaceCategorySelect = row.querySelector('select[data-field="layingSurfaceCategory"]');
+                const surfaceInput = row.querySelector('input[data-field="layingSurface"]');
                 row.dataset.index = index.toString();
                 if (nameInput) {
                     nameInput.setAttribute('name', `connectionPoints[${index}].name`);
@@ -892,6 +990,15 @@
                 }
                 if (cableSelect) {
                     cableSelect.setAttribute('name', `connectionPoints[${index}].powerCableTypeId`);
+                }
+                if (materialSelect) {
+                    materialSelect.setAttribute('name', `connectionPoints[${index}].layingMaterialId`);
+                }
+                if (surfaceCategorySelect) {
+                    surfaceCategorySelect.setAttribute('name', `connectionPoints[${index}].layingSurfaceCategory`);
+                }
+                if (surfaceInput) {
+                    surfaceInput.setAttribute('name', `connectionPoints[${index}].layingSurface`);
                 }
                 if (layingInput) {
                     layingInput.setAttribute('name', `connectionPoints[${index}].layingMethod`);
@@ -1050,21 +1157,9 @@
             groups.forEach((group, groupIndex) => {
                 group.dataset.index = groupIndex.toString();
                 const labelInput = group.querySelector('input[data-field="groupLabel"]');
-                const nameInput = group.querySelector('input[data-field="groupName"]');
-                const surfaceInput = group.querySelector('input[data-field="surface"]');
-                const surfaceCategorySelect = group.querySelector('[data-field="surfaceCategory"]');
                 if (labelInput) {
                     labelInput.setAttribute('name', `materialGroups[${groupIndex}].groupLabel`);
                     group.dataset.groupLabel = labelInput.value.trim();
-                }
-                if (nameInput) {
-                    nameInput.setAttribute('name', `materialGroups[${groupIndex}].groupName`);
-                }
-                if (surfaceInput) {
-                    surfaceInput.setAttribute('name', `materialGroups[${groupIndex}].surface`);
-                }
-                if (surfaceCategorySelect) {
-                    surfaceCategorySelect.setAttribute('name', `materialGroups[${groupIndex}].surfaceCategory`);
                 }
                 const rows = Array.from(group.querySelectorAll('.material-row'));
                 rows.forEach((row, rowIndex) => {
@@ -1172,15 +1267,25 @@
                 updateDeviceSummaries();
                 updateGroupCapacities();
                 validateMaterialCapacity();
+            } else if (field === 'cameraViewingDepth') {
+                updateDeviceSummaries();
             }
         });
 
         deviceContainer?.addEventListener('change', event => {
             const target = event.target;
-            if (target instanceof HTMLSelectElement && target.getAttribute('data-field') === 'deviceTypeId') {
+            if (!(target instanceof HTMLSelectElement)) {
+                return;
+            }
+            const field = target.getAttribute('data-field');
+            if (field === 'deviceTypeId') {
+                const group = target.closest('.device-group');
+                updateCameraFieldsForGroup(group);
                 updateDeviceSummaries();
                 updateGroupCapacities();
                 validateMaterialCapacity();
+            } else if (field === 'cameraAccessory') {
+                updateDeviceSummaries();
             }
         });
 

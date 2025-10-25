@@ -3,6 +3,7 @@ package com.kapamejlbka.objectmannage.web;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kapamejlbka.objectmannage.model.CableType;
+import com.kapamejlbka.objectmannage.model.CameraInstallationOption;
 import com.kapamejlbka.objectmannage.model.DeviceType;
 import com.kapamejlbka.objectmannage.model.InstallationMaterial;
 import com.kapamejlbka.objectmannage.model.ManagedObject;
@@ -40,8 +41,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Locale;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.core.io.Resource;
 import org.springframework.http.ContentDisposition;
@@ -301,6 +305,11 @@ public class ObjectController {
         List<MountingElement> mountingElements = mountingElementRepository.findAll();
         List<InstallationMaterial> materials = installationMaterialRepository.findAll();
         List<CableType> cableTypes = cableTypeRepository.findAll();
+        form.validate(bindingResult);
+        if (bindingResult.hasErrors()) {
+            prepareWizardModel(model, managedObject, form);
+            return "objects/primary-wizard";
+        }
         PrimaryDataSnapshot snapshot = form.toSnapshot(deviceTypes, mountingElements, materials, cableTypes);
         String json;
         try {
@@ -343,6 +352,7 @@ public class ObjectController {
         model.addAttribute("totalConnectionPoints", form.calculateTotalConnectionPoints());
         model.addAttribute("mapProvider", applicationSettingsService.getMapProvider());
         model.addAttribute("surfaceTypes", SurfaceType.values());
+        model.addAttribute("cameraOptions", CameraInstallationOption.values());
     }
 
     private PrimaryDataSnapshot parseSnapshot(String primaryData) {
@@ -553,6 +563,8 @@ public class ObjectController {
     }
 
     public static class PrimaryDataWizardForm {
+        private static final Pattern LENGTH_PATTERN = Pattern.compile("(-?\\d+(?:[.,]\\d+)?)");
+        private static final double LENGTH_TOLERANCE = 0.0001;
         @Valid
         private List<DeviceGroupForm> deviceGroups = new ArrayList<>();
         @Valid
@@ -601,6 +613,8 @@ public class ObjectController {
                     groupForm.setConnectionPoint(group.getConnectionPoint());
                     groupForm.setDistanceToConnectionPoint(group.getDistanceToConnectionPoint());
                     groupForm.setGroupLabel(group.getGroupLabel());
+                    groupForm.setCameraAccessory(group.getCameraAccessory());
+                    groupForm.setCameraViewingDepth(group.getCameraViewingDepth());
                     form.deviceGroups.add(groupForm);
                 }
             }
@@ -626,6 +640,19 @@ public class ObjectController {
                     pointForm.setDistanceToPower(point.getDistanceToPower());
                     pointForm.setPowerCableTypeId(point.getPowerCableTypeId());
                     pointForm.setLayingMethod(point.getLayingMethod());
+                    pointForm.setLayingMaterialId(point.getLayingMaterialId());
+                    pointForm.setLayingSurface(point.getLayingSurface());
+                    pointForm.setLayingSurfaceCategory(point.getLayingSurfaceCategory());
+                    if (!StringUtils.hasText(pointForm.getLayingSurfaceCategory())) {
+                        SurfaceType.resolve(point.getLayingSurface())
+                                .ifPresent(surfaceType -> {
+                                    pointForm.setLayingSurfaceCategory(surfaceType.getCode());
+                                    pointForm.setLayingSurface(surfaceType.getDisplayName());
+                                });
+                    } else {
+                        SurfaceType.resolve(pointForm.getLayingSurfaceCategory())
+                                .ifPresent(surfaceType -> pointForm.setLayingSurface(surfaceType.getDisplayName()));
+                    }
                     form.connectionPoints.add(pointForm);
                 }
             }
@@ -646,23 +673,7 @@ public class ObjectController {
             if (snapshot != null && snapshot.getMaterialGroups() != null) {
                 for (PrimaryDataSnapshot.MaterialGroup group : snapshot.getMaterialGroups()) {
                     MaterialGroupForm groupForm = new MaterialGroupForm();
-                    groupForm.setGroupName(group.getGroupName());
                     groupForm.setGroupLabel(group.getGroupLabel());
-                    groupForm.setSurface(group.getSurface());
-                    groupForm.setSurfaceCategory(group.getSurfaceCategory());
-                    if (!StringUtils.hasText(groupForm.getSurfaceCategory())) {
-                        SurfaceType.resolve(group.getSurface())
-                                .ifPresent(surfaceType -> {
-                                    groupForm.setSurfaceCategory(surfaceType.getCode());
-                                    groupForm.setSurface(surfaceType.getDisplayName());
-                                });
-                    } else {
-                        SurfaceType.resolve(groupForm.getSurfaceCategory())
-                                .ifPresent(surfaceType -> {
-                                    groupForm.setSurfaceCategory(surfaceType.getCode());
-                                    groupForm.setSurface(surfaceType.getDisplayName());
-                                });
-                    }
                     if (group.getMaterials() != null) {
                         for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
                             MaterialUsageForm usageForm = new MaterialUsageForm();
@@ -794,6 +805,55 @@ public class ObjectController {
             return unique.size();
         }
 
+        public void validate(BindingResult bindingResult) {
+            Map<String, Double> capacities = new HashMap<>();
+            for (DeviceGroupForm group : deviceGroups) {
+                if (group == null) {
+                    continue;
+                }
+                String label = trim(group.getGroupLabel());
+                if (!StringUtils.hasText(label)) {
+                    continue;
+                }
+                double distance = group.getDistanceToConnectionPoint() != null
+                        ? Math.max(0.0, group.getDistanceToConnectionPoint())
+                        : 0.0;
+                int count = group.getDeviceCount() != null ? Math.max(group.getDeviceCount(), 0) : 0;
+                double length = distance * count;
+                if (length > 0) {
+                    capacities.merge(label, length, Double::sum);
+                }
+            }
+            for (MaterialGroupForm group : materialGroups) {
+                if (group == null) {
+                    continue;
+                }
+                String label = trim(group.getGroupLabel());
+                if (!StringUtils.hasText(label)) {
+                    continue;
+                }
+                double capacity = capacities.getOrDefault(label, 0.0);
+                double used = 0.0;
+                if (group.getMaterials() != null) {
+                    for (MaterialUsageForm usage : group.getMaterials()) {
+                        if (usage == null) {
+                            continue;
+                        }
+                        double length = parseLength(usage.getAmount());
+                        if (length > 0) {
+                            used += length;
+                        }
+                    }
+                }
+                if (capacity > 0 && used > capacity + LENGTH_TOLERANCE) {
+                    String message = String.format(Locale.getDefault(),
+                            "Группа \"%s\": запланировано %.2f м при доступных %.2f м.",
+                            label, used, capacity);
+                    bindingResult.reject("materialGroups.capacity", message);
+                }
+            }
+        }
+
         public PrimaryDataSnapshot toSnapshot(List<DeviceType> deviceTypes,
                                               List<MountingElement> availableMountingElements,
                                               List<InstallationMaterial> materials,
@@ -829,6 +889,12 @@ public class ObjectController {
                 group.setConnectionPoint(trim(form.getConnectionPoint()));
                 group.setDistanceToConnectionPoint(form.getDistanceToConnectionPoint());
                 group.setGroupLabel(trim(form.getGroupLabel()));
+                if (StringUtils.hasText(form.getCameraAccessory())) {
+                    group.setCameraAccessory(form.getCameraAccessory().trim());
+                } else {
+                    group.setCameraAccessory(null);
+                }
+                group.setCameraViewingDepth(form.getCameraViewingDepth());
                 snapshotGroups.add(group);
             }
             snapshot.setDeviceGroups(snapshotGroups);
@@ -856,6 +922,23 @@ public class ObjectController {
                         snapshotPoint.setPowerCableTypeName(cableType.getName());
                     }
                 }
+                snapshotPoint.setLayingMaterialId(connectionPoint.getLayingMaterialId());
+                if (connectionPoint.getLayingMaterialId() != null) {
+                    InstallationMaterial material = materialMap.get(connectionPoint.getLayingMaterialId());
+                    if (material != null) {
+                        snapshotPoint.setLayingMaterialName(material.getName());
+                        snapshotPoint.setLayingMaterialUnit(material.getUnit());
+                    }
+                }
+                SurfaceType.resolve(connectionPoint.getLayingSurfaceCategory())
+                        .ifPresentOrElse(surfaceType -> {
+                                    snapshotPoint.setLayingSurface(surfaceType.getDisplayName());
+                                    snapshotPoint.setLayingSurfaceCategory(surfaceType.getCode());
+                                },
+                                () -> {
+                                    snapshotPoint.setLayingSurface(trim(connectionPoint.getLayingSurface()));
+                                    snapshotPoint.setLayingSurfaceCategory(trim(connectionPoint.getLayingSurfaceCategory()));
+                                });
                 snapshotPoint.setLayingMethod(trim(connectionPoint.getLayingMethod()));
                 connectionPointSnapshots.add(snapshotPoint);
             }
@@ -901,24 +984,14 @@ public class ObjectController {
                             }, () -> usage.setLayingSurfaceCategory(trim(usageForm.getLayingSurfaceCategory())));
                     usages.add(usage);
                 }
-                boolean hasGroupData = StringUtils.hasText(groupForm.getGroupName())
-                        || StringUtils.hasText(groupForm.getSurface())
-                        || StringUtils.hasText(groupForm.getSurfaceCategory())
+                boolean hasGroupData = StringUtils.hasText(groupForm.getGroupLabel())
                         || !usages.isEmpty();
                 if (!hasGroupData) {
                     continue;
                 }
                 PrimaryDataSnapshot.MaterialGroup group = new PrimaryDataSnapshot.MaterialGroup();
-                group.setGroupName(trim(groupForm.getGroupName()));
+                group.setGroupName(trim(groupForm.getGroupLabel()));
                 group.setGroupLabel(trim(groupForm.getGroupLabel()));
-                SurfaceType.resolve(groupForm.getSurfaceCategory())
-                        .ifPresentOrElse(surfaceType -> {
-                            group.setSurface(surfaceType.getDisplayName());
-                            group.setSurfaceCategory(surfaceType.getCode());
-                        }, () -> {
-                            group.setSurface(trim(groupForm.getSurface()));
-                            group.setSurfaceCategory(trim(groupForm.getSurfaceCategory()));
-                        });
                 group.setMaterials(usages);
                 materialGroupsSnapshot.add(group);
             }
@@ -930,6 +1003,22 @@ public class ObjectController {
             return value == null ? null : value.trim();
         }
 
+        private double parseLength(String value) {
+            if (!StringUtils.hasText(value)) {
+                return 0.0;
+            }
+            String normalized = value.replace(',', '.');
+            Matcher matcher = LENGTH_PATTERN.matcher(normalized);
+            if (!matcher.find()) {
+                return 0.0;
+            }
+            try {
+                return Double.parseDouble(matcher.group(1));
+            } catch (NumberFormatException ex) {
+                return 0.0;
+            }
+        }
+
         public static class DeviceGroupForm {
             private UUID deviceTypeId;
             private Integer deviceCount;
@@ -938,6 +1027,8 @@ public class ObjectController {
             private String connectionPoint;
             private Double distanceToConnectionPoint;
             private String groupLabel;
+            private String cameraAccessory;
+            private Double cameraViewingDepth;
 
             public boolean isEmpty() {
                 return (deviceTypeId == null)
@@ -946,7 +1037,9 @@ public class ObjectController {
                         && !StringUtils.hasText(installSurfaceCategory)
                         && !StringUtils.hasText(connectionPoint)
                         && distanceToConnectionPoint == null
-                        && !StringUtils.hasText(groupLabel);
+                        && !StringUtils.hasText(groupLabel)
+                        && !StringUtils.hasText(cameraAccessory)
+                        && cameraViewingDepth == null;
             }
 
             public UUID getDeviceTypeId() {
@@ -1004,6 +1097,22 @@ public class ObjectController {
             public void setGroupLabel(String groupLabel) {
                 this.groupLabel = groupLabel;
             }
+
+            public String getCameraAccessory() {
+                return cameraAccessory;
+            }
+
+            public void setCameraAccessory(String cameraAccessory) {
+                this.cameraAccessory = cameraAccessory;
+            }
+
+            public Double getCameraViewingDepth() {
+                return cameraViewingDepth;
+            }
+
+            public void setCameraViewingDepth(Double cameraViewingDepth) {
+                this.cameraViewingDepth = cameraViewingDepth;
+            }
         }
 
         public static class ConnectionPointForm {
@@ -1012,6 +1121,9 @@ public class ObjectController {
             private Double distanceToPower;
             private UUID powerCableTypeId;
             private String layingMethod;
+            private UUID layingMaterialId;
+            private String layingSurface;
+            private String layingSurfaceCategory;
 
             public String getName() {
                 return name;
@@ -1052,6 +1164,30 @@ public class ObjectController {
             public void setLayingMethod(String layingMethod) {
                 this.layingMethod = layingMethod;
             }
+
+            public UUID getLayingMaterialId() {
+                return layingMaterialId;
+            }
+
+            public void setLayingMaterialId(UUID layingMaterialId) {
+                this.layingMaterialId = layingMaterialId;
+            }
+
+            public String getLayingSurface() {
+                return layingSurface;
+            }
+
+            public void setLayingSurface(String layingSurface) {
+                this.layingSurface = layingSurface;
+            }
+
+            public String getLayingSurfaceCategory() {
+                return layingSurfaceCategory;
+            }
+
+            public void setLayingSurfaceCategory(String layingSurfaceCategory) {
+                this.layingSurfaceCategory = layingSurfaceCategory;
+            }
         }
 
         public static class MountingSelectionForm {
@@ -1085,20 +1221,9 @@ public class ObjectController {
         }
 
         public static class MaterialGroupForm {
-            private String groupName;
             private String groupLabel;
-            private String surface;
-            private String surfaceCategory;
             @Valid
             private List<MaterialUsageForm> materials = new ArrayList<>();
-
-            public String getGroupName() {
-                return groupName;
-            }
-
-            public void setGroupName(String groupName) {
-                this.groupName = groupName;
-            }
 
             public String getGroupLabel() {
                 return groupLabel;
@@ -1106,22 +1231,6 @@ public class ObjectController {
 
             public void setGroupLabel(String groupLabel) {
                 this.groupLabel = groupLabel;
-            }
-
-            public String getSurface() {
-                return surface;
-            }
-
-            public void setSurface(String surface) {
-                this.surface = surface;
-            }
-
-            public String getSurfaceCategory() {
-                return surfaceCategory;
-            }
-
-            public void setSurfaceCategory(String surfaceCategory) {
-                this.surfaceCategory = surfaceCategory;
             }
 
             public List<MaterialUsageForm> getMaterials() {
