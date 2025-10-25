@@ -150,7 +150,6 @@
                                     <th>Кабель</th>
                                     <th>Материал прокладки</th>
                                     <th>Поверхность</th>
-                                    <th>Способ прокладки</th>
                                 </tr>
                                 </thead>
                                 <tbody>
@@ -165,7 +164,6 @@
                                     </td>
                                     <td th:classappend="${((node.layingSurface == null or node.layingSurface.isBlank()) and (node.layingSurfaceCategory == null or node.layingSurfaceCategory.isBlank())) or (node.layingSurfaceCategory != null and node.layingSurfaceCategory.equalsIgnoreCase('UNKNOWN')) ? 'table-warning' : ''}"
                                         th:text="${(node.layingSurface != null and !node.layingSurface.isBlank()) ? node.layingSurface : ((node.layingSurfaceCategory != null and !node.layingSurfaceCategory.isBlank()) ? (node.layingSurfaceCategory.equalsIgnoreCase('UNKNOWN') ? 'Уточнить' : node.layingSurfaceCategory) : 'Уточнить')}"></td>
-                                    <td th:text="${node.layingMethod != null ? node.layingMethod : '—'}"></td>
                                 </tr>
                                 </tbody>
                             </table>

@@ -6,6 +6,7 @@ import com.kapamejlbka.objectmannage.model.PrimaryDataSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.DeviceGroup;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MaterialGroup;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MaterialUsage;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MountingMaterial;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MountingRequirement;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.AdditionalMaterialItem;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableFunctionSummary;
@@ -143,7 +144,36 @@ public class PdfReportService {
                     }
                     String element = safeText(requirement.getElementName());
                     String quantity = safeText(requirement.getQuantity());
-                    items.add(String.format("%s — %s", element, StringUtils.hasText(quantity) ? quantity : "не указано"));
+                    StringBuilder builder = new StringBuilder();
+                    builder.append(element);
+                    builder.append(" — ");
+                    builder.append(StringUtils.hasText(quantity) ? quantity : "не указано");
+                    List<MountingMaterial> materials = requirement.getMaterials();
+                    if (materials != null) {
+                        List<String> materialDetails = new ArrayList<>();
+                        for (MountingMaterial material : materials) {
+                            if (material == null) {
+                                continue;
+                            }
+                            String name = safeText(material.getMaterialName());
+                            if (!StringUtils.hasText(name)) {
+                                continue;
+                            }
+                            String amount = safeText(material.getAmount());
+                            String unit = safeText(material.getUnit());
+                            StringBuilder materialBuilder = new StringBuilder(name);
+                            if (StringUtils.hasText(amount)) {
+                                materialBuilder.append(" — ").append(amount);
+                            } else if (StringUtils.hasText(unit)) {
+                                materialBuilder.append(" (" + unit + ")");
+                            }
+                            materialDetails.add(materialBuilder.toString());
+                        }
+                        if (!materialDetails.isEmpty()) {
+                            builder.append("; материалы: ").append(String.join(", ", materialDetails));
+                        }
+                    }
+                    items.add(builder.toString());
                 }
                 writeBulletList(items, 12f);
             }

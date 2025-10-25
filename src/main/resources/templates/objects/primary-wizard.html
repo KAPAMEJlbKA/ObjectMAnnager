@@ -105,75 +105,31 @@
                         </div>
                         <div class="grid cable-settings" data-role="cable-fields">
                             <div class="cable-field" data-cable-function="SIGNAL">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL]}">Сигнальный кабель</label>
+                                <label th:attr="data-default-label=${cableFunctionLabels[signalCableFunction]}"
+                                       th:text="${cableFunctionLabels[signalCableFunction]}">Сигнальный кабель</label>
                                 <select th:field="*{deviceGroups[__${iter.index}__].signalCableTypeId}" data-field="signalCableTypeId">
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL}"
+                                            th:if="${cable.function == signalCableFunction}"
                                             th:value="${cable.id}"
                                             th:text="${cable.name}"></option>
                                 </select>
                                 <p class="field-error"
                                    th:if="${#fields.hasErrors('deviceGroups[' + iter.index + '].signalCableTypeId')}"
-                                   th:errors="*{deviceGroups[__${iter.index}__].signalCableTypeId}"></p>
+                                    th:errors="*{deviceGroups[__${iter.index}__].signalCableTypeId}"></p>
                             </div>
                             <div class="cable-field" data-cable-function="LOW_VOLTAGE_POWER">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER]}">Кабель для слаботочного питания</label>
+                                <label th:text="${cableFunctionLabels[lowVoltageCableFunction]}">Кабель для слаботочного питания</label>
                                 <select th:field="*{deviceGroups[__${iter.index}__].lowVoltageCableTypeId}" data-field="lowVoltageCableTypeId">
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER}"
+                                            th:if="${cable.function == lowVoltageCableFunction}"
                                             th:value="${cable.id}"
                                             th:text="${cable.name}"></option>
                                 </select>
                                 <p class="field-error"
                                    th:if="${#fields.hasErrors('deviceGroups[' + iter.index + '].lowVoltageCableTypeId')}"
                                    th:errors="*{deviceGroups[__${iter.index}__].lowVoltageCableTypeId}"></p>
-                            </div>
-                            <div class="cable-field" data-cable-function="POWER">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).POWER]}">Силовой кабель</label>
-                                <select th:field="*{deviceGroups[__${iter.index}__].powerCableTypeId}" data-field="powerCableTypeId">
-                                    <option value="">Не выбран</option>
-                                    <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).POWER}"
-                                            th:value="${cable.id}"
-                                            th:text="${cable.name}"></option>
-                                </select>
-                                <p class="field-error"
-                                   th:if="${#fields.hasErrors('deviceGroups[' + iter.index + '].powerCableTypeId')}"
-                                   th:errors="*{deviceGroups[__${iter.index}__].powerCableTypeId}"></p>
-                            </div>
-                        </div>
-                        <div class="grid cable-settings" data-role="cable-fields">
-                            <div class="cable-field" data-cable-function="SIGNAL">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL]}">Сигнальный кабель</label>
-                                <select th:field="*{deviceGroups[__${iter.index}__].signalCableTypeId}" data-field="signalCableTypeId">
-                                    <option value="">Не выбран</option>
-                                    <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL}"
-                                            th:value="${cable.id}"
-                                            th:text="${cable.name}"></option>
-                                </select>
-                            </div>
-                            <div class="cable-field" data-cable-function="LOW_VOLTAGE_POWER">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER]}">Кабель для слаботочного питания</label>
-                                <select th:field="*{deviceGroups[__${iter.index}__].lowVoltageCableTypeId}" data-field="lowVoltageCableTypeId">
-                                    <option value="">Не выбран</option>
-                                    <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER}"
-                                            th:value="${cable.id}"
-                                            th:text="${cable.name}"></option>
-                                </select>
-                            </div>
-                            <div class="cable-field" data-cable-function="POWER">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).POWER]}">Силовой кабель</label>
-                                <select th:field="*{deviceGroups[__${iter.index}__].powerCableTypeId}" data-field="powerCableTypeId">
-                                    <option value="">Не выбран</option>
-                                    <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).POWER}"
-                                            th:value="${cable.id}"
-                                            th:text="${cable.name}"></option>
-                                </select>
                             </div>
                         </div>
                         <button type="button" class="link-button danger remove-device" th:if="${iter.index > 0}">Удалить</button>
@@ -233,31 +189,22 @@
                         </div>
                         <div class="grid cable-settings is-hidden" data-role="cable-fields">
                             <div class="cable-field" data-cable-function="SIGNAL">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL]}">Сигнальный кабель</label>
+                                <label th:attr="data-default-label=${cableFunctionLabels[signalCableFunction]}"
+                                       th:text="${cableFunctionLabels[signalCableFunction]}">Сигнальный кабель</label>
                                 <select data-field="signalCableTypeId">
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).SIGNAL}"
+                                            th:if="${cable.function == signalCableFunction}"
                                             th:value="${cable.id}"
                                             th:text="${cable.name}"></option>
                                 </select>
                             </div>
                             <div class="cable-field" data-cable-function="LOW_VOLTAGE_POWER">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER]}">Кабель для слаботочного питания</label>
+                                <label th:text="${cableFunctionLabels[lowVoltageCableFunction]}">Кабель для слаботочного питания</label>
                                 <select data-field="lowVoltageCableTypeId">
                                     <option value="">Не выбран</option>
                                     <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).LOW_VOLTAGE_POWER}"
-                                            th:value="${cable.id}"
-                                            th:text="${cable.name}"></option>
-                                </select>
-                            </div>
-                            <div class="cable-field" data-cable-function="POWER">
-                                <label th:text="${cableFunctionLabels[T(com.kapamejlbka.objectmannage.model.CableFunction).POWER]}">Силовой кабель</label>
-                                <select data-field="powerCableTypeId">
-                                    <option value="">Не выбран</option>
-                                    <option th:each="cable : ${cableTypes}"
-                                            th:if="${cable.function == T(com.kapamejlbka.objectmannage.model.CableFunction).POWER}"
+                                            th:if="${cable.function == lowVoltageCableFunction}"
                                             th:value="${cable.id}"
                                             th:text="${cable.name}"></option>
                                 </select>
@@ -296,10 +243,13 @@
                                 <input type="number" min="0" step="0.1" th:field="*{connectionPoints[__${iter.index}__].distanceToPower}" data-field="distanceToPower" placeholder="Например, 5">
                             </div>
                             <div>
-                                <label>Тип кабеля питания</label>
+                                <label>Тип силового кабеля</label>
                                 <select th:field="*{connectionPoints[__${iter.index}__].powerCableTypeId}" data-field="powerCableTypeId">
                                     <option value="">Не выбран</option>
-                                    <option th:each="cable : ${cableTypes}" th:value="${cable.id}" th:text="${cable.name}"></option>
+                                    <option th:each="cable : ${cableTypes}"
+                                            th:if="${cable.function == powerCableFunction}"
+                                            th:value="${cable.id}"
+                                            th:text="${cable.name}"></option>
                                 </select>
                             </div>
                         </div>
@@ -322,10 +272,6 @@
                                 <label>Доп. описание поверхности</label>
                                 <input type="text" th:field="*{connectionPoints[__${iter.index}__].layingSurface}" data-field="layingSurface" placeholder="По стене, в коробе...">
                             </div>
-                        </div>
-                        <div>
-                            <label>Способ прокладки</label>
-                            <input type="text" th:field="*{connectionPoints[__${iter.index}__].layingMethod}" data-field="layingMethod" placeholder="В гофре по потолку...">
                         </div>
                         <p class="connection-usage" data-role="usage">Устройства будут отображены после заполнения первого шага.</p>
                     </div>
@@ -352,10 +298,13 @@
                                 <input type="number" min="0" step="0.1" data-field="distanceToPower" placeholder="Например, 5">
                             </div>
                             <div>
-                                <label>Тип кабеля питания</label>
+                                <label>Тип силового кабеля</label>
                                 <select data-field="powerCableTypeId">
                                     <option value="">Не выбран</option>
-                                    <option th:each="cable : ${cableTypes}" th:value="${cable.id}" th:text="${cable.name}"></option>
+                                    <option th:each="cable : ${cableTypes}"
+                                            th:if="${cable.function == powerCableFunction}"
+                                            th:value="${cable.id}"
+                                            th:text="${cable.name}"></option>
                                 </select>
                             </div>
                         </div>
@@ -378,10 +327,6 @@
                                 <label>Доп. описание поверхности</label>
                                 <input type="text" data-field="layingSurface" placeholder="По стене, в коробе...">
                             </div>
-                        </div>
-                        <div>
-                            <label>Способ прокладки</label>
-                            <input type="text" data-field="layingMethod" placeholder="В гофре по потолку...">
                         </div>
                         <p class="connection-usage" data-role="usage">Устройства будут отображены после заполнения первого шага.</p>
                     </div>
@@ -407,6 +352,7 @@
                         <div class="grouping-controls">
                             <button type="button" class="button secondary" id="add-group">Создать группу</button>
                         </div>
+                        <p class="field-error" id="grouping-warning" hidden></p>
                         <p class="muted small" id="grouping-empty">Создайте группу и перетащите в неё устройства.</p>
                         <div id="grouping-columns" class="grouping-columns"></div>
                     </section>
@@ -418,6 +364,7 @@
                             <button type="button" class="link-button danger remove-group">Удалить</button>
                         </header>
                         <p class="muted small" data-role="capacity">Длина линии: 0 м</p>
+                        <p class="muted small" data-role="connection-hint">Узел: не выбран</p>
                         <div class="group-dropzone" data-role="dropzone"></div>
                     </div>
                 </template>
@@ -432,27 +379,111 @@
 
             <section class="wizard-step" data-step-index="3" hidden>
                 <h3>Шаг 4. Монтажные материалы</h3>
-                <p class="muted">Для каждой созданной группы укажите материалы и способ прокладки. Если группа не требует материалов, оставьте поля пустыми.</p>
+                <p class="muted">Для каждой созданной группы укажите необходимые материалы. Если группа не требует материалов, оставьте поля пустыми.</p>
                 <div class="card nested-card">
                     <h4>Монтажные элементы</h4>
-                    <p class="muted small">Укажите дополнительные монтажные элементы, необходимые для всех групп.</p>
-                    <div class="stack">
-                        <div class="mounting-row" th:each="element, iter : *{mountingElements}" th:data-index="${iter.index}">
-                            <input type="hidden" th:field="*{mountingElements[__${iter.index}__].elementId}" data-field="elementId">
-                            <div class="grid">
+                    <p class="muted small">Монтажные коробки, назначенные на шаге «Точки подключения», отображаются автоматически. Добавьте материалы или дополнительные коробки при необходимости.</p>
+                    <div class="stack" id="mounting-list">
+                        <div class="mounting-row" th:each="element, iter : *{mountingElements}" th:data-index="${iter.index}" th:classappend="${element.autoAssigned} ? ' is-locked' : ''">
+                            <input type="hidden" th:field="*{mountingElements[__${iter.index}__].elementName}" data-field="elementName">
+                            <div class="grid mounting-row-header">
                                 <div>
-                                    <label th:for="${'mounting-' + iter.index}" th:text="${element.elementName != null ? element.elementName : 'Элемент'}">Элемент</label>
-                                    <input type="text" th:id="${'mounting-' + iter.index}" th:value="${element.elementName}" readonly>
+                                    <label>Монтажный короб / ящик</label>
+                                    <div class="mounting-element-display" th:if="${element.autoAssigned}">
+                                        <input type="hidden" th:field="*{mountingElements[__${iter.index}__].elementId}" data-field="elementId">
+                                        <p class="muted" data-role="element-name" th:text="${#strings.hasText(element.elementName) ? element.elementName : 'Не выбран'}">Не выбран</p>
+                                        <p class="muted small">Назначен на шаге точек подключения.</p>
+                                    </div>
+                                    <select th:unless="${element.autoAssigned}" th:field="*{mountingElements[__${iter.index}__].elementId}" data-field="elementId">
+                                        <option value="">Не выбран</option>
+                                        <option th:each="option : ${availableMountingElements}" th:value="${option.id}" th:text="${option.name}"></option>
+                                    </select>
                                 </div>
                                 <div>
                                     <label>Количество / примечание</label>
                                     <input type="text" th:field="*{mountingElements[__${iter.index}__].quantity}" data-field="quantity" placeholder="2 шт, 1 комплект...">
                                 </div>
                             </div>
+                            <div class="stack mounting-materials" data-role="materials">
+                                <div class="mounting-material-row" th:each="material, mIndex : *{mountingElements[__${iter.index}__].materials}" th:data-index="${mIndex.index}">
+                                    <div class="grid">
+                                        <div>
+                                            <label>Материал</label>
+                                            <select th:field="*{mountingElements[__${iter.index}__].materials[__${mIndex.index}__].materialId}" data-field="materialId">
+                                                <option value="">Не выбран</option>
+                                                <option th:each="materialOption : ${installationMaterials}" th:value="${materialOption.id}" th:text="${materialOption.name}"></option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label>Количество / примечание</label>
+                                            <input type="text" th:field="*{mountingElements[__${iter.index}__].materials[__${mIndex.index}__].amount}" data-field="amount" placeholder="1 комплект, 20 м...">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="link-button danger remove-mounting-material" th:if="${mIndex.index > 0}">Удалить материал</button>
+                                </div>
+                            </div>
+                            <button type="button" class="button tertiary" data-action="add-mounting-material">Добавить материал</button>
+                            <button type="button" class="link-button danger remove-mounting" th:if="${!element.autoAssigned && iter.index > 0}">Удалить</button>
                         </div>
-                        <p th:if="${#lists.isEmpty(mountingElements)}" class="muted small">Монтажные элементы пока не добавлены в администрировании.</p>
                     </div>
+                    <button type="button" class="button secondary" id="add-mounting-element">Добавить монтажный элемент</button>
                 </div>
+                <template id="mounting-row-template">
+                    <div class="mounting-row">
+                        <input type="hidden" data-field="elementName">
+                        <div class="grid mounting-row-header">
+                            <div>
+                                <label>Монтажный короб / ящик</label>
+                                <select data-field="elementId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="option : ${availableMountingElements}" th:value="${option.id}" th:text="${option.name}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Количество / примечание</label>
+                                <input type="text" data-field="quantity" placeholder="2 шт, 1 комплект...">
+                            </div>
+                        </div>
+                        <div class="stack mounting-materials" data-role="materials">
+                            <div class="mounting-material-row">
+                                <div class="grid">
+                                    <div>
+                                        <label>Материал</label>
+                                        <select data-field="materialId">
+                                            <option value="">Не выбран</option>
+                                            <option th:each="materialOption : ${installationMaterials}" th:value="${materialOption.id}" th:text="${materialOption.name}"></option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label>Количество / примечание</label>
+                                        <input type="text" data-field="amount" placeholder="1 комплект, 20 м...">
+                                    </div>
+                                </div>
+                                <button type="button" class="link-button danger remove-mounting-material">Удалить материал</button>
+                            </div>
+                        </div>
+                        <button type="button" class="button tertiary" data-action="add-mounting-material">Добавить материал</button>
+                        <button type="button" class="link-button danger remove-mounting">Удалить</button>
+                    </div>
+                </template>
+                <template id="mounting-material-template">
+                    <div class="mounting-material-row">
+                        <div class="grid">
+                            <div>
+                                <label>Материал</label>
+                                <select data-field="materialId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="materialOption : ${installationMaterials}" th:value="${materialOption.id}" th:text="${materialOption.name}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Количество / примечание</label>
+                                <input type="text" data-field="amount" placeholder="1 комплект, 20 м...">
+                            </div>
+                        </div>
+                        <button type="button" class="link-button danger remove-mounting-material">Удалить материал</button>
+                    </div>
+                </template>
                 <p class="muted" id="materials-empty" th:if="${#lists.isEmpty(wizardForm.materialGroups)}">Создайте хотя бы одну группу устройств на предыдущем шаге, чтобы назначить материалы.</p>
                 <div id="material-groups" class="stack">
                     <div class="material-group card nested-card" th:each="group, gIndex : *{materialGroups}" th:data-group-label="${group.groupLabel != null ? group.groupLabel : ''}">
@@ -590,10 +621,15 @@
         const groupingEmptyMessage = document.getElementById('grouping-empty');
         const addGroupButton = document.getElementById('add-group');
         const deviceChipTemplate = document.getElementById('device-chip-template');
+        const groupingWarning = document.getElementById('grouping-warning');
         const materialGroupsContainer = document.getElementById('material-groups');
         const materialGroupTemplate = document.getElementById('material-group-template');
         const materialRowTemplate = document.getElementById('material-row-template');
         const materialsEmptyMessage = document.getElementById('materials-empty');
+        const mountingList = document.getElementById('mounting-list');
+        const mountingRowTemplate = document.getElementById('mounting-row-template');
+        const mountingMaterialTemplate = document.getElementById('mounting-material-template');
+        const addMountingButton = document.getElementById('add-mounting-element');
         const stepSections = Array.from(document.querySelectorAll('.wizard-step'));
         const stepButtons = Array.from(document.querySelectorAll('.wizard-progress-step'));
         const prevButton = document.querySelector('[data-action="prev-step"]');
@@ -685,6 +721,24 @@
             return label.includes('камера');
         }
 
+        function normalizeConnectionName(value) {
+            return (value || '').trim().toLowerCase();
+        }
+
+        function requiresGenericCableLabel(select) {
+            if (!(select instanceof HTMLSelectElement)) {
+                return false;
+            }
+            const option = select.options[select.selectedIndex];
+            const label = option?.text?.toLowerCase() ?? '';
+            return label.includes('камера')
+                || label.includes('точка доступа')
+                || label.includes('wi-fi')
+                || label.includes('wifi')
+                || label.includes('точка сети')
+                || label.includes('сетевая точка');
+        }
+
         function updateCameraFieldsForGroup(group) {
             if (!group) {
                 return;
@@ -744,6 +798,18 @@
                 }
             });
             container.classList.toggle('is-hidden', requiredFunctions.length === 0);
+            const signalField = fields.find(field => (field.dataset.cableFunction || '').toUpperCase() === 'SIGNAL');
+            if (signalField) {
+                const labelElement = signalField.querySelector('label');
+                if (labelElement) {
+                    const defaultLabel = labelElement.dataset.defaultLabel || labelElement.textContent || '';
+                    if (requiresGenericCableLabel(typeSelect)) {
+                        labelElement.textContent = 'Кабель';
+                    } else if (defaultLabel) {
+                        labelElement.textContent = defaultLabel;
+                    }
+                }
+            }
         }
 
         function getMountingRows() {
@@ -751,15 +817,56 @@
         }
 
         function reindexMountingRows() {
-            getMountingRows().forEach((row, index) => {
+            const rows = getMountingRows();
+            rows.forEach((row, index) => {
                 row.dataset.index = index.toString();
                 row.querySelectorAll('[data-field]').forEach(field => {
+                    if (!(field instanceof HTMLElement)) {
+                        return;
+                    }
+                    if (field.closest('.mounting-material-row')) {
+                        return;
+                    }
                     const key = field.getAttribute('data-field');
                     if (!key) {
                         return;
                     }
                     field.setAttribute('name', `mountingElements[${index}].${key}`);
                 });
+                const materialsContainer = row.querySelector('[data-role="materials"]');
+                if (materialsContainer) {
+                    const materialRows = Array.from(materialsContainer.querySelectorAll('.mounting-material-row'));
+                    materialRows.forEach((materialRow, materialIndex) => {
+                        materialRow.dataset.index = materialIndex.toString();
+                        materialRow.querySelectorAll('[data-field]').forEach(field => {
+                            const key = field.getAttribute('data-field');
+                            if (!key) {
+                                return;
+                            }
+                            let name = '';
+                            if (key === 'materialId') {
+                                name = `mountingElements[${index}].materials[${materialIndex}].materialId`;
+                            } else if (key === 'amount') {
+                                name = `mountingElements[${index}].materials[${materialIndex}].amount`;
+                            }
+                            if (name) {
+                                field.setAttribute('name', name);
+                            }
+                        });
+                        const removeMaterialButton = materialRow.querySelector('.remove-mounting-material');
+                        if (removeMaterialButton) {
+                            removeMaterialButton.style.display = materialIndex === 0 ? 'none' : '';
+                        }
+                    });
+                }
+                const removeButton = row.querySelector('.remove-mounting');
+                if (removeButton) {
+                    if (row.classList.contains('is-locked')) {
+                        removeButton.style.display = 'none';
+                    } else {
+                        removeButton.style.display = index === 0 ? 'none' : '';
+                    }
+                }
             });
         }
 
@@ -799,9 +906,12 @@
                 event.dataTransfer?.setData('text/plain', card.dataset.index ?? '');
                 event.dataTransfer?.setDragImage(card, 12, 12);
                 card.classList.add('dragging');
+                showGroupingWarning('');
+                highlightDropzonesForCard(card);
             });
             card.addEventListener('dragend', () => {
                 card.classList.remove('dragging');
+                clearDropzoneHighlights();
             });
             card.dataset.dragBound = 'true';
         }
@@ -864,6 +974,7 @@
                 input.value = trimmed;
             }
             updateGroupingEmptyState();
+            updateColumnConnection(column);
             return column;
         }
 
@@ -899,6 +1010,7 @@
             dropzone?.addEventListener('drop', event => {
                 event.preventDefault();
                 dropzone.classList.remove('drop-target');
+                clearDropzoneHighlights();
                 const index = Number(event.dataTransfer?.getData('text/plain'));
                 const label = column.dataset.groupLabel || input?.value.trim() || '';
                 moveCardToGroupByIndex(index, label);
@@ -928,33 +1040,56 @@
             }
         }
 
-        function moveCardToGroup(card, label) {
+        function moveCardToGroup(card, label, options = {}) {
             if (!card) {
                 return;
             }
             const trimmed = (label || '').trim();
             const hidden = card.querySelector('input[data-field="groupLabel"]');
+            const targetIsPool = trimmed.length === 0;
+            let column = null;
+            let dropzone = null;
+            if (!targetIsPool) {
+                column = ensureGroupColumn(trimmed);
+                dropzone = column?.querySelector('[data-role="dropzone"]') ?? null;
+                if (!dropzone) {
+                    return;
+                }
+                if (!options.skipValidation && !isCardCompatibleWithColumn(card, column)) {
+                    if (!options.silent) {
+                        const allowed = column.dataset.allowedConnectionLabel || '';
+                        const deviceConnection = (card.dataset.connectionPoint || '').trim() || 'без точки подключения';
+                        const message = allowed
+                            ? `Группы формируются по узлам. Устройство подключено к "${deviceConnection}", а группа предназначена для узла "${allowed}".`
+                            : `Группы формируются по узлам. Устройство подключено к "${deviceConnection}", поэтому его нельзя объединять с этой группой.`;
+                        showGroupingWarning(message);
+                    }
+                    return;
+                }
+            }
             if (hidden) {
                 hidden.value = trimmed;
             }
             card.dataset.groupLabel = trimmed;
             updateCardAssignmentDisplay(card);
-            let target = groupingPool;
-            if (trimmed) {
-                const column = ensureGroupColumn(trimmed);
-                target = column?.querySelector('[data-role="dropzone"]') ?? groupingPool;
+            if (targetIsPool || !dropzone) {
+                groupingPool?.appendChild(card);
+            } else {
+                dropzone.appendChild(card);
             }
-            target?.appendChild(card);
+            if (!options.silent) {
+                showGroupingWarning('');
+            }
             updateGroupingEmptyState();
             updateGroupCapacities();
             syncMaterialGroupsWithLabels();
             validateMaterialCapacity();
         }
 
-        function moveCardToGroupByIndex(index, label) {
+        function moveCardToGroupByIndex(index, label, options = {}) {
             const card = getDeviceCards().find(item => Number(item.dataset.index) === index);
             if (card) {
-                moveCardToGroup(card, label);
+                moveCardToGroup(card, label, options);
             }
         }
 
@@ -972,15 +1107,16 @@
             const viewingDepthInput = group.querySelector('input[data-field="cameraViewingDepth"]');
             const signalCableSelect = group.querySelector('select[data-field="signalCableTypeId"]');
             const lowVoltageCableSelect = group.querySelector('select[data-field="lowVoltageCableTypeId"]');
-            const powerCableSelect = group.querySelector('select[data-field="powerCableTypeId"]');
             const typeName = typeSelect instanceof HTMLSelectElement
                 ? typeSelect.options[typeSelect.selectedIndex]?.text?.trim()
                 : '';
+            const connectionName = connectionInput?.value.trim() || '';
             return {
                 typeName: typeName || '',
                 count: countInput?.value.trim() || '',
                 installLocation: installInput?.value.trim() || '',
-                connectionPoint: connectionInput?.value.trim() || '',
+                connectionPoint: connectionName,
+                connectionKey: normalizeConnectionName(connectionName),
                 distance: distanceInput?.value.trim() || '',
                 accessory: accessorySelect instanceof HTMLSelectElement
                     ? accessorySelect.options[accessorySelect.selectedIndex]?.text?.trim() || ''
@@ -992,9 +1128,7 @@
                 lowVoltageCable: lowVoltageCableSelect instanceof HTMLSelectElement
                     ? lowVoltageCableSelect.options[lowVoltageCableSelect.selectedIndex]?.text?.trim() || ''
                     : '',
-                powerCable: powerCableSelect instanceof HTMLSelectElement
-                    ? powerCableSelect.options[powerCableSelect.selectedIndex]?.text?.trim() || ''
-                    : '',
+                signalLabel: requiresGenericCableLabel(typeSelect) ? 'Кабель' : 'Сигнал',
                 isCamera: isCameraDevice(typeSelect)
             };
         }
@@ -1010,8 +1144,12 @@
                 if (!data) {
                     summary.textContent = 'Заполните информацию на первом шаге, чтобы увидеть сводку.';
                     card.dataset.totalLength = '0';
+                    card.dataset.connectionPoint = '';
+                    card.dataset.connectionKey = '';
                     return;
                 }
+                card.dataset.connectionPoint = data.connectionPoint || '';
+                card.dataset.connectionKey = data.connectionKey || '';
                 const parts = [];
                 if (data.typeName) {
                     parts.push(data.typeName);
@@ -1038,13 +1176,10 @@
                 }
                 const cableDescriptions = [];
                 if (data.signalCable) {
-                    cableDescriptions.push(`Сигнал: ${data.signalCable}`);
+                    cableDescriptions.push(`${data.signalLabel}: ${data.signalCable}`);
                 }
                 if (data.lowVoltageCable) {
                     cableDescriptions.push(`Питание: ${data.lowVoltageCable}`);
-                }
-                if (data.powerCable) {
-                    cableDescriptions.push(`Силовой: ${data.powerCable}`);
                 }
                 if (cableDescriptions.length > 0) {
                     parts.push(`Кабели: ${cableDescriptions.join(', ')}`);
@@ -1112,6 +1247,7 @@
                 if (capacity) {
                     capacity.textContent = `Длина линии: ${total.toFixed(2)} м`;
                 }
+                updateColumnConnection(column);
             });
         }
 
@@ -1126,6 +1262,85 @@
                 }
             });
             return labels;
+        }
+
+        function showGroupingWarning(message) {
+            if (!groupingWarning) {
+                if (message) {
+                    console.warn(message);
+                }
+                return;
+            }
+            if (message) {
+                groupingWarning.textContent = message;
+                groupingWarning.hidden = false;
+            } else {
+                groupingWarning.textContent = '';
+                groupingWarning.hidden = true;
+            }
+        }
+
+        function updateColumnConnection(column) {
+            if (!column) {
+                return;
+            }
+            const dropzone = column.querySelector('[data-role="dropzone"]');
+            const cards = Array.from(dropzone?.querySelectorAll('.device-chip') ?? []);
+            const cardWithConnection = cards.find(item => (item.dataset.connectionPoint || '').trim());
+            const connectionLabel = cardWithConnection ? (cardWithConnection.dataset.connectionPoint || '').trim() : '';
+            column.dataset.allowedConnection = cardWithConnection ? normalizeConnectionName(connectionLabel) : '';
+            column.dataset.allowedConnectionLabel = connectionLabel;
+            const hint = column.querySelector('[data-role="connection-hint"]');
+            if (hint) {
+                if (cards.length === 0) {
+                    hint.textContent = 'Узел: не выбран';
+                } else if (connectionLabel) {
+                    hint.textContent = `Узел: ${connectionLabel}`;
+                } else {
+                    hint.textContent = 'Узел: не указан';
+                }
+            }
+        }
+
+        function isCardCompatibleWithColumn(card, column) {
+            if (!card || !column) {
+                return false;
+            }
+            const dropzone = column.querySelector('[data-role="dropzone"]');
+            const existingCards = Array.from(dropzone?.querySelectorAll('.device-chip') ?? []).filter(existing => existing !== card);
+            if (existingCards.length === 0) {
+                return true;
+            }
+            const cardConnection = (card.dataset.connectionPoint || '').trim();
+            const cardKey = normalizeConnectionName(cardConnection);
+            const nonEmpty = existingCards
+                .map(existing => ({
+                    raw: (existing.dataset.connectionPoint || '').trim(),
+                    key: normalizeConnectionName(existing.dataset.connectionPoint || '')
+                }))
+                .filter(item => item.raw);
+            if (nonEmpty.length > 0) {
+                return cardKey.length > 0 && cardKey === nonEmpty[0].key;
+            }
+            return cardConnection.length === 0;
+        }
+
+        function highlightDropzonesForCard(card) {
+            getGroupColumns().forEach(column => {
+                const dropzone = column.querySelector('[data-role="dropzone"]');
+                if (!dropzone) {
+                    return;
+                }
+                const compatible = isCardCompatibleWithColumn(card, column);
+                dropzone.classList.toggle('is-incompatible', !compatible);
+            });
+        }
+
+        function clearDropzoneHighlights() {
+            getGroupColumns().forEach(column => {
+                column.querySelector('[data-role="dropzone"]')?.classList.remove('is-incompatible');
+            });
+            groupingPool?.classList.remove('is-incompatible');
         }
 
         function setConnectionPointError(input, message) {
@@ -1155,7 +1370,6 @@
                 const elementSelect = row.querySelector('select[data-field="mountingElementId"]');
                 const distanceInput = row.querySelector('input[data-field="distanceToPower"]');
                 const cableSelect = row.querySelector('select[data-field="powerCableTypeId"]');
-                const layingInput = row.querySelector('[data-field="layingMethod"]');
                 const materialSelect = row.querySelector('select[data-field="layingMaterialId"]');
                 const surfaceCategorySelect = row.querySelector('select[data-field="layingSurfaceCategory"]');
                 const surfaceInput = row.querySelector('input[data-field="layingSurface"]');
@@ -1181,9 +1395,6 @@
                 }
                 if (surfaceInput) {
                     surfaceInput.setAttribute('name', `connectionPoints[${index}].layingSurface`);
-                }
-                if (layingInput) {
-                    layingInput.setAttribute('name', `connectionPoints[${index}].layingMethod`);
                 }
             });
             if (connectionEmptyMessage) {
@@ -1568,8 +1779,115 @@
         groupingPool?.addEventListener('drop', event => {
             event.preventDefault();
             groupingPool.classList.remove('drop-target');
+            clearDropzoneHighlights();
             const index = Number(event.dataTransfer?.getData('text/plain'));
             moveCardToGroupByIndex(index, '');
+        });
+
+        addMountingButton?.addEventListener('click', event => {
+            event.preventDefault();
+            if (!(mountingRowTemplate instanceof HTMLTemplateElement) || !mountingList) {
+                return;
+            }
+            const clone = mountingRowTemplate.content.firstElementChild.cloneNode(true);
+            mountingList.appendChild(clone);
+            reindexMountingRows();
+        });
+
+        mountingList?.addEventListener('change', event => {
+            const target = event.target;
+            if (!(target instanceof HTMLSelectElement)) {
+                return;
+            }
+            if (target.getAttribute('data-field') !== 'elementId') {
+                return;
+            }
+            const row = target.closest('.mounting-row');
+            if (!row) {
+                return;
+            }
+            const hiddenName = row.querySelector('input[data-field="elementName"]');
+            if (hiddenName instanceof HTMLInputElement) {
+                const option = target.options[target.selectedIndex];
+                hiddenName.value = option?.text ?? '';
+            }
+        });
+
+        mountingList?.addEventListener('click', event => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+            if (target.dataset.action === 'add-mounting-material') {
+                event.preventDefault();
+                const row = target.closest('.mounting-row');
+                if (!row || !(mountingMaterialTemplate instanceof HTMLTemplateElement)) {
+                    return;
+                }
+                const container = row.querySelector('[data-role="materials"]');
+                if (!container) {
+                    return;
+                }
+                const clone = mountingMaterialTemplate.content.firstElementChild.cloneNode(true);
+                container.appendChild(clone);
+                reindexMountingRows();
+                return;
+            }
+            if (target.classList.contains('remove-mounting-material')) {
+                event.preventDefault();
+                const materialRow = target.closest('.mounting-material-row');
+                const row = target.closest('.mounting-row');
+                if (!materialRow || !row) {
+                    return;
+                }
+                const container = row.querySelector('[data-role="materials"]');
+                if (!container) {
+                    return;
+                }
+                const materialRows = Array.from(container.querySelectorAll('.mounting-material-row'));
+                if (materialRows.length <= 1) {
+                    materialRow.querySelectorAll('select[data-field], input[data-field]').forEach(field => {
+                        if (field instanceof HTMLSelectElement || field instanceof HTMLInputElement) {
+                            field.value = '';
+                        }
+                    });
+                    return;
+                }
+                materialRow.remove();
+                reindexMountingRows();
+                return;
+            }
+            if (!target.classList.contains('remove-mounting')) {
+                return;
+            }
+            event.preventDefault();
+            const row = target.closest('.mounting-row');
+            if (!row || row.classList.contains('is-locked')) {
+                return;
+            }
+            const rows = getMountingRows();
+            if (rows.length <= 1) {
+                row.querySelectorAll('select[data-field], input[data-field]').forEach(field => {
+                    if (field instanceof HTMLSelectElement || field instanceof HTMLInputElement) {
+                        field.value = '';
+                    }
+                });
+                const materials = row.querySelectorAll('.mounting-material-row');
+                materials.forEach((materialRow, index) => {
+                    materialRow.querySelectorAll('select[data-field], input[data-field]').forEach(field => {
+                        if (field instanceof HTMLSelectElement || field instanceof HTMLInputElement) {
+                            field.value = '';
+                        }
+                    });
+                    if (index > 0) {
+                        materialRow.remove();
+                    }
+                });
+                reindexMountingRows();
+                return;
+            }
+            row.remove();
+            reindexMountingRows();
         });
 
         materialGroupsContainer?.addEventListener('click', event => {
