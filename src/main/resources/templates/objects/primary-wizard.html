@@ -382,13 +382,19 @@
                 <p class="muted">Для каждой созданной группы укажите необходимые материалы. Если группа не требует материалов, оставьте поля пустыми.</p>
                 <div class="card nested-card">
                     <h4>Монтажные элементы</h4>
-                    <p class="muted small">Укажите дополнительные монтажные элементы, необходимые для всех групп.</p>
+                    <p class="muted small">Монтажные коробки, назначенные на шаге «Точки подключения», отображаются автоматически. Добавьте материалы или дополнительные коробки при необходимости.</p>
                     <div class="stack" id="mounting-list">
-                        <div class="mounting-row" th:each="element, iter : *{mountingElements}" th:data-index="${iter.index}">
-                            <div class="grid">
+                        <div class="mounting-row" th:each="element, iter : *{mountingElements}" th:data-index="${iter.index}" th:classappend="${element.autoAssigned} ? ' is-locked' : ''">
+                            <input type="hidden" th:field="*{mountingElements[__${iter.index}__].elementName}" data-field="elementName">
+                            <div class="grid mounting-row-header">
                                 <div>
                                     <label>Монтажный короб / ящик</label>
-                                    <select th:field="*{mountingElements[__${iter.index}__].elementId}" data-field="elementId">
+                                    <div class="mounting-element-display" th:if="${element.autoAssigned}">
+                                        <input type="hidden" th:field="*{mountingElements[__${iter.index}__].elementId}" data-field="elementId">
+                                        <p class="muted" data-role="element-name" th:text="${#strings.hasText(element.elementName) ? element.elementName : 'Не выбран'}">Не выбран</p>
+                                        <p class="muted small">Назначен на шаге точек подключения.</p>
+                                    </div>
+                                    <select th:unless="${element.autoAssigned}" th:field="*{mountingElements[__${iter.index}__].elementId}" data-field="elementId">
                                         <option value="">Не выбран</option>
                                         <option th:each="option : ${availableMountingElements}" th:value="${option.id}" th:text="${option.name}"></option>
                                     </select>
@@ -398,14 +404,34 @@
                                     <input type="text" th:field="*{mountingElements[__${iter.index}__].quantity}" data-field="quantity" placeholder="2 шт, 1 комплект...">
                                 </div>
                             </div>
-                            <button type="button" class="link-button danger remove-mounting" th:if="${iter.index > 0}">Удалить</button>
+                            <div class="stack mounting-materials" data-role="materials">
+                                <div class="mounting-material-row" th:each="material, mIndex : *{mountingElements[__${iter.index}__].materials}" th:data-index="${mIndex.index}">
+                                    <div class="grid">
+                                        <div>
+                                            <label>Материал</label>
+                                            <select th:field="*{mountingElements[__${iter.index}__].materials[__${mIndex.index}__].materialId}" data-field="materialId">
+                                                <option value="">Не выбран</option>
+                                                <option th:each="materialOption : ${installationMaterials}" th:value="${materialOption.id}" th:text="${materialOption.name}"></option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label>Количество / примечание</label>
+                                            <input type="text" th:field="*{mountingElements[__${iter.index}__].materials[__${mIndex.index}__].amount}" data-field="amount" placeholder="1 комплект, 20 м...">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="link-button danger remove-mounting-material" th:if="${mIndex.index > 0}">Удалить материал</button>
+                                </div>
+                            </div>
+                            <button type="button" class="button tertiary" data-action="add-mounting-material">Добавить материал</button>
+                            <button type="button" class="link-button danger remove-mounting" th:if="${!element.autoAssigned && iter.index > 0}">Удалить</button>
                         </div>
                     </div>
                     <button type="button" class="button secondary" id="add-mounting-element">Добавить монтажный элемент</button>
                 </div>
                 <template id="mounting-row-template">
                     <div class="mounting-row">
-                        <div class="grid">
+                        <input type="hidden" data-field="elementName">
+                        <div class="grid mounting-row-header">
                             <div>
                                 <label>Монтажный короб / ящик</label>
                                 <select data-field="elementId">
@@ -418,7 +444,44 @@
                                 <input type="text" data-field="quantity" placeholder="2 шт, 1 комплект...">
                             </div>
                         </div>
+                        <div class="stack mounting-materials" data-role="materials">
+                            <div class="mounting-material-row">
+                                <div class="grid">
+                                    <div>
+                                        <label>Материал</label>
+                                        <select data-field="materialId">
+                                            <option value="">Не выбран</option>
+                                            <option th:each="materialOption : ${installationMaterials}" th:value="${materialOption.id}" th:text="${materialOption.name}"></option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label>Количество / примечание</label>
+                                        <input type="text" data-field="amount" placeholder="1 комплект, 20 м...">
+                                    </div>
+                                </div>
+                                <button type="button" class="link-button danger remove-mounting-material">Удалить материал</button>
+                            </div>
+                        </div>
+                        <button type="button" class="button tertiary" data-action="add-mounting-material">Добавить материал</button>
                         <button type="button" class="link-button danger remove-mounting">Удалить</button>
+                    </div>
+                </template>
+                <template id="mounting-material-template">
+                    <div class="mounting-material-row">
+                        <div class="grid">
+                            <div>
+                                <label>Материал</label>
+                                <select data-field="materialId">
+                                    <option value="">Не выбран</option>
+                                    <option th:each="materialOption : ${installationMaterials}" th:value="${materialOption.id}" th:text="${materialOption.name}"></option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Количество / примечание</label>
+                                <input type="text" data-field="amount" placeholder="1 комплект, 20 м...">
+                            </div>
+                        </div>
+                        <button type="button" class="link-button danger remove-mounting-material">Удалить материал</button>
                     </div>
                 </template>
                 <p class="muted" id="materials-empty" th:if="${#lists.isEmpty(wizardForm.materialGroups)}">Создайте хотя бы одну группу устройств на предыдущем шаге, чтобы назначить материалы.</p>
@@ -565,6 +628,7 @@
         const materialsEmptyMessage = document.getElementById('materials-empty');
         const mountingList = document.getElementById('mounting-list');
         const mountingRowTemplate = document.getElementById('mounting-row-template');
+        const mountingMaterialTemplate = document.getElementById('mounting-material-template');
         const addMountingButton = document.getElementById('add-mounting-element');
         const stepSections = Array.from(document.querySelectorAll('.wizard-step'));
         const stepButtons = Array.from(document.querySelectorAll('.wizard-progress-step'));
@@ -757,15 +821,51 @@
             rows.forEach((row, index) => {
                 row.dataset.index = index.toString();
                 row.querySelectorAll('[data-field]').forEach(field => {
+                    if (!(field instanceof HTMLElement)) {
+                        return;
+                    }
+                    if (field.closest('.mounting-material-row')) {
+                        return;
+                    }
                     const key = field.getAttribute('data-field');
                     if (!key) {
                         return;
                     }
                     field.setAttribute('name', `mountingElements[${index}].${key}`);
                 });
+                const materialsContainer = row.querySelector('[data-role="materials"]');
+                if (materialsContainer) {
+                    const materialRows = Array.from(materialsContainer.querySelectorAll('.mounting-material-row'));
+                    materialRows.forEach((materialRow, materialIndex) => {
+                        materialRow.dataset.index = materialIndex.toString();
+                        materialRow.querySelectorAll('[data-field]').forEach(field => {
+                            const key = field.getAttribute('data-field');
+                            if (!key) {
+                                return;
+                            }
+                            let name = '';
+                            if (key === 'materialId') {
+                                name = `mountingElements[${index}].materials[${materialIndex}].materialId`;
+                            } else if (key === 'amount') {
+                                name = `mountingElements[${index}].materials[${materialIndex}].amount`;
+                            }
+                            if (name) {
+                                field.setAttribute('name', name);
+                            }
+                        });
+                        const removeMaterialButton = materialRow.querySelector('.remove-mounting-material');
+                        if (removeMaterialButton) {
+                            removeMaterialButton.style.display = materialIndex === 0 ? 'none' : '';
+                        }
+                    });
+                }
                 const removeButton = row.querySelector('.remove-mounting');
                 if (removeButton) {
-                    removeButton.style.display = index === 0 ? 'none' : '';
+                    if (row.classList.contains('is-locked')) {
+                        removeButton.style.display = 'none';
+                    } else {
+                        removeButton.style.display = index === 0 ? 'none' : '';
+                    }
                 }
             });
         }
@@ -1694,14 +1794,75 @@
             reindexMountingRows();
         });
 
+        mountingList?.addEventListener('change', event => {
+            const target = event.target;
+            if (!(target instanceof HTMLSelectElement)) {
+                return;
+            }
+            if (target.getAttribute('data-field') !== 'elementId') {
+                return;
+            }
+            const row = target.closest('.mounting-row');
+            if (!row) {
+                return;
+            }
+            const hiddenName = row.querySelector('input[data-field="elementName"]');
+            if (hiddenName instanceof HTMLInputElement) {
+                const option = target.options[target.selectedIndex];
+                hiddenName.value = option?.text ?? '';
+            }
+        });
+
         mountingList?.addEventListener('click', event => {
             const target = event.target;
-            if (!(target instanceof HTMLElement) || !target.classList.contains('remove-mounting')) {
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+            if (target.dataset.action === 'add-mounting-material') {
+                event.preventDefault();
+                const row = target.closest('.mounting-row');
+                if (!row || !(mountingMaterialTemplate instanceof HTMLTemplateElement)) {
+                    return;
+                }
+                const container = row.querySelector('[data-role="materials"]');
+                if (!container) {
+                    return;
+                }
+                const clone = mountingMaterialTemplate.content.firstElementChild.cloneNode(true);
+                container.appendChild(clone);
+                reindexMountingRows();
+                return;
+            }
+            if (target.classList.contains('remove-mounting-material')) {
+                event.preventDefault();
+                const materialRow = target.closest('.mounting-material-row');
+                const row = target.closest('.mounting-row');
+                if (!materialRow || !row) {
+                    return;
+                }
+                const container = row.querySelector('[data-role="materials"]');
+                if (!container) {
+                    return;
+                }
+                const materialRows = Array.from(container.querySelectorAll('.mounting-material-row'));
+                if (materialRows.length <= 1) {
+                    materialRow.querySelectorAll('select[data-field], input[data-field]').forEach(field => {
+                        if (field instanceof HTMLSelectElement || field instanceof HTMLInputElement) {
+                            field.value = '';
+                        }
+                    });
+                    return;
+                }
+                materialRow.remove();
+                reindexMountingRows();
+                return;
+            }
+            if (!target.classList.contains('remove-mounting')) {
                 return;
             }
             event.preventDefault();
             const row = target.closest('.mounting-row');
-            if (!row) {
+            if (!row || row.classList.contains('is-locked')) {
                 return;
             }
             const rows = getMountingRows();
@@ -1711,6 +1872,18 @@
                         field.value = '';
                     }
                 });
+                const materials = row.querySelectorAll('.mounting-material-row');
+                materials.forEach((materialRow, index) => {
+                    materialRow.querySelectorAll('select[data-field], input[data-field]').forEach(field => {
+                        if (field instanceof HTMLSelectElement || field instanceof HTMLInputElement) {
+                            field.value = '';
+                        }
+                    });
+                    if (index > 0) {
+                        materialRow.remove();
+                    }
+                });
+                reindexMountingRows();
                 return;
             }
             row.remove();

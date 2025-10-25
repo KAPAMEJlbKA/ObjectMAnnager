@@ -699,6 +699,45 @@ button:hover {
     opacity: 0.75;
 }
 
+.mounting-row {
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1rem;
+    background: #ffffff;
+}
+
+.mounting-row + .mounting-row {
+    margin-top: 1rem;
+}
+
+.mounting-row.is-locked {
+    border-style: dashed;
+    background: #f9fafb;
+}
+
+.mounting-row-header {
+    gap: 1.5rem;
+}
+
+.mounting-element-display p {
+    margin: 0.1rem 0;
+}
+
+.mounting-materials {
+    margin-top: 1rem;
+    gap: 0.75rem;
+}
+
+.mounting-material-row {
+    padding-top: 0.75rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.mounting-material-row:first-child {
+    border-top: none;
+    padding-top: 0;
+}
+
 .grouping-columns {
     display: grid;
     gap: 1rem;

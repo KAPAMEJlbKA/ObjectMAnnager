@@ -38,6 +38,7 @@ import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -309,6 +310,7 @@ public class ObjectController {
         List<MountingElement> mountingElements = mountingElementRepository.findAll();
         List<InstallationMaterial> materials = installationMaterialRepository.findAll();
         List<CableType> cableTypes = cableTypeRepository.findAll();
+        form.synchronizeMountingSelections(mountingElements);
         form.validate(bindingResult, deviceTypes);
         if (bindingResult.hasErrors()) {
             prepareWizardModel(model, managedObject, form, determineWizardErrorStep(bindingResult));
@@ -331,15 +333,19 @@ public class ObjectController {
     private PrimaryDataWizardForm loadPrimaryDataForm(String primaryData) {
         List<MountingElement> mountingElements = mountingElementRepository.findAll();
         List<InstallationMaterial> materials = installationMaterialRepository.findAll();
+        PrimaryDataWizardForm form;
         if (!StringUtils.hasText(primaryData)) {
-            return PrimaryDataWizardForm.empty(mountingElements, materials);
+            form = PrimaryDataWizardForm.empty(mountingElements, materials);
+        } else {
+            try {
+                PrimaryDataSnapshot snapshot = objectMapper.readValue(primaryData, PrimaryDataSnapshot.class);
+                form = PrimaryDataWizardForm.fromSnapshot(snapshot, mountingElements, materials);
+            } catch (JsonProcessingException e) {
+                form = PrimaryDataWizardForm.empty(mountingElements, materials);
+            }
         }
-        try {
-            PrimaryDataSnapshot snapshot = objectMapper.readValue(primaryData, PrimaryDataSnapshot.class);
-            return PrimaryDataWizardForm.fromSnapshot(snapshot, mountingElements, materials);
-        } catch (JsonProcessingException e) {
-            return PrimaryDataWizardForm.empty(mountingElements, materials);
-        }
+        form.synchronizeMountingSelections(mountingElements);
+        return form;
     }
 
     private void prepareWizardModel(Model model, ManagedObject managedObject, PrimaryDataWizardForm form) {
@@ -354,6 +360,7 @@ public class ObjectController {
         List<MountingElement> mountingElements = mountingElementRepository.findAll();
         List<InstallationMaterial> materials = installationMaterialRepository.findAll();
         List<CableType> cableTypes = cableTypeRepository.findAll();
+        form.synchronizeMountingSelections(mountingElements);
         model.addAttribute("object", managedObject);
         model.addAttribute("wizardForm", form);
         model.addAttribute("deviceTypes", deviceTypes);
@@ -650,6 +657,7 @@ public class ObjectController {
             form.connectionPoints = new ArrayList<>();
             form.connectionPoints.add(new ConnectionPointForm());
             ensureMaterialRows(form.materialGroups);
+            ensureMountingMaterialRows(form.mountingElements);
             return form;
         }
 
@@ -687,12 +695,28 @@ public class ObjectController {
                     selection.setElementId(requirement.getElementId());
                     selection.setElementName(requirement.getElementName());
                     selection.setQuantity(requirement.getQuantity());
+                    if (requirement.getMaterials() != null) {
+                        List<MountingMaterialForm> selectionMaterials = new ArrayList<>();
+                        for (PrimaryDataSnapshot.MountingMaterial material : requirement.getMaterials()) {
+                            if (material == null) {
+                                continue;
+                            }
+                            MountingMaterialForm materialForm = new MountingMaterialForm();
+                            materialForm.setMaterialId(material.getMaterialId());
+                            materialForm.setMaterialName(material.getMaterialName());
+                            materialForm.setAmount(material.getAmount());
+                            selectionMaterials.add(materialForm);
+                        }
+                        selection.setMaterials(selectionMaterials);
+                    }
+                    selection.ensureMaterialRows();
                     form.mountingElements.add(selection);
                 }
             }
             if (form.mountingElements.isEmpty()) {
                 form.mountingElements.add(new MountingSelectionForm());
             }
+            ensureMountingMaterialRows(form.mountingElements);
 
             form.connectionPoints.clear();
             if (snapshot != null && snapshot.getConnectionPoints() != null) {
@@ -780,6 +804,85 @@ public class ObjectController {
             }
         }
 
+        private static void ensureMountingMaterialRows(List<MountingSelectionForm> selections) {
+            for (MountingSelectionForm selection : selections) {
+                if (selection != null) {
+                    selection.ensureMaterialRows();
+                }
+            }
+        }
+
+        public void synchronizeMountingSelections(List<MountingElement> availableElements) {
+            Map<UUID, MountingElement> elementMap = availableElements == null
+                    ? Collections.emptyMap()
+                    : availableElements.stream()
+                    .filter(element -> element.getId() != null)
+                    .collect(Collectors.toMap(MountingElement::getId, Function.identity()));
+            LinkedHashSet<UUID> assignedIds = new LinkedHashSet<>();
+            if (connectionPoints != null) {
+                for (ConnectionPointForm point : connectionPoints) {
+                    if (point == null || point.getMountingElementId() == null) {
+                        continue;
+                    }
+                    assignedIds.add(point.getMountingElementId());
+                }
+            }
+
+            Map<UUID, MountingSelectionForm> existingById = new LinkedHashMap<>();
+            List<MountingSelectionForm> manualSelections = new ArrayList<>();
+            for (MountingSelectionForm selection : new ArrayList<>(mountingElements)) {
+                if (selection == null) {
+                    continue;
+                }
+                selection.ensureMaterialRows();
+                UUID elementId = selection.getElementId();
+                if (elementId != null) {
+                    existingById.putIfAbsent(elementId, selection);
+                    MountingElement element = elementMap.get(elementId);
+                    if (element != null) {
+                        selection.setElementName(element.getName());
+                    }
+                }
+                boolean autoAssigned = elementId != null && assignedIds.contains(elementId);
+                selection.setAutoAssigned(autoAssigned);
+                if (!autoAssigned) {
+                    manualSelections.add(selection);
+                }
+            }
+
+            List<MountingSelectionForm> ordered = new ArrayList<>();
+            for (UUID elementId : assignedIds) {
+                MountingSelectionForm selection = existingById.get(elementId);
+                if (selection == null) {
+                    selection = new MountingSelectionForm();
+                    selection.setElementId(elementId);
+                }
+                selection.setAutoAssigned(true);
+                selection.ensureMaterialRows();
+                MountingElement element = elementMap.get(elementId);
+                if (element != null) {
+                    selection.setElementName(element.getName());
+                }
+                ordered.add(selection);
+            }
+
+            for (MountingSelectionForm selection : manualSelections) {
+                MountingElement element = selection.getElementId() != null ? elementMap.get(selection.getElementId()) : null;
+                if (element != null) {
+                    selection.setElementName(element.getName());
+                }
+                selection.setAutoAssigned(false);
+                ordered.add(selection);
+            }
+
+            if (ordered.isEmpty()) {
+                ordered.add(new MountingSelectionForm());
+            }
+
+            mountingElements.clear();
+            mountingElements.addAll(ordered);
+        }
+
         private static List<String> collectUniqueConnectionPointNames(List<DeviceGroupForm> deviceGroups) {
             Set<String> names = new LinkedHashSet<>();
             for (DeviceGroupForm group : deviceGroups) {
@@ -825,6 +928,7 @@ public class ObjectController {
             if (this.mountingElements.isEmpty()) {
                 this.mountingElements.add(new MountingSelectionForm());
             }
+            ensureMountingMaterialRows(this.mountingElements);
         }
 
         public List<MaterialGroupForm> getMaterialGroups() {
@@ -1049,14 +1153,41 @@ public class ObjectController {
 
             List<PrimaryDataSnapshot.MountingRequirement> requirements = new ArrayList<>();
             for (MountingSelectionForm form : this.mountingElements) {
-                if (form == null || form.getElementId() == null || !StringUtils.hasText(form.getQuantity())) {
+                if (form == null || form.getElementId() == null) {
+                    continue;
+                }
+                boolean hasQuantity = StringUtils.hasText(form.getQuantity());
+                boolean hasMaterials = form.hasMaterials();
+                boolean include = hasQuantity || hasMaterials || form.isAutoAssigned();
+                if (!include) {
                     continue;
                 }
                 PrimaryDataSnapshot.MountingRequirement requirement = new PrimaryDataSnapshot.MountingRequirement();
                 requirement.setElementId(form.getElementId());
-                MountingElement element = form.getElementId() != null ? elementMap.get(form.getElementId()) : null;
+                MountingElement element = elementMap.get(form.getElementId());
                 requirement.setElementName(element != null ? element.getName() : form.getElementName());
-                requirement.setQuantity(form.getQuantity().trim());
+                requirement.setQuantity(hasQuantity ? form.getQuantity().trim() : null);
+                List<PrimaryDataSnapshot.MountingMaterial> materialsForRequirement = new ArrayList<>();
+                if (form.getMaterials() != null) {
+                    for (MountingMaterialForm materialForm : form.getMaterials()) {
+                        if (materialForm == null || materialForm.isEmpty()) {
+                            continue;
+                        }
+                        PrimaryDataSnapshot.MountingMaterial material = new PrimaryDataSnapshot.MountingMaterial();
+                        material.setMaterialId(materialForm.getMaterialId());
+                        InstallationMaterial definedMaterial = materialForm.getMaterialId() != null
+                                ? materialMap.get(materialForm.getMaterialId()) : null;
+                        if (definedMaterial != null) {
+                            material.setMaterialName(definedMaterial.getName());
+                            material.setUnit(definedMaterial.getUnit());
+                        } else if (StringUtils.hasText(materialForm.getMaterialName())) {
+                            material.setMaterialName(materialForm.getMaterialName().trim());
+                        }
+                        material.setAmount(trim(materialForm.getAmount()));
+                        materialsForRequirement.add(material);
+                    }
+                }
+                requirement.setMaterials(materialsForRequirement);
                 requirements.add(requirement);
             }
             snapshot.setMountingElements(requirements);
@@ -1309,6 +1440,13 @@ public class ObjectController {
             private UUID elementId;
             private String elementName;
             private String quantity;
+            @Valid
+            private List<MountingMaterialForm> materials = new ArrayList<>();
+            private boolean autoAssigned;
+
+            public MountingSelectionForm() {
+                ensureMaterialRows();
+            }
 
             public UUID getElementId() {
                 return elementId;
@@ -1332,6 +1470,73 @@ public class ObjectController {
 
             public void setQuantity(String quantity) {
                 this.quantity = quantity;
+            }
+
+            public List<MountingMaterialForm> getMaterials() {
+                return materials;
+            }
+
+            public void setMaterials(List<MountingMaterialForm> materials) {
+                this.materials = materials == null ? new ArrayList<>() : materials;
+                ensureMaterialRows();
+            }
+
+            public boolean isAutoAssigned() {
+                return autoAssigned;
+            }
+
+            public void setAutoAssigned(boolean autoAssigned) {
+                this.autoAssigned = autoAssigned;
+            }
+
+            public void ensureMaterialRows() {
+                if (materials == null) {
+                    materials = new ArrayList<>();
+                }
+                if (materials.isEmpty()) {
+                    materials.add(new MountingMaterialForm());
+                }
+            }
+
+            public boolean hasMaterials() {
+                if (materials == null) {
+                    return false;
+                }
+                return materials.stream().anyMatch(material -> material != null && !material.isEmpty());
+            }
+        }
+
+        public static class MountingMaterialForm {
+            private UUID materialId;
+            private String materialName;
+            private String amount;
+
+            public UUID getMaterialId() {
+                return materialId;
+            }
+
+            public void setMaterialId(UUID materialId) {
+                this.materialId = materialId;
+            }
+
+            public String getMaterialName() {
+                return materialName;
+            }
+
+            public void setMaterialName(String materialName) {
+                this.materialName = materialName;
+            }
+
+            public String getAmount() {
+                return amount;
+            }
+
+            public void setAmount(String amount) {
+                this.amount = amount;
+            }
+
+            public boolean isEmpty() {
+                return materialId == null && !StringUtils.hasText(amount);
             }
         }
 

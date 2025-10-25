@@ -288,6 +288,7 @@ public class PrimaryDataSnapshot {
         private UUID elementId;
         private String elementName;
         private String quantity;
+        private List<MountingMaterial> materials = new ArrayList<>();
 
         public UUID getElementId() {
             return elementId;
@@ -311,6 +312,53 @@ public class PrimaryDataSnapshot {
 
         public void setQuantity(String quantity) {
             this.quantity = quantity;
+        }
+
+        public List<MountingMaterial> getMaterials() {
+            return materials;
+        }
+
+        public void setMaterials(List<MountingMaterial> materials) {
+            this.materials = materials;
+        }
+    }
+
+    public static class MountingMaterial {
+        private UUID materialId;
+        private String materialName;
+        private String unit;
+        private String amount;
+
+        public UUID getMaterialId() {
+            return materialId;
+        }
+
+        public void setMaterialId(UUID materialId) {
+            this.materialId = materialId;
+        }
+
+        public String getMaterialName() {
+            return materialName;
+        }
+
+        public void setMaterialName(String materialName) {
+            this.materialName = materialName;
+        }
+
+        public String getUnit() {
+            return unit;
+        }
+
+        public void setUnit(String unit) {
+            this.unit = unit;
+        }
+
+        public String getAmount() {
+            return amount;
+        }
+
+        public void setAmount(String amount) {
+            this.amount = amount;
         }
     }
 
