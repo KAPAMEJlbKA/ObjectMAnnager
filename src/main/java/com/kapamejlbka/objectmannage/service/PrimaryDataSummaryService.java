@@ -13,8 +13,9 @@ import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.AdditionalMaterial
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableFunctionSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableLengthSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.DeviceTypeSummary;
-import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.NodeSummary;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.MaterialGroupSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.MaterialUsageSummary;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.NodeSummary;
 import com.kapamejlbka.objectmannage.model.SurfaceType;
 import com.kapamejlbka.objectmannage.repository.CableTypeRepository;
 import com.kapamejlbka.objectmannage.repository.DeviceCableProfileRepository;
@@ -80,6 +81,7 @@ public class PrimaryDataSummaryService {
         Map<String, MaterialAccumulator> additionalMaterials = new LinkedHashMap<>();
         Map<String, MaterialAccumulator> overallMaterialTotals = new LinkedHashMap<>();
         Map<String, MaterialAccumulator> mountingElementTotals = new LinkedHashMap<>();
+        List<MaterialGroupSummary> materialGroupSummaries = new ArrayList<>();
         EnumMap<SurfaceType, Integer> cameraCountsBySurface = new EnumMap<>(SurfaceType.class);
         EnumMap<SurfaceType, Integer> adapterCountsBySurface = new EnumMap<>(SurfaceType.class);
         EnumMap<SurfaceType, Integer> plasticBoxCountsBySurface = new EnumMap<>(SurfaceType.class);
@@ -246,13 +248,15 @@ public class PrimaryDataSummaryService {
                             unit = "м";
                         }
                         String surfaceLabel = resolveSurfaceLabel(surfaceType, point.getLayingSurface());
+                        String materialName = trimText(point.getLayingMaterialName());
+                        String amountWithUnit = formatQuantity(powerLength, unit);
+                        MaterialUsageSummary material =
+                                new MaterialUsageSummary(materialName, amountWithUnit, surfaceLabel);
                         addNodeMaterial(context,
                                 "Прокладка питания",
-                                point.getLayingMaterialName(),
-                                formatQuantity(powerLength, unit),
+                                material,
                                 powerLength,
                                 unit,
-                                surfaceLabel,
                                 overallMaterialTotals);
                     }
                 }
@@ -266,6 +270,10 @@ public class PrimaryDataSummaryService {
                     continue;
                 }
                 String label = determineGroupLabel(group.getGroupLabel(), group.getGroupName());
+                String groupSurfaceLabel = resolveSurfaceLabel(
+                        SurfaceType.resolve(group.getSurfaceCategory()).orElse(null),
+                        group.getSurface());
+                List<MaterialUsageSummary> groupMaterials = new ArrayList<>();
                 NodeContext target = resolveNodeForGroup(label, labelToNodeMap, nodeContextsByNormalizedName);
                 for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
                     if (usage == null) {
@@ -288,19 +296,21 @@ public class PrimaryDataSummaryService {
                         quantity = numeric;
                     }
                     String unit = resolveUnit(usage.getUnit(), usage.getAmount());
+                    MaterialUsageSummary material =
+                            new MaterialUsageSummary(name, amountWithUnit, surfaceLabel);
+                    groupMaterials.add(material);
                     if (target != null) {
                         addNodeMaterial(target,
                                 label,
-                                name,
-                                amountWithUnit,
+                                material,
                                 quantity,
                                 unit,
-                                surfaceLabel,
                                 overallMaterialTotals);
                     } else if (quantity != null && StringUtils.hasText(name)) {
                         addMaterial(overallMaterialTotals, name, unit, quantity);
                     }
                 }
+                materialGroupSummaries.add(new MaterialGroupSummary(label, groupSurfaceLabel, groupMaterials));
             }
         }
 
@@ -417,6 +427,7 @@ public class PrimaryDataSummaryService {
                 .forEach(builder::addAdditionalMaterial);
         materialTotals.forEach(builder::addMaterialTotal);
         mountingTotals.forEach(builder::addMountingElementTotal);
+        materialGroupSummaries.forEach(builder::addMaterialGroupSummary);
         return builder.build();
     }
 
@@ -760,23 +771,18 @@ public class PrimaryDataSummaryService {
 
     private void addNodeMaterial(NodeContext context,
                                  String groupLabel,
-                                 String materialName,
-                                 String amountWithUnit,
+                                 PrimaryDataSummary.MaterialUsageSummary material,
                                  Double quantity,
                                  String unit,
-                                 String surfaceLabel,
                                  Map<String, MaterialAccumulator> overallTotals) {
-        if (context == null) {
+        if (context == null || material == null) {
             return;
         }
         String effectiveLabel = StringUtils.hasText(groupLabel) ? groupLabel.trim() : "Без группы";
-        String trimmedName = trimText(materialName);
-        String amount = StringUtils.hasText(amountWithUnit)
-                ? amountWithUnit
-                : (quantity != null ? formatQuantity(quantity, unit) : null);
         List<MaterialUsageSummary> materials = context.groupMaterials
                 .computeIfAbsent(effectiveLabel, key -> new ArrayList<>());
-        materials.add(new MaterialUsageSummary(trimmedName, amount, surfaceLabel));
+        materials.add(material);
+        String trimmedName = trimText(material.getMaterialName());
         if (quantity != null && quantity > 0 && StringUtils.hasText(trimmedName)) {
             addMaterial(context.totals, trimmedName, unit, quantity);
             addMaterial(overallTotals, trimmedName, unit, quantity);
