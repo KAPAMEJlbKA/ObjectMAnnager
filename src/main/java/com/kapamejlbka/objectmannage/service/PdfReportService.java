@@ -14,12 +14,15 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -57,6 +60,7 @@ public class PdfReportService {
             PdfBuilder builder = new PdfBuilder(document, font, logo);
             builder.addTitlePage(object, summary);
             List<AdditionalMaterialItem> additional = summary != null ? summary.getAdditionalMaterials() : List.of();
+            builder.addMaterialLedger(object, safeSnapshot, summary, additional);
             builder.addMountingMaterialsSection(safeSnapshot, summary, additional);
             builder.addEquipmentSection(summary);
             builder.addNodeMaterialsSection(summary);
@@ -83,6 +87,8 @@ public class PdfReportService {
     private static class PdfBuilder implements Closeable {
         private static final float MARGIN = 54f;
         private static final float LINE_SPACING_RATIO = 1.4f;
+        private static final Pattern QUANTITY_PATTERN = Pattern.compile(
+                "^(\\d+(?:[\\s\\u00A0]?\\d{3})*(?:[\\.,]\\d+)?)\\s*(.*)$");
 
         private final PDDocument document;
         private final PDFont font;
@@ -121,6 +127,61 @@ public class PdfReportService {
                         summary.getDeclaredConnectionAssignments() != null
                                 ? summary.getDeclaredConnectionAssignments() : 0), 12f);
             }
+        }
+
+        void addMaterialLedger(ManagedObject object,
+                               PrimaryDataSnapshot snapshot,
+                               PrimaryDataSummary summary,
+                               List<AdditionalMaterialItem> calculatedMaterials) throws IOException {
+            newPage();
+            String objectName = safeText(object.getName());
+            writeParagraph(String.format("Кабельный журнал для объекта \"%s\"", objectName), 18f);
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+            writeParagraph("Дата формирования: " + LocalDateTime.now().format(formatter), 12f);
+            if (summary != null && summary.isHasData()) {
+                String connectionPoints = summary.getDeclaredConnectionAssignments() != null
+                        ? summary.getDeclaredConnectionAssignments().toString()
+                        : "0";
+                writeParagraph(String.format(Locale.getDefault(),
+                        "Устройства: %d • Узлы: %d • Точки подключения: %s",
+                        summary.getTotalDeviceCount(),
+                        summary.getTotalNodes(),
+                        connectionPoints), 12f);
+            }
+            writeSpacing(18f);
+
+            List<TableRow> rows = collectMaterialLedgerRows(snapshot, summary, calculatedMaterials);
+            if (rows.isEmpty()) {
+                writeParagraph("Материалы не указаны.", 12f);
+                return;
+            }
+
+            String[] headers = {"Раздел", "Наименование", "Количество", "Ед. изм.", "Примечание"};
+            List<String[]> tableRows = new ArrayList<>();
+            for (TableRow row : rows) {
+                if (row == null) {
+                    continue;
+                }
+                tableRows.add(new String[]{
+                        row.category(),
+                        row.name(),
+                        defaultValue(row.quantity()),
+                        defaultValue(row.unit()),
+                        defaultValue(row.note())
+                });
+            }
+
+            float availableWidth = pageWidth - 2 * MARGIN;
+            float[] columnWidths = new float[]{
+                    availableWidth * 0.22f,
+                    availableWidth * 0.34f,
+                    availableWidth * 0.12f,
+                    availableWidth * 0.10f,
+                    0f
+            };
+            columnWidths[4] = availableWidth - (columnWidths[0] + columnWidths[1] + columnWidths[2] + columnWidths[3]);
+            writeTable(headers, tableRows, columnWidths, 11f);
+            writeSpacing(12f);
         }
 
         void addMountingMaterialsSection(PrimaryDataSnapshot snapshot,
@@ -340,6 +401,350 @@ public class PdfReportService {
                 }
                 writeBulletList(totals, 11f);
             }
+        }
+
+        private List<TableRow> collectMaterialLedgerRows(PrimaryDataSnapshot snapshot,
+                                                         PrimaryDataSummary summary,
+                                                         List<AdditionalMaterialItem> calculatedMaterials) {
+            List<TableRow> rows = new ArrayList<>();
+            if (summary != null) {
+                List<TableRow> cableRows = new ArrayList<>();
+                if (summary.getCableLengthSummaries() != null) {
+                    for (PrimaryDataSummary.CableLengthSummary cable : summary.getCableLengthSummaries()) {
+                        if (cable == null) {
+                            continue;
+                        }
+                        String note = cable.isClassificationMissing() ? "Нет классификации" : null;
+                        cableRows.add(new TableRow(
+                                "",
+                                trimToNull(cable.getCableTypeName()),
+                                formatQuantity(cable.getTotalLength()),
+                                "м",
+                                trimToNull(note)));
+                    }
+                }
+                appendGroup(rows, "Метраж кабелей", cableRows);
+
+                List<TableRow> materialTotals = new ArrayList<>();
+                if (summary.getMaterialTotals() != null) {
+                    for (PrimaryDataSummary.MaterialTotal total : summary.getMaterialTotals()) {
+                        if (total == null) {
+                            continue;
+                        }
+                        if (total.getQuantity() <= 0) {
+                            continue;
+                        }
+                        materialTotals.add(new TableRow(
+                                "",
+                                trimToNull(total.getName()),
+                                formatQuantity(total.getQuantity()),
+                                trimToNull(total.getUnit()),
+                                null));
+                    }
+                }
+                appendGroup(rows, "Материалы по объекту", materialTotals);
+
+                List<TableRow> mountingTotals = new ArrayList<>();
+                if (summary.getMountingElementTotals() != null) {
+                    for (PrimaryDataSummary.MaterialTotal total : summary.getMountingElementTotals()) {
+                        if (total == null) {
+                            continue;
+                        }
+                        if (total.getQuantity() <= 0) {
+                            continue;
+                        }
+                        mountingTotals.add(new TableRow(
+                                "",
+                                trimToNull(total.getName()),
+                                formatQuantity(total.getQuantity()),
+                                trimToNull(total.getUnit()),
+                                null));
+                    }
+                }
+                appendGroup(rows, "Монтажные элементы", mountingTotals);
+            }
+
+            List<TableRow> cabinetRows = new ArrayList<>();
+            if (snapshot != null && snapshot.getMountingElements() != null) {
+                for (PrimaryDataSnapshot.MountingRequirement requirement : snapshot.getMountingElements()) {
+                    if (requirement == null) {
+                        continue;
+                    }
+                    QuantityDescriptor quantity = parseQuantityDescriptor(requirement.getQuantity());
+                    String note = mergeNotes(buildRequirementNote(requirement), quantity.note());
+                    cabinetRows.add(new TableRow(
+                            "",
+                            trimToNull(requirement.getElementName()),
+                            quantity.quantity(),
+                            quantity.unit(),
+                            trimToNull(note)));
+                }
+            }
+            appendGroup(rows, "Назначенные шкафы", cabinetRows);
+
+            List<TableRow> additionalRows = new ArrayList<>();
+            if (calculatedMaterials != null) {
+                for (AdditionalMaterialItem item : calculatedMaterials) {
+                    if (item == null || item.getQuantity() <= 0) {
+                        continue;
+                    }
+                    additionalRows.add(new TableRow(
+                            "",
+                            trimToNull(item.getName()),
+                            formatQuantity(item.getQuantity()),
+                            trimToNull(item.getUnit()),
+                            null));
+                }
+            }
+            appendGroup(rows, "Дополнительные материалы", additionalRows);
+
+            rows.removeIf(this::isRowEmpty);
+            return rows;
+        }
+
+        private void appendGroup(List<TableRow> target, String label, List<TableRow> groupRows) {
+            if (groupRows == null || groupRows.isEmpty()) {
+                return;
+            }
+            boolean first = true;
+            for (TableRow row : groupRows) {
+                if (row == null) {
+                    continue;
+                }
+                target.add(row.withCategory(first ? label : ""));
+                first = false;
+            }
+        }
+
+        private QuantityDescriptor parseQuantityDescriptor(String raw) {
+            if (!StringUtils.hasText(raw)) {
+                return new QuantityDescriptor(null, null, null);
+            }
+            String trimmed = raw.trim();
+            Matcher matcher = QUANTITY_PATTERN.matcher(trimmed.replace(',', '.'));
+            if (!matcher.matches()) {
+                return new QuantityDescriptor(null, null, trimmed);
+            }
+            String numericPart = matcher.group(1).replace("\u00A0", "").replace(" ", "");
+            Double amount = null;
+            try {
+                amount = Double.parseDouble(numericPart);
+            } catch (NumberFormatException ignored) {
+            }
+            String remainder = matcher.group(2) != null ? matcher.group(2).trim() : null;
+            String unit = null;
+            String note = null;
+            if (StringUtils.hasText(remainder)) {
+                String normalized = remainder.trim();
+                if (normalized.startsWith("(")) {
+                    note = normalized;
+                } else {
+                    int spaceIndex = normalized.indexOf(' ');
+                    if (spaceIndex > 0) {
+                        unit = normalized.substring(0, spaceIndex).trim();
+                        String tail = normalized.substring(spaceIndex).trim();
+                        if (StringUtils.hasText(tail)) {
+                            note = tail;
+                        }
+                    } else {
+                        unit = normalized;
+                    }
+                }
+            }
+            String quantity = amount != null ? formatQuantity(amount) : null;
+            return new QuantityDescriptor(quantity, unit, note);
+        }
+
+        private String buildRequirementNote(PrimaryDataSnapshot.MountingRequirement requirement) {
+            if (requirement.getMaterials() == null || requirement.getMaterials().isEmpty()) {
+                return null;
+            }
+            List<String> details = new ArrayList<>();
+            for (PrimaryDataSnapshot.MountingMaterial material : requirement.getMaterials()) {
+                if (material == null) {
+                    continue;
+                }
+                String name = trimToNull(material.getMaterialName());
+                if (name == null) {
+                    continue;
+                }
+                String amount = trimToNull(material.getAmount());
+                String unit = trimToNull(material.getUnit());
+                StringBuilder builder = new StringBuilder(name);
+                if (StringUtils.hasText(amount)) {
+                    builder.append(" — ").append(amount);
+                } else if (StringUtils.hasText(unit)) {
+                    builder.append(" (").append(unit).append(")");
+                }
+                details.add(builder.toString());
+            }
+            if (details.isEmpty()) {
+                return null;
+            }
+            return "Материалы: " + String.join("; ", details);
+        }
+
+        private boolean isRowEmpty(TableRow row) {
+            if (row == null) {
+                return true;
+            }
+            return !StringUtils.hasText(row.name())
+                    && !StringUtils.hasText(row.quantity())
+                    && !StringUtils.hasText(row.unit())
+                    && !StringUtils.hasText(row.note());
+        }
+
+        private String mergeNotes(String first, String second) {
+            String primary = trimToNull(first);
+            String secondary = trimToNull(second);
+            if (!StringUtils.hasText(primary)) {
+                return secondary;
+            }
+            if (!StringUtils.hasText(secondary)) {
+                return primary;
+            }
+            return primary + "; " + secondary;
+        }
+
+        private String trimToNull(String value) {
+            return StringUtils.hasText(value) ? value.trim() : null;
+        }
+
+        private String defaultValue(String value) {
+            if (value == null) {
+                return "—";
+            }
+            String trimmed = value.trim();
+            return trimmed.isEmpty() ? "" : trimmed;
+        }
+
+        private void writeTable(String[] headers,
+                                List<String[]> rows,
+                                float[] columnWidths,
+                                float fontSize) throws IOException {
+            if (headers == null || headers.length == 0 || rows == null || rows.isEmpty()) {
+                return;
+            }
+            float cellPadding = 6f;
+            RowLayout headerLayout = prepareRow(headers, columnWidths, fontSize, cellPadding);
+            ensureSpace(headerLayout.height());
+            drawRow(headerLayout, columnWidths, fontSize, cellPadding, true, true, false);
+            boolean shade = false;
+            for (String[] row : rows) {
+                if (row == null) {
+                    continue;
+                }
+                RowLayout layout = prepareRow(row, columnWidths, fontSize, cellPadding);
+                float previousY = y;
+                ensureSpace(layout.height());
+                if (y > previousY + 0.1f) {
+                    headerLayout = prepareRow(headers, columnWidths, fontSize, cellPadding);
+                    ensureSpace(headerLayout.height());
+                    drawRow(headerLayout, columnWidths, fontSize, cellPadding, true, true, false);
+                    shade = false;
+                    ensureSpace(layout.height());
+                }
+                drawRow(layout, columnWidths, fontSize, cellPadding, false, false, shade);
+                shade = !shade;
+            }
+        }
+
+        private RowLayout prepareRow(String[] values,
+                                     float[] columnWidths,
+                                     float fontSize,
+                                     float cellPadding) throws IOException {
+            List<List<String>> columns = new ArrayList<>();
+            float lineHeight = fontSize * LINE_SPACING_RATIO;
+            int maxLines = 1;
+            for (int i = 0; i < columnWidths.length; i++) {
+                String value = i < values.length ? values[i] : "";
+                float maxWidth = Math.max(columnWidths[i] - cellPadding * 2, 24f);
+                List<String> lines = wrapText(value, fontSize, maxWidth);
+                if (lines.isEmpty()) {
+                    lines = List.of(" ");
+                }
+                columns.add(lines);
+                maxLines = Math.max(maxLines, lines.size());
+            }
+            float height = maxLines * lineHeight + cellPadding * 2;
+            return new RowLayout(columns, height);
+        }
+
+        private void drawRow(RowLayout layout,
+                              float[] columnWidths,
+                              float fontSize,
+                              float cellPadding,
+                              boolean header,
+                              boolean drawTopBorder,
+                              boolean shaded) throws IOException {
+            float rowTop = y;
+            float rowHeight = layout.height();
+            float totalWidth = 0f;
+            for (float width : columnWidths) {
+                totalWidth += width;
+            }
+            if (header) {
+                contentStream.saveGraphicsState();
+                contentStream.setNonStrokingColor(240, 240, 240);
+                contentStream.addRect(MARGIN, rowTop - rowHeight, totalWidth, rowHeight);
+                contentStream.fill();
+                contentStream.restoreGraphicsState();
+            } else if (shaded) {
+                contentStream.saveGraphicsState();
+                contentStream.setNonStrokingColor(248, 248, 248);
+                contentStream.addRect(MARGIN, rowTop - rowHeight, totalWidth, rowHeight);
+                contentStream.fill();
+                contentStream.restoreGraphicsState();
+            }
+
+            float lineHeight = fontSize * LINE_SPACING_RATIO;
+            float textBase = rowTop - cellPadding - fontSize;
+            float x = MARGIN;
+            for (int i = 0; i < layout.cellLines().size(); i++) {
+                List<String> cellLines = layout.cellLines().get(i);
+                float currentY = textBase;
+                for (String line : cellLines) {
+                    contentStream.beginText();
+                    contentStream.setFont(font, fontSize);
+                    contentStream.newLineAtOffset(x + cellPadding, currentY);
+                    contentStream.showText(line != null ? line : "");
+                    contentStream.endText();
+                    currentY -= lineHeight;
+                }
+                x += columnWidths[i];
+            }
+
+            contentStream.saveGraphicsState();
+            contentStream.setLineWidth(0.5f);
+            if (drawTopBorder) {
+                contentStream.moveTo(MARGIN, rowTop);
+                contentStream.lineTo(MARGIN + totalWidth, rowTop);
+            }
+            contentStream.moveTo(MARGIN, rowTop - rowHeight);
+            contentStream.lineTo(MARGIN + totalWidth, rowTop - rowHeight);
+            float currentX = MARGIN;
+            contentStream.moveTo(currentX, rowTop);
+            contentStream.lineTo(currentX, rowTop - rowHeight);
+            for (float columnWidth : columnWidths) {
+                currentX += columnWidth;
+                contentStream.moveTo(currentX, rowTop);
+                contentStream.lineTo(currentX, rowTop - rowHeight);
+            }
+            contentStream.stroke();
+            contentStream.restoreGraphicsState();
+            y = rowTop - rowHeight;
+        }
+
+        private record RowLayout(List<List<String>> cellLines, float height) {
+        }
+
+        private record TableRow(String category, String name, String quantity, String unit, String note) {
+            TableRow withCategory(String category) {
+                return new TableRow(category, name, quantity, unit, note);
+            }
+        }
+
+        private record QuantityDescriptor(String quantity, String unit, String note) {
         }
 
         private PDImageXObject createLogoImage(PDDocument document,

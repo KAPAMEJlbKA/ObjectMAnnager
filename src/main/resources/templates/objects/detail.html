@@ -66,10 +66,25 @@
                             </li>
                             <li>
                                 Материалы по объекту:
-                                <span th:if="${primarySummary.overallMaterialSummary != null}">
-                                    <strong th:text="${primarySummary.overallMaterialSummary}"></strong>
-                                </span>
-                                <span class="muted" th:if="${primarySummary.overallMaterialSummary == null}">нет данных</span>
+                                <div th:if="${!#lists.isEmpty(primarySummary.materialTotals)}">
+                                    <table class="data-table compact overall-materials-table">
+                                        <thead>
+                                        <tr>
+                                            <th>Материал</th>
+                                            <th>Количество</th>
+                                            <th>Ед. изм.</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="item : ${primarySummary.materialTotals}">
+                                            <td th:text="${item.name != null ? item.name : 'Материал не указан'}"></td>
+                                            <td th:text="${#numbers.formatDecimal(item.quantity, 0, 2)}"></td>
+                                            <td th:text="${item.unit != null ? item.unit : '—'}"></td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <span class="muted" th:if="${#lists.isEmpty(primarySummary.materialTotals)}">нет данных</span>
                             </li>
                             <li th:if="${#lists.isEmpty(primarySummary.cableFunctionSummaries)}">Длины кабелей: <span class="muted">нет данных</span></li>
                             <li th:each="functionSummary : ${primarySummary.cableFunctionSummaries}">
@@ -192,7 +207,7 @@
                                 <div class="card nested-card" th:each="node : ${primarySummary.nodeSummaries}">
                                     <h5 th:text="${'Узел: ' + (node.name != null ? node.name : 'Без названия')}"></h5>
                                     <p class="muted small">
-                                        <span th:text="${node.mountingElementName != null ? 'Монтажный элемент: ' + node.mountingElementName : 'Монтажный элемент не указан'}"></span>
+                                        <span th:text="${!#strings.isEmpty(node.mountingElementName) ? 'Шкаф: ' + node.mountingElementName : 'Шкаф не указан'}"></span>
                                         <span th:if="${node.powerCableTypeName != null}" th:text="${' • Кабель: ' + node.powerCableTypeName}"></span>
                                         <span th:if="${node.singleSocketCount > 0 or node.doubleSocketCount > 0}" th:text="${' • Розетки: ' + node.singleSocketCount + '×1м, ' + node.doubleSocketCount + '×2м'}"></span>
                                         <span th:if="${node.breakerCount > 0}" th:text="${' • Автоматы: ' + node.breakerCount + ' шт.'}"></span>
