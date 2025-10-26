@@ -12,7 +12,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -87,6 +89,31 @@ public class DatabaseSettingsService {
                 });
     }
 
+    @Transactional
+    public boolean activateConnection(UUID id) {
+        DatabaseConnectionSettings target = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Подключение не найдено"));
+
+        revalidateConnection(target);
+
+        if (!target.isInitialized()) {
+            target.setActive(false);
+            return false;
+        }
+
+        List<DatabaseConnectionSettings> allConnections = repository.findAll();
+        for (DatabaseConnectionSettings connection : allConnections) {
+            boolean shouldActivate = connection.getId().equals(id);
+            connection.setActive(shouldActivate);
+        }
+        return true;
+    }
+
+    @Transactional
+    public void deactivateConnection(UUID id) {
+        repository.findById(id).ifPresent(connection -> connection.setActive(false));
+    }
+
     private void refreshH2Settings(DatabaseConnectionSettings settings, String url, Path databasePath,
                                    boolean existedBefore, boolean allowCreate) {
         Path parentDirectory = databasePath != null ? databasePath.getParent() : null;
@@ -120,6 +147,25 @@ public class DatabaseSettingsService {
             settings.setStatusMessage("Ошибка подключения к H2: " + ex.getMessage());
         }
         settings.setLastVerifiedAt(LocalDateTime.now());
+    }
+
+    private void revalidateConnection(DatabaseConnectionSettings settings) {
+        if (settings.getDatabaseType() == DatabaseType.H2) {
+            String url = settings.getDatabaseName();
+            if (url == null || url.isBlank()) {
+                settings.setInitialized(false);
+                settings.setStatusMessage("URL H2 базы данных не задан");
+                settings.setLastVerifiedAt(LocalDateTime.now());
+                return;
+            }
+            Path databasePath = extractDatabasePath(url);
+            boolean existedBefore = databasePath != null
+                    && (Files.exists(withExtension(databasePath, ".mv.db"))
+                    || Files.exists(withExtension(databasePath, ".h2.db")));
+            refreshH2Settings(settings, url, databasePath, existedBefore, false);
+        } else {
+            verifyAndInitialize(settings);
+        }
     }
 
     private Path extractDatabasePath(String url) {
