@@ -1235,6 +1235,24 @@
             }
         }
 
+        function syncDeviceGroupLabel(card, label) {
+            if (!card || !deviceContainer) {
+                return;
+            }
+            const index = Number(card.dataset.index);
+            if (!Number.isInteger(index) || index < 0) {
+                return;
+            }
+            const groupElement = deviceContainer.querySelector(`.device-group[data-index="${index}"]`);
+            if (!groupElement) {
+                return;
+            }
+            const hiddenField = groupElement.querySelector('input[data-field="groupLabel"]');
+            if (hiddenField instanceof HTMLInputElement) {
+                hiddenField.value = label;
+            }
+        }
+
         function moveCardToGroup(card, label, options = {}) {
             if (!card) {
                 return;
@@ -1266,6 +1284,7 @@
                 hidden.value = trimmed;
             }
             card.dataset.groupLabel = trimmed;
+            syncDeviceGroupLabel(card, trimmed);
             updateCardAssignmentDisplay(card);
             if (targetIsPool || !dropzone) {
                 groupingPool?.appendChild(card);
@@ -1418,6 +1437,7 @@
                 } else {
                     groupingPool.appendChild(card);
                 }
+                syncDeviceGroupLabel(card, label);
                 updateCardAssignmentDisplay(card);
             });
             updateGroupingEmptyState();
