@@ -187,6 +187,95 @@
                             </div>
                         </div>
                         <div>
+                            <h4>Материалы по узлам</h4>
+                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.nodeSummaries)}">Материалы по узлам не указаны.</p>
+                            <div class="stack" th:if="${!#lists.isEmpty(primarySummary.nodeSummaries)}">
+                                <div class="card nested-card" th:each="node : ${primarySummary.nodeSummaries}">
+                                    <h5 th:text="${'Узел: ' + (node.name != null ? node.name : 'Без названия')}"></h5>
+                                    <p class="muted small">
+                                        <span th:text="${node.mountingElementName != null ? 'Монтажный элемент: ' + node.mountingElementName : 'Монтажный элемент не указан'}"></span>
+                                        <span th:if="${node.powerCableTypeName != null}" th:text="${' • Кабель: ' + node.powerCableTypeName}"></span>
+                                    </p>
+                                    <div th:if="${!#lists.isEmpty(node.materialTotals)}">
+                                        <h6>Итого по узлу</h6>
+                                        <table class="data-table compact">
+                                            <thead>
+                                            <tr>
+                                                <th>Материал</th>
+                                                <th>Количество</th>
+                                                <th>Ед. изм.</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr th:each="item : ${node.materialTotals}">
+                                                <td th:text="${item.name != null ? item.name : 'Материал не указан'}"></td>
+                                                <td th:text="${#numbers.formatDecimal(item.quantity, 0, 2)}"></td>
+                                                <td th:text="${item.unit != null ? item.unit : '—'}"></td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div th:if="${!#lists.isEmpty(node.materialGroups)}">
+                                        <h6>Материалы по группам узла</h6>
+                                        <div class="stack">
+                                            <div class="card subtle" th:each="group : ${node.materialGroups}">
+                                                <h6 th:text="${group.label != null ? group.label : 'Без названия'}"></h6>
+                                                <ul class="compact-list">
+                                                    <li th:if="${#lists.isEmpty(group.materials)}" class="muted">Материалы не указаны.</li>
+                                                    <li th:each="material : ${group.materials}">
+                                                        <span th:text="${material.materialName != null ? material.materialName : 'Материал не указан'}"></span>
+                                                        <span th:if="${material.amountWithUnit != null}" th:text="${' — ' + material.amountWithUnit}"></span>
+                                                        <span class="muted small" th:if="${material.surfaceLabel != null}" th:text="${' (' + material.surfaceLabel + ')'}"></span>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="muted" th:if="${#lists.isEmpty(node.materialTotals) and #lists.isEmpty(node.materialGroups)}">Материалы не указаны.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4>Итог по материалам</h4>
+                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.materialTotals)}">Суммарные материалы не рассчитаны.</p>
+                            <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.materialTotals)}">
+                                <thead>
+                                <tr>
+                                    <th>Материал</th>
+                                    <th>Количество</th>
+                                    <th>Ед. изм.</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="item : ${primarySummary.materialTotals}">
+                                    <td th:text="${item.name != null ? item.name : 'Материал не указан'}"></td>
+                                    <td th:text="${#numbers.formatDecimal(item.quantity, 0, 2)}"></td>
+                                    <td th:text="${item.unit != null ? item.unit : '—'}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
+                            <h4>Итог по монтажным элементам</h4>
+                            <p class="muted" th:if="${#lists.isEmpty(primarySummary.mountingElementTotals)}">Монтажные элементы не рассчитаны.</p>
+                            <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.mountingElementTotals)}">
+                                <thead>
+                                <tr>
+                                    <th>Элемент</th>
+                                    <th>Количество</th>
+                                    <th>Ед. изм.</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="item : ${primarySummary.mountingElementTotals}">
+                                    <td th:text="${item.name != null ? item.name : 'Элемент не указан'}"></td>
+                                    <td th:text="${#numbers.formatDecimal(item.quantity, 0, 2)}"></td>
+                                    <td th:text="${item.unit != null ? item.unit : '—'}"></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div>
                             <h4>Дополнительные материалы</h4>
                             <p class="muted" th:if="${#lists.isEmpty(primarySummary.additionalMaterials)}">Дополнительные материалы не рассчитаны.</p>
                             <table class="data-table" th:if="${!#lists.isEmpty(primarySummary.additionalMaterials)}">

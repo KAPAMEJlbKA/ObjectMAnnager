@@ -3,16 +3,12 @@ package com.kapamejlbka.objectmannage.service;
 import com.kapamejlbka.objectmannage.model.ManagedObject;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary;
-import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.DeviceGroup;
-import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MaterialGroup;
-import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MaterialUsage;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MountingMaterial;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSnapshot.MountingRequirement;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.AdditionalMaterialItem;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableFunctionSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.DeviceTypeSummary;
-import com.kapamejlbka.objectmannage.model.CameraInstallationOption;
-import com.kapamejlbka.objectmannage.model.SurfaceType;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.MaterialUsageSummary;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.IOException;
@@ -21,11 +17,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -63,9 +57,9 @@ public class PdfReportService {
             PdfBuilder builder = new PdfBuilder(document, font, logo);
             builder.addTitlePage(object, summary);
             List<AdditionalMaterialItem> additional = summary != null ? summary.getAdditionalMaterials() : List.of();
-            builder.addMountingMaterialsSection(safeSnapshot, additional);
+            builder.addMountingMaterialsSection(safeSnapshot, summary, additional);
             builder.addEquipmentSection(summary);
-            builder.addGroupsSection(safeSnapshot);
+            builder.addNodeMaterialsSection(summary);
             builder.finish();
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             document.save(outputStream);
@@ -130,6 +124,7 @@ public class PdfReportService {
         }
 
         void addMountingMaterialsSection(PrimaryDataSnapshot snapshot,
+                                         PrimaryDataSummary summary,
                                          List<AdditionalMaterialItem> calculatedMaterials) throws IOException {
             newPage();
             writeSectionHeading("Перечень монтажных материалов");
@@ -178,43 +173,21 @@ public class PdfReportService {
                 writeBulletList(items, 12f);
             }
 
-            writeSpacing(18f);
-            writeSubHeading("Материалы по группам");
-            List<MaterialGroup> materialGroups = snapshot.getMaterialGroups();
-            if (materialGroups == null || materialGroups.isEmpty()) {
-                writeParagraph("Материалы по группам не указаны.", 12f);
-            } else {
-                for (MaterialGroup group : materialGroups) {
-                    if (group == null) {
+            if (summary != null && summary.getMountingElementTotals() != null
+                    && !summary.getMountingElementTotals().isEmpty()) {
+                writeSpacing(18f);
+                writeSubHeading("Суммарные монтажные элементы");
+                List<String> totals = new ArrayList<>();
+                for (PrimaryDataSummary.MaterialTotal total : summary.getMountingElementTotals()) {
+                    if (total == null) {
                         continue;
                     }
-                    String label = determineGroupLabel(group.getGroupLabel(), group.getGroupName());
-                    writeParagraph("Группа: " + label, 12f);
-                    List<String> materials = new ArrayList<>();
-                    if (group.getMaterials() != null) {
-                        for (MaterialUsage usage : group.getMaterials()) {
-                            if (usage == null) {
-                                continue;
-                            }
-                            String name = safeText(usage.getMaterialName());
-                            String amount = safeText(usage.getAmount());
-                            String surface = safeText(usage.getLayingSurface());
-                            StringBuilder builder = new StringBuilder(name);
-                            if (StringUtils.hasText(amount)) {
-                                builder.append(" — ").append(amount.trim());
-                            }
-                            if (StringUtils.hasText(surface)) {
-                                builder.append(" (" + surface.trim() + ")");
-                            }
-                            materials.add(builder.toString());
-                        }
-                    }
-                    if (materials.isEmpty()) {
-                        materials.add("Материалы не указаны.");
-                    }
-                    writeBulletList(materials, 11f);
-                    writeSpacing(12f);
+                    totals.add(formatTotalLine(total));
                 }
+                if (totals.isEmpty()) {
+                    totals.add("Монтажные элементы не рассчитаны.");
+                }
+                writeBulletList(totals, 11f);
             }
 
             if (calculatedMaterials != null && !calculatedMaterials.isEmpty()) {
@@ -274,180 +247,85 @@ public class PdfReportService {
             }
         }
 
-        void addGroupsSection(PrimaryDataSnapshot snapshot) throws IOException {
+        void addNodeMaterialsSection(PrimaryDataSummary summary) throws IOException {
             newPage();
-            writeSectionHeading("Группы устройств и материалы");
-            Map<String, List<DeviceGroup>> groupsByLabel = groupDevices(snapshot.getDeviceGroups());
-            Map<String, MaterialGroup> materialsByLabel = mapMaterials(snapshot.getMaterialGroups());
-            Set<String> labels = new LinkedHashSet<>();
-            labels.addAll(groupsByLabel.keySet());
-            labels.addAll(materialsByLabel.keySet());
-
-            if (labels.isEmpty()) {
-                writeParagraph("Группы устройств не заданы.", 12f);
+            writeSectionHeading("Материалы по узлам");
+            if (summary == null || summary.getNodeSummaries() == null || summary.getNodeSummaries().isEmpty()) {
+                writeParagraph("Материалы по узлам не указаны.", 12f);
                 return;
             }
-
-            for (String rawLabel : labels) {
-                String label = determineGroupLabel(rawLabel, rawLabel);
-                writeSubHeading("Группа: " + label);
-
-                List<DeviceGroup> deviceGroups = groupsByLabel.getOrDefault(rawLabel, List.of());
-                List<String> deviceLines = new ArrayList<>();
-                double totalLength = 0;
-                for (DeviceGroup group : deviceGroups) {
-                    if (group == null) {
-                        continue;
-                    }
-                    int quantity = Math.max(group.getQuantity(), 0);
-                    double distance = safeDouble(group.getDistanceToConnectionPoint());
-                    totalLength += quantity * distance;
-                    StringBuilder builder = new StringBuilder();
-                    builder.append(safeText(group.getDeviceTypeName()));
-                    builder.append(" — ").append(quantity).append(" шт.");
-                    if (StringUtils.hasText(group.getInstallLocation())) {
-                        builder.append(", установка: ").append(group.getInstallLocation().trim());
-                    }
-                    if (StringUtils.hasText(group.getConnectionPoint())) {
-                        builder.append(", подключение: ").append(group.getConnectionPoint().trim());
-                    }
-                    String surfaceLabel = resolveSurfaceLabel(group.getInstallSurfaceCategory());
-                    if (surfaceLabel != null) {
-                        builder.append(", поверхность: ").append(surfaceLabel);
-                    }
-                    if (distance > 0) {
-                        builder.append(String.format(Locale.getDefault(), ", расстояние: %.2f м", distance));
-                    }
-                    CameraInstallationOption.fromCode(group.getCameraAccessory())
-                            .ifPresent(option -> builder.append(", комплектация: ").append(option.getDisplayName()));
-                    Double viewingDepth = group.getCameraViewingDepth();
-                    if (viewingDepth != null && viewingDepth > 0) {
-                        builder.append(String.format(Locale.getDefault(), ", глубина просмотра: %.1f м", viewingDepth));
-                    }
-                    deviceLines.add(builder.toString());
+            for (PrimaryDataSummary.NodeSummary node : summary.getNodeSummaries()) {
+                if (node == null) {
+                    continue;
                 }
-                if (deviceLines.isEmpty()) {
-                    writeParagraph("Устройства не привязаны к группе.", 11f);
-                } else {
-                    writeBulletList(deviceLines, 11f);
+                writeSubHeading("Узел: " + safeText(node.getName()));
+                List<String> info = new ArrayList<>();
+                if (StringUtils.hasText(node.getMountingElementName())) {
+                    info.add("Монтажный элемент: " + node.getMountingElementName().trim());
                 }
-                writeParagraph(String.format(Locale.getDefault(),
-                        "Суммарная длина кабеля: %.2f м", totalLength), 11f);
-
-                MaterialGroup materialGroup = materialsByLabel.get(rawLabel);
-                double gofraLength = calculateGofraLength(materialGroup);
-                if (gofraLength > 0) {
-                    writeParagraph(String.format(Locale.getDefault(),
-                            "Метраж гофры: %.2f м", gofraLength), 11f);
+                if (StringUtils.hasText(node.getPowerCableTypeName())) {
+                    info.add("Кабель: " + node.getPowerCableTypeName().trim());
                 }
-                if (materialGroup != null && materialGroup.getMaterials() != null && !materialGroup.getMaterials().isEmpty()) {
-                    writeParagraph("Материалы:", 11f);
-                    List<String> materials = new ArrayList<>();
-                    for (MaterialUsage usage : materialGroup.getMaterials()) {
-                        if (usage == null) {
+                if (node.getDistanceToPower() != null && node.getDistanceToPower() > 0) {
+                    info.add(String.format(Locale.getDefault(), "Расстояние до питания: %.2f м", node.getDistanceToPower()));
+                }
+                if (!info.isEmpty()) {
+                    writeBulletList(info, 11f);
+                }
+                if (node.getMaterialTotals() != null && !node.getMaterialTotals().isEmpty()) {
+                    writeParagraph("Итого по узлу:", 11f);
+                    List<String> totals = new ArrayList<>();
+                    for (PrimaryDataSummary.MaterialTotal total : node.getMaterialTotals()) {
+                        if (total == null) {
                             continue;
                         }
-                        StringBuilder line = new StringBuilder(safeText(usage.getMaterialName()));
-                        if (StringUtils.hasText(usage.getAmount())) {
-                            line.append(" — ").append(usage.getAmount().trim());
-                        }
-                        if (StringUtils.hasText(usage.getLayingSurface())) {
-                            line.append(" (" + usage.getLayingSurface().trim() + ")");
-                        }
-                        materials.add(line.toString());
+                        totals.add(formatTotalLine(total));
                     }
-                    writeBulletList(materials, 11f);
-                } else {
-                    writeParagraph("Материалы группы не указаны.", 11f);
+                    writeBulletList(totals, 11f);
                 }
-                writeSpacing(18f);
-            }
-        }
-
-        private Map<String, List<DeviceGroup>> groupDevices(List<DeviceGroup> deviceGroups) {
-            Map<String, List<DeviceGroup>> map = new LinkedHashMap<>();
-            if (deviceGroups == null) {
-                return map;
-            }
-            for (DeviceGroup group : deviceGroups) {
-                if (group == null) {
-                    continue;
-                }
-                String label = normalizeLabel(group.getGroupLabel());
-                map.computeIfAbsent(label, key -> new ArrayList<>()).add(group);
-            }
-            return map;
-        }
-
-        private Map<String, MaterialGroup> mapMaterials(List<MaterialGroup> materialGroups) {
-            Map<String, MaterialGroup> map = new LinkedHashMap<>();
-            if (materialGroups == null) {
-                return map;
-            }
-            for (MaterialGroup group : materialGroups) {
-                if (group == null) {
-                    continue;
-                }
-                String label = normalizeLabel(group.getGroupLabel());
-                if (!map.containsKey(label)) {
-                    map.put(label, group);
-                }
-            }
-            return map;
-        }
-
-        private double calculateGofraLength(MaterialGroup group) {
-            if (group == null || group.getMaterials() == null) {
-                return 0.0;
-            }
-            double total = 0.0;
-            for (MaterialUsage usage : group.getMaterials()) {
-                if (usage == null || !StringUtils.hasText(usage.getMaterialName())) {
-                    continue;
-                }
-                String name = usage.getMaterialName().toLowerCase(Locale.ROOT);
-                if (name.contains("гоф")) {
-                    double length = parseNumeric(usage.getAmount());
-                    if (!Double.isNaN(length)) {
-                        total += length;
+                if (node.getMaterialGroups() != null && !node.getMaterialGroups().isEmpty()) {
+                    for (PrimaryDataSummary.NodeMaterialGroupSummary group : node.getMaterialGroups()) {
+                        if (group == null) {
+                            continue;
+                        }
+                        writeParagraph("Группа: " + safeText(group.getLabel()), 11f);
+                        List<String> materials = new ArrayList<>();
+                        if (group.getMaterials() != null) {
+                            for (MaterialUsageSummary usage : group.getMaterials()) {
+                                if (usage == null) {
+                                    continue;
+                                }
+                                StringBuilder line = new StringBuilder(safeText(usage.getMaterialName()));
+                                if (StringUtils.hasText(usage.getAmountWithUnit())) {
+                                    line.append(" — ").append(usage.getAmountWithUnit().trim());
+                                }
+                                if (StringUtils.hasText(usage.getSurfaceLabel())) {
+                                    line.append(" (" + usage.getSurfaceLabel().trim() + ")");
+                                }
+                                materials.add(line.toString());
+                            }
+                        }
+                        if (materials.isEmpty()) {
+                            materials.add("Материалы не указаны.");
+                        }
+                        writeBulletList(materials, 11f);
+                        writeSpacing(6f);
                     }
+                } else if (node.getMaterialTotals() == null || node.getMaterialTotals().isEmpty()) {
+                    writeParagraph("Материалы не указаны.", 11f);
                 }
+                writeSpacing(12f);
             }
-            return total;
-        }
-
-        private String determineGroupLabel(String groupLabel, String fallback) {
-            String candidate = normalizeLabel(groupLabel);
-            if (!StringUtils.hasText(candidate)) {
-                candidate = normalizeLabel(fallback);
-            }
-            return StringUtils.hasText(candidate) ? candidate : "Без названия";
-        }
-
-        private String normalizeLabel(String value) {
-            return StringUtils.hasText(value) ? value.trim() : "";
-        }
-
-        private double parseNumeric(String value) {
-            if (!StringUtils.hasText(value)) {
-                return Double.NaN;
-            }
-            String sanitized = value.replace(',', '.');
-            StringBuilder builder = new StringBuilder();
-            for (char ch : sanitized.toCharArray()) {
-                if ((ch >= '0' && ch <= '9') || ch == '.' || ch == '-') {
-                    builder.append(ch);
-                } else if (builder.length() > 0) {
-                    break;
+            if (summary.getMaterialTotals() != null && !summary.getMaterialTotals().isEmpty()) {
+                writeSubHeading("Суммарные материалы по объекту");
+                List<String> totals = new ArrayList<>();
+                for (PrimaryDataSummary.MaterialTotal total : summary.getMaterialTotals()) {
+                    if (total == null) {
+                        continue;
+                    }
+                    totals.add(formatTotalLine(total));
                 }
-            }
-            if (builder.length() == 0) {
-                return Double.NaN;
-            }
-            try {
-                return Double.parseDouble(builder.toString());
-            } catch (NumberFormatException ex) {
-                return Double.NaN;
+                writeBulletList(totals, 11f);
             }
         }
 
@@ -486,18 +364,25 @@ public class PdfReportService {
             y = topY - 24f;
         }
 
-        private String resolveSurfaceLabel(String category) {
-            return SurfaceType.resolve(category)
-                    .map(SurfaceType::getDisplayName)
-                    .orElse(null);
-        }
-
         private String formatQuantity(double value) {
             double rounded = Math.rint(value);
             if (Math.abs(value - rounded) < 1e-3) {
                 return String.format(Locale.getDefault(), "%.0f", rounded);
             }
             return String.format(Locale.getDefault(), "%.2f", value);
+        }
+
+        private String formatTotalLine(PrimaryDataSummary.MaterialTotal total) {
+            if (total == null) {
+                return "—";
+            }
+            String name = safeText(total.getName());
+            String quantity = formatQuantity(total.getQuantity());
+            String unit = safeText(total.getUnit());
+            if (StringUtils.hasText(unit)) {
+                return String.format(Locale.getDefault(), "%s — %s %s", name, quantity, unit);
+            }
+            return String.format(Locale.getDefault(), "%s — %s", name, quantity);
         }
 
         private void writeSectionHeading(String text) throws IOException {
@@ -601,10 +486,6 @@ public class PdfReportService {
 
         private String safeText(String text) {
             return StringUtils.hasText(text) ? text.trim() : "—";
-        }
-
-        private double safeDouble(Double value) {
-            return value == null ? 0.0 : Math.max(value, 0.0);
         }
 
         private void newPage() throws IOException {
