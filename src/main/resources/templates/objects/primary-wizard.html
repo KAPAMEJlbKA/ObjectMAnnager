@@ -1090,7 +1090,49 @@
         }
 
         function getDeviceCards() {
-            return Array.from(groupingPool?.querySelectorAll('.device-chip') ?? []);
+            const collected = [];
+            let order = 0;
+            const pushCard = card => {
+                if (!card) {
+                    return;
+                }
+                const parsedIndex = Number.parseInt(card.dataset.index ?? '', 10);
+                collected.push({
+                    card,
+                    index: Number.isFinite(parsedIndex) ? parsedIndex : Number.NaN,
+                    order: order++
+                });
+            };
+            groupingPool?.querySelectorAll('.device-chip').forEach(pushCard);
+            getGroupColumns().forEach(column => {
+                column.querySelectorAll('.device-chip').forEach(pushCard);
+            });
+            collected.sort((left, right) => {
+                const leftHasIndex = Number.isFinite(left.index);
+                const rightHasIndex = Number.isFinite(right.index);
+                if (leftHasIndex && rightHasIndex && left.index !== right.index) {
+                    return left.index - right.index;
+                }
+                if (leftHasIndex && !rightHasIndex) {
+                    return -1;
+                }
+                if (!leftHasIndex && rightHasIndex) {
+                    return 1;
+                }
+                return left.order - right.order;
+            });
+            return collected.map(entry => entry.card);
+        }
+
+        function removeDeviceCard(index) {
+            if (!Number.isInteger(index) || index < 0) {
+                return;
+            }
+            const target = getDeviceCards().find(card => {
+                const parsed = Number.parseInt(card.dataset.index ?? '', 10);
+                return Number.isFinite(parsed) && parsed === index;
+            });
+            target?.remove();
         }
 
         function enableCardDrag(card) {
@@ -1128,6 +1170,7 @@
             while (cards.length > groups.length) {
                 const card = cards.pop();
                 card?.remove();
+                cards = getDeviceCards();
             }
             cards = getDeviceCards();
             cards.forEach((card, index) => {
@@ -1910,7 +1953,9 @@
             if (target.classList.contains('remove-device')) {
                 const group = target.closest('.device-group');
                 if (group && deviceContainer.children.length > 1) {
+                    const index = Number.parseInt(group.dataset.index ?? '', 10);
                     group.remove();
+                    removeDeviceCard(Number.isFinite(index) ? index : -1);
                     reindexDeviceGroups();
                 }
             }
