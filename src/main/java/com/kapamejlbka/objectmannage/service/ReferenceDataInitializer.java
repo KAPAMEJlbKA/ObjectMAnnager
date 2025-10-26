@@ -38,6 +38,7 @@ public class ReferenceDataInitializer implements ApplicationRunner {
                 .map(type -> normalize(type.getName()))
                 .collect(Collectors.toCollection(HashSet::new));
         ensureDeviceType(existing, "Видеокамера");
+        ensureDeviceType(existing, "Сетевое устройство");
         ensureDeviceType(existing, "Точка доступа Wi-Fi");
         ensureDeviceType(existing, "Точка сети");
         ensureDeviceType(existing, "Контроллер считыватель");
