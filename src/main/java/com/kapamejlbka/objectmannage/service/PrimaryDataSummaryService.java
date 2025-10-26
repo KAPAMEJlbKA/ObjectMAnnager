@@ -14,7 +14,6 @@ import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableFunctionSumma
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableLengthSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.DeviceTypeSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.NodeSummary;
-import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.MaterialGroupSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.MaterialUsageSummary;
 import com.kapamejlbka.objectmannage.model.SurfaceType;
 import com.kapamejlbka.objectmannage.repository.CableTypeRepository;
@@ -76,9 +75,11 @@ public class PrimaryDataSummaryService {
         }
         Map<String, Integer> deviceTypeCounts = new LinkedHashMap<>();
         Map<String, CableLengthAccumulator> cableLengthMap = new LinkedHashMap<>();
-        List<NodeSummary> nodeSummaries = new ArrayList<>();
-        List<MaterialGroupSummary> materialGroupSummaries = new ArrayList<>();
+        List<NodeContext> nodeContexts = new ArrayList<>();
+        Map<String, NodeContext> nodeContextsByNormalizedName = new LinkedHashMap<>();
         Map<String, MaterialAccumulator> additionalMaterials = new LinkedHashMap<>();
+        Map<String, MaterialAccumulator> overallMaterialTotals = new LinkedHashMap<>();
+        Map<String, MaterialAccumulator> mountingElementTotals = new LinkedHashMap<>();
         EnumMap<SurfaceType, Integer> cameraCountsBySurface = new EnumMap<>(SurfaceType.class);
         EnumMap<SurfaceType, Integer> adapterCountsBySurface = new EnumMap<>(SurfaceType.class);
         EnumMap<SurfaceType, Integer> plasticBoxCountsBySurface = new EnumMap<>(SurfaceType.class);
@@ -98,6 +99,7 @@ public class PrimaryDataSummaryService {
         int plasticBoxCameras = 0;
         int boxNodes = 0;
         double structureLengthWithoutMaterial = 0.0;
+        int unnamedNodeIndex = 1;
 
         if (snapshot.getDeviceGroups() != null) {
             for (PrimaryDataSnapshot.DeviceGroup group : snapshot.getDeviceGroups()) {
@@ -195,29 +197,40 @@ public class PrimaryDataSummaryService {
                 if (StringUtils.hasText(trimmedName)) {
                     definedConnectionPoints.add(trimmedName);
                 }
-                String name = StringUtils.hasText(trimmedName) ? trimmedName : "Без названия";
-                String elementName = point.getMountingElementName();
-                Double distanceToPower = point.getDistanceToPower();
+                String displayName = StringUtils.hasText(trimmedName) ? trimmedName : "Без названия";
+                String normalizedName = normalizeKey(trimmedName);
                 CableTypeData powerCable = resolveCable(point.getPowerCableTypeName(),
                         point.getPowerCableTypeId(), cableTypeData);
-                String powerCableName = powerCable != null ? powerCable.name() : null;
-                String layingMaterialName = point.getLayingMaterialName();
-                String layingMaterialUnit = point.getLayingMaterialUnit();
-                String layingSurface = point.getLayingSurface();
-                String layingSurfaceCategory = point.getLayingSurfaceCategory();
-                nodeSummaries.add(new NodeSummary(name, elementName, distanceToPower, powerCableName,
-                        layingMaterialName, layingMaterialUnit, layingSurface, layingSurfaceCategory));
+                NodeContext context = new NodeContext(point,
+                        displayName,
+                        normalizedName,
+                        powerCable != null ? powerCable.name() : null);
+                nodeContexts.add(context);
+                String normalizedDisplayName = normalizeKey(displayName);
+                if (normalizedName != null) {
+                    nodeContextsByNormalizedName.putIfAbsent(normalizedName, context);
+                }
+                if (normalizedDisplayName != null) {
+                    nodeContextsByNormalizedName.putIfAbsent(normalizedDisplayName, context);
+                }
+                if (normalizedName == null && normalizedDisplayName == null) {
+                    nodeContextsByNormalizedName.putIfAbsent("__unnamed__" + unnamedNodeIndex++, context);
+                }
 
+                String elementName = point.getMountingElementName();
                 if (isBoxNode(elementName)) {
                     boxNodes++;
                 }
 
+                Double distanceToPower = point.getDistanceToPower();
                 double powerLength = Math.max(0.0, defaultDouble(distanceToPower));
                 if (powerLength > 0) {
                     CableFunction function = powerCable != null && powerCable.function() != null
                             ? powerCable.function() : CableFunction.UNKNOWN;
                     boolean missingClassification = powerCable == null || powerCable.function() == CableFunction.UNKNOWN;
-                    addCableLength(cableLengthMap, powerCableName != null ? powerCableName : UNKNOWN_CABLE_TYPE,
+                    String cableName = powerCable != null && StringUtils.hasText(powerCable.name())
+                            ? powerCable.name() : UNKNOWN_CABLE_TYPE;
+                    addCableLength(cableLengthMap, cableName,
                             powerLength, missingClassification, function, functionTotals);
                     totalCableLength += powerLength;
                     boolean hasMaterial = point.getLayingMaterialId() != null
@@ -227,10 +240,98 @@ public class PrimaryDataSummaryService {
                     if (!hasMaterial && surfaceType == SurfaceType.EXISTING_STRUCTURES) {
                         structureLengthWithoutMaterial += powerLength;
                     }
+                    if (hasMaterial) {
+                        String unit = trimText(point.getLayingMaterialUnit());
+                        if (!StringUtils.hasText(unit)) {
+                            unit = "м";
+                        }
+                        String surfaceLabel = resolveSurfaceLabel(surfaceType, point.getLayingSurface());
+                        addNodeMaterial(context,
+                                "Прокладка питания",
+                                point.getLayingMaterialName(),
+                                formatQuantity(powerLength, unit),
+                                powerLength,
+                                unit,
+                                surfaceLabel,
+                                overallMaterialTotals);
+                    }
                 }
             }
         }
 
+        Map<String, String> labelToNodeMap = mapGroupLabelsToNodes(snapshot.getDeviceGroups());
+        if (snapshot.getMaterialGroups() != null) {
+            for (PrimaryDataSnapshot.MaterialGroup group : snapshot.getMaterialGroups()) {
+                if (group == null || group.getMaterials() == null) {
+                    continue;
+                }
+                String label = determineGroupLabel(group.getGroupLabel(), group.getGroupName());
+                NodeContext target = resolveNodeForGroup(label, labelToNodeMap, nodeContextsByNormalizedName);
+                for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
+                    if (usage == null) {
+                        continue;
+                    }
+                    String name = trimText(usage.getMaterialName());
+                    String amountWithUnit = combineAmountWithUnit(usage.getAmount(), usage.getUnit());
+                    String surfaceLabel = resolveSurfaceLabel(
+                            SurfaceType.resolve(usage.getLayingSurfaceCategory()).orElse(null),
+                            usage.getLayingSurface());
+                    boolean empty = !StringUtils.hasText(name)
+                            && !StringUtils.hasText(amountWithUnit)
+                            && !StringUtils.hasText(surfaceLabel);
+                    if (empty) {
+                        continue;
+                    }
+                    Double quantity = null;
+                    double numeric = parseLength(usage.getAmount());
+                    if (numeric > 0) {
+                        quantity = numeric;
+                    }
+                    String unit = resolveUnit(usage.getUnit(), usage.getAmount());
+                    if (target != null) {
+                        addNodeMaterial(target,
+                                label,
+                                name,
+                                amountWithUnit,
+                                quantity,
+                                unit,
+                                surfaceLabel,
+                                overallMaterialTotals);
+                    } else if (quantity != null && StringUtils.hasText(name)) {
+                        addMaterial(overallMaterialTotals, name, unit, quantity);
+                    }
+                }
+            }
+        }
+
+        if (snapshot.getMountingElements() != null) {
+            for (PrimaryDataSnapshot.MountingRequirement requirement : snapshot.getMountingElements()) {
+                if (requirement == null) {
+                    continue;
+                }
+                String elementName = trimText(requirement.getElementName());
+                double quantity = parseLength(requirement.getQuantity());
+                String unit = resolveUnit(null, requirement.getQuantity());
+                if (quantity > 0 && StringUtils.hasText(elementName)) {
+                    addMaterial(mountingElementTotals, elementName, unit, quantity);
+                }
+                if (requirement.getMaterials() != null) {
+                    for (PrimaryDataSnapshot.MountingMaterial material : requirement.getMaterials()) {
+                        if (material == null) {
+                            continue;
+                        }
+                        String materialName = trimText(material.getMaterialName());
+                        double materialQuantity = parseLength(material.getAmount());
+                        String materialUnit = resolveUnit(material.getUnit(), material.getAmount());
+                        if (materialQuantity > 0 && StringUtils.hasText(materialName)) {
+                            addMaterial(overallMaterialTotals, materialName, materialUnit, materialQuantity);
+                        }
+                    }
+                }
+            }
+        }
+
+        List<NodeSummary> nodeSummaries = buildNodeSummaries(nodeContexts);
         List<DeviceTypeSummary> deviceSummaries = new ArrayList<>();
         deviceTypeCounts.forEach((name, quantity) ->
                 deviceSummaries.add(new DeviceTypeSummary(name, quantity != null ? quantity : 0)));
@@ -269,7 +370,6 @@ public class PrimaryDataSummaryService {
         Integer declaredAssignments = recordedConnectionPoints > 0 ? recordedConnectionPoints : null;
 
         MaterialLengthStats materialLengths = collectMaterialLengths(snapshot);
-        materialGroupSummaries = summarizeMaterialGroups(snapshot);
         accumulateCameraMaterials(additionalMaterials,
                 cameraCountsBySurface,
                 adapterCountsBySurface,
@@ -282,6 +382,12 @@ public class PrimaryDataSummaryService {
                 materialLengths,
                 structureLengthWithoutMaterial,
                 applicationSettingsService.getMaterialCoefficients());
+
+        additionalMaterials.values().forEach(acc ->
+                addMaterial(overallMaterialTotals, acc.name(), acc.unit(), acc.quantity()));
+
+        List<PrimaryDataSummary.MaterialTotal> materialTotals = buildMaterialTotals(overallMaterialTotals);
+        List<PrimaryDataSummary.MaterialTotal> mountingTotals = buildMaterialTotals(mountingElementTotals);
 
         PrimaryDataSummary.Builder builder = PrimaryDataSummary.builder()
                 .withHasData(true)
@@ -296,7 +402,6 @@ public class PrimaryDataSummaryService {
         cableSummaries.forEach(builder::addCableLengthSummary);
         functionSummaries.forEach(builder::addCableFunctionSummary);
         nodeSummaries.forEach(builder::addNodeSummary);
-        materialGroupSummaries.forEach(builder::addMaterialGroupSummary);
         cameraDetails.stream()
                 .sorted(Comparator
                         .comparing((PrimaryDataSummary.CameraDetail detail) -> detail.getDeviceTypeName(),
@@ -310,43 +415,9 @@ public class PrimaryDataSummaryService {
                 .sorted(Comparator.comparing(MaterialAccumulator::name, Comparator.nullsLast(String::compareToIgnoreCase)))
                 .map(acc -> new AdditionalMaterialItem(acc.name(), acc.unit(), acc.quantity()))
                 .forEach(builder::addAdditionalMaterial);
+        materialTotals.forEach(builder::addMaterialTotal);
+        mountingTotals.forEach(builder::addMountingElementTotal);
         return builder.build();
-    }
-
-    private List<MaterialGroupSummary> summarizeMaterialGroups(PrimaryDataSnapshot snapshot) {
-        List<MaterialGroupSummary> summaries = new ArrayList<>();
-        if (snapshot == null || snapshot.getMaterialGroups() == null) {
-            return summaries;
-        }
-        for (PrimaryDataSnapshot.MaterialGroup group : snapshot.getMaterialGroups()) {
-            if (group == null) {
-                continue;
-            }
-            String label = determineGroupLabel(group.getGroupLabel(), group.getGroupName());
-            String surface = resolveSurfaceLabel(
-                    SurfaceType.resolve(group.getSurfaceCategory()).orElse(null),
-                    group.getSurface());
-            List<MaterialUsageSummary> materials = new ArrayList<>();
-            if (group.getMaterials() != null) {
-                for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
-                    if (usage == null) {
-                        continue;
-                    }
-                    String name = trimText(usage.getMaterialName());
-                    String amount = combineAmountWithUnit(usage.getAmount(), usage.getUnit());
-                    String usageSurface = resolveSurfaceLabel(
-                            SurfaceType.resolve(usage.getLayingSurfaceCategory()).orElse(null),
-                            usage.getLayingSurface());
-                    if (!StringUtils.hasText(name) && !StringUtils.hasText(amount)
-                            && !StringUtils.hasText(usageSurface)) {
-                        continue;
-                    }
-                    materials.add(new MaterialUsageSummary(name, amount, usageSurface));
-                }
-            }
-            summaries.add(new MaterialGroupSummary(label, surface, materials));
-        }
-        return summaries;
     }
 
     private double accumulateExplicitDeviceCables(PrimaryDataSnapshot.DeviceGroup group,
@@ -650,6 +721,165 @@ public class PrimaryDataSummaryService {
         return normalized.contains("м");
     }
 
+    private List<NodeSummary> buildNodeSummaries(List<NodeContext> contexts) {
+        List<NodeSummary> summaries = new ArrayList<>();
+        for (NodeContext context : contexts) {
+            if (context == null) {
+                continue;
+            }
+            List<PrimaryDataSummary.NodeMaterialGroupSummary> groups = new ArrayList<>();
+            context.groupMaterials.forEach((label, materials) ->
+                    groups.add(new PrimaryDataSummary.NodeMaterialGroupSummary(label, materials)));
+            groups.sort(Comparator.comparing(PrimaryDataSummary.NodeMaterialGroupSummary::getLabel,
+                    Comparator.nullsLast(String::compareToIgnoreCase)));
+            List<PrimaryDataSummary.MaterialTotal> totals = buildMaterialTotals(context.totals);
+            PrimaryDataSnapshot.ConnectionPoint point = context.point;
+            summaries.add(new NodeSummary(
+                    context.displayName,
+                    point.getMountingElementName(),
+                    point.getDistanceToPower(),
+                    context.powerCableName,
+                    point.getLayingMaterialName(),
+                    point.getLayingMaterialUnit(),
+                    point.getLayingSurface(),
+                    point.getLayingSurfaceCategory(),
+                    groups,
+                    totals));
+        }
+        return summaries;
+    }
+
+    private List<PrimaryDataSummary.MaterialTotal> buildMaterialTotals(Map<String, MaterialAccumulator> totals) {
+        List<PrimaryDataSummary.MaterialTotal> result = new ArrayList<>();
+        totals.values().stream()
+                .sorted(Comparator.comparing(MaterialAccumulator::name,
+                        Comparator.nullsLast(String::compareToIgnoreCase)))
+                .forEach(acc -> result.add(new PrimaryDataSummary.MaterialTotal(acc.name(), acc.unit(), acc.quantity())));
+        return result;
+    }
+
+    private void addNodeMaterial(NodeContext context,
+                                 String groupLabel,
+                                 String materialName,
+                                 String amountWithUnit,
+                                 Double quantity,
+                                 String unit,
+                                 String surfaceLabel,
+                                 Map<String, MaterialAccumulator> overallTotals) {
+        if (context == null) {
+            return;
+        }
+        String effectiveLabel = StringUtils.hasText(groupLabel) ? groupLabel.trim() : "Без группы";
+        String trimmedName = trimText(materialName);
+        String amount = StringUtils.hasText(amountWithUnit)
+                ? amountWithUnit
+                : (quantity != null ? formatQuantity(quantity, unit) : null);
+        List<MaterialUsageSummary> materials = context.groupMaterials
+                .computeIfAbsent(effectiveLabel, key -> new ArrayList<>());
+        materials.add(new MaterialUsageSummary(trimmedName, amount, surfaceLabel));
+        if (quantity != null && quantity > 0 && StringUtils.hasText(trimmedName)) {
+            addMaterial(context.totals, trimmedName, unit, quantity);
+            addMaterial(overallTotals, trimmedName, unit, quantity);
+        }
+    }
+
+    private Map<String, String> mapGroupLabelsToNodes(List<PrimaryDataSnapshot.DeviceGroup> groups) {
+        Map<String, Set<String>> labelToNodes = new HashMap<>();
+        if (groups == null) {
+            return Map.of();
+        }
+        for (PrimaryDataSnapshot.DeviceGroup group : groups) {
+            if (group == null) {
+                continue;
+            }
+            String label = normalizeKey(trimText(group.getGroupLabel()));
+            String node = normalizeKey(trimText(group.getConnectionPoint()));
+            if (!StringUtils.hasText(label) || !StringUtils.hasText(node)) {
+                continue;
+            }
+            labelToNodes.computeIfAbsent(label, key -> new HashSet<>()).add(node);
+        }
+        Map<String, String> result = new HashMap<>();
+        labelToNodes.forEach((label, nodes) -> {
+            if (nodes.size() == 1) {
+                result.put(label, nodes.iterator().next());
+            }
+        });
+        return result;
+    }
+
+    private NodeContext resolveNodeForGroup(String label,
+                                            Map<String, String> labelToNodeMap,
+                                            Map<String, NodeContext> nodeContextsByNormalizedName) {
+        if (nodeContextsByNormalizedName.isEmpty()) {
+            return null;
+        }
+        String normalizedLabel = normalizeKey(label);
+        if (!StringUtils.hasText(normalizedLabel)) {
+            return null;
+        }
+        String mappedNode = labelToNodeMap.get(normalizedLabel);
+        if (mappedNode != null) {
+            NodeContext mapped = nodeContextsByNormalizedName.get(mappedNode);
+            if (mapped != null) {
+                return mapped;
+            }
+        }
+        return nodeContextsByNormalizedName.get(normalizedLabel);
+    }
+
+    private String normalizeKey(String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return Normalizer.normalize(trimmed, Normalizer.Form.NFKD).toLowerCase(Locale.ROOT);
+    }
+
+    private String resolveUnit(String explicitUnit, String amount) {
+        String candidate = trimText(explicitUnit);
+        if (StringUtils.hasText(candidate)) {
+            return candidate;
+        }
+        return extractUnitFromAmount(amount);
+    }
+
+    private String extractUnitFromAmount(String amount) {
+        if (!StringUtils.hasText(amount)) {
+            return null;
+        }
+        String normalized = amount.trim();
+        StringBuilder builder = new StringBuilder();
+        boolean numberEnded = false;
+        for (char ch : normalized.toCharArray()) {
+            if (!numberEnded) {
+                if ((ch >= '0' && ch <= '9') || ch == '.' || ch == ',' || ch == '-' || Character.isWhitespace(ch)) {
+                    continue;
+                }
+                numberEnded = true;
+            }
+            if (numberEnded) {
+                builder.append(ch);
+            }
+        }
+        String unit = builder.toString().trim();
+        return StringUtils.hasText(unit) ? unit : null;
+    }
+
+    private String formatQuantity(double value, String unit) {
+        double rounded = Math.rint(value);
+        String number;
+        if (Math.abs(value - rounded) < 1e-3) {
+            number = String.format(Locale.getDefault(), "%.0f", rounded);
+        } else {
+            number = String.format(Locale.getDefault(), "%.2f", value);
+        }
+        if (StringUtils.hasText(unit)) {
+            return number + " " + unit;
+        }
+        return number;
+    }
+
     private boolean containsIgnoreCase(String source, String needle) {
         if (!StringUtils.hasText(source) || !StringUtils.hasText(needle)) {
             return false;
@@ -660,12 +890,38 @@ public class PrimaryDataSummaryService {
     }
 
     private void addMaterial(Map<String, MaterialAccumulator> accumulator, String name, String unit, double quantity) {
-        if (quantity <= 0) {
+        if (quantity <= 0 || !StringUtils.hasText(name)) {
             return;
         }
-        MaterialAccumulator entry = accumulator.computeIfAbsent(name,
-                key -> new MaterialAccumulator(name, unit, 0.0));
+        String key = buildMaterialKey(name, unit);
+        MaterialAccumulator entry = accumulator.computeIfAbsent(key,
+                ignored -> new MaterialAccumulator(name, unit, 0.0));
         entry.add(quantity);
+    }
+
+    private String buildMaterialKey(String name, String unit) {
+        String normalizedName = normalizeKey(name);
+        String normalizedUnit = normalizeKey(unit);
+        return (normalizedName != null ? normalizedName : "") + "|" + (normalizedUnit != null ? normalizedUnit : "");
+    }
+
+    private static class NodeContext {
+        private final PrimaryDataSnapshot.ConnectionPoint point;
+        private final String displayName;
+        private final String normalizedName;
+        private final String powerCableName;
+        private final Map<String, List<MaterialUsageSummary>> groupMaterials = new LinkedHashMap<>();
+        private final Map<String, MaterialAccumulator> totals = new LinkedHashMap<>();
+
+        NodeContext(PrimaryDataSnapshot.ConnectionPoint point,
+                    String displayName,
+                    String normalizedName,
+                    String powerCableName) {
+            this.point = point;
+            this.displayName = displayName;
+            this.normalizedName = normalizedName;
+            this.powerCableName = powerCableName;
+        }
     }
 
     private static class MaterialAccumulator {
@@ -674,8 +930,8 @@ public class PrimaryDataSummaryService {
         private double quantity;
 
         MaterialAccumulator(String name, String unit, double quantity) {
-            this.name = name;
-            this.unit = unit;
+            this.name = trim(name);
+            this.unit = trim(unit);
             this.quantity = quantity;
         }
 
@@ -693,6 +949,10 @@ public class PrimaryDataSummaryService {
 
         double quantity() {
             return quantity;
+        }
+
+        private String trim(String value) {
+            return value == null ? null : value.trim();
         }
     }
 
