@@ -14,6 +14,7 @@ public class PrimaryDataSummary {
     private final List<CableFunctionSummary> cableFunctionSummaries;
     private final List<NodeSummary> nodeSummaries;
     private final List<CameraDetail> cameraDetails;
+    private final List<MaterialGroupSummary> materialGroupSummaries;
     private final List<AdditionalMaterialItem> additionalMaterials;
     private final int totalDeviceCount;
     private final int totalNodes;
@@ -31,6 +32,7 @@ public class PrimaryDataSummary {
         this.cableFunctionSummaries = Collections.unmodifiableList(new ArrayList<>(builder.cableFunctionSummaries));
         this.nodeSummaries = Collections.unmodifiableList(new ArrayList<>(builder.nodeSummaries));
         this.cameraDetails = Collections.unmodifiableList(new ArrayList<>(builder.cameraDetails));
+        this.materialGroupSummaries = Collections.unmodifiableList(new ArrayList<>(builder.materialGroupSummaries));
         this.additionalMaterials = Collections.unmodifiableList(new ArrayList<>(builder.additionalMaterials));
         this.totalDeviceCount = builder.totalDeviceCount;
         this.totalNodes = builder.totalNodes;
@@ -91,6 +93,10 @@ public class PrimaryDataSummary {
         return additionalMaterials;
     }
 
+    public List<MaterialGroupSummary> getMaterialGroupSummaries() {
+        return materialGroupSummaries;
+    }
+
     public int getTotalDeviceCount() {
         return totalDeviceCount;
     }
@@ -123,6 +129,7 @@ public class PrimaryDataSummary {
         private final List<CableLengthSummary> cableLengthSummaries = new ArrayList<>();
         private final List<CableFunctionSummary> cableFunctionSummaries = new ArrayList<>();
         private final List<NodeSummary> nodeSummaries = new ArrayList<>();
+        private final List<MaterialGroupSummary> materialGroupSummaries = new ArrayList<>();
         private final List<CameraDetail> cameraDetails = new ArrayList<>();
         private final List<AdditionalMaterialItem> additionalMaterials = new ArrayList<>();
         private int totalDeviceCount;
@@ -182,6 +189,13 @@ public class PrimaryDataSummary {
             return this;
         }
 
+        public Builder addMaterialGroupSummary(MaterialGroupSummary summary) {
+            if (summary != null) {
+                this.materialGroupSummaries.add(summary);
+            }
+            return this;
+        }
+
         public Builder withTotalDeviceCount(int totalDeviceCount) {
             this.totalDeviceCount = totalDeviceCount;
             return this;
@@ -225,6 +239,7 @@ public class PrimaryDataSummary {
                 this.cableLengthSummaries.clear();
                 this.cableFunctionSummaries.clear();
                 this.nodeSummaries.clear();
+                this.materialGroupSummaries.clear();
                 this.cameraDetails.clear();
                 this.additionalMaterials.clear();
                 this.totalDeviceCount = 0;
@@ -435,6 +450,58 @@ public class PrimaryDataSummary {
 
         public double getQuantity() {
             return quantity;
+        }
+    }
+
+    public static class MaterialGroupSummary {
+        private final String label;
+        private final String surfaceLabel;
+        private final List<MaterialUsageSummary> materials;
+
+        public MaterialGroupSummary(String label, String surfaceLabel, List<MaterialUsageSummary> materials) {
+            this.label = label;
+            this.surfaceLabel = surfaceLabel;
+            if (materials == null || materials.isEmpty()) {
+                this.materials = Collections.emptyList();
+            } else {
+                this.materials = Collections.unmodifiableList(new ArrayList<>(materials));
+            }
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public String getSurfaceLabel() {
+            return surfaceLabel;
+        }
+
+        public List<MaterialUsageSummary> getMaterials() {
+            return materials;
+        }
+    }
+
+    public static class MaterialUsageSummary {
+        private final String materialName;
+        private final String amountWithUnit;
+        private final String surfaceLabel;
+
+        public MaterialUsageSummary(String materialName, String amountWithUnit, String surfaceLabel) {
+            this.materialName = materialName;
+            this.amountWithUnit = amountWithUnit;
+            this.surfaceLabel = surfaceLabel;
+        }
+
+        public String getMaterialName() {
+            return materialName;
+        }
+
+        public String getAmountWithUnit() {
+            return amountWithUnit;
+        }
+
+        public String getSurfaceLabel() {
+            return surfaceLabel;
         }
     }
 }
