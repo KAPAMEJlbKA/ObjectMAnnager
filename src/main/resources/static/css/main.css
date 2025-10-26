@@ -77,9 +77,9 @@ body {
 }
 
 .content {
-    max-width: 960px;
+    max-width: 1200px;
     margin: 2rem auto;
-    padding: 0 1rem;
+    padding: 0 1.5rem;
 }
 
 .card {
@@ -608,24 +608,79 @@ button:hover {
     color: #b91c1c;
 }
 
-.admin-grid {
-    display: grid;
+.admin-layout {
+    display: flex;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.sidebar {
+    position: sticky;
+    top: 1.5rem;
+    flex: 0 0 240px;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.section-link {
+    display: flex;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    background: #f9fafb;
+    color: var(--text-color);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: left;
+}
+
+.section-link:hover {
+    border-color: var(--primary);
+}
+
+.section-link.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 10px 20px rgba(47, 91, 234, 0.2);
+}
+
+.section-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     gap: 2rem;
 }
 
-.tabs {
+.section-panel {
+    display: none;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.section-panel.active {
+    display: flex;
+}
+
+.reference-tabs {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
 }
 
-.tab-nav {
+.reference-tab-nav {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
 }
 
-.tab-link {
+.reference-tab-link {
     border: 1px solid #d1d5db;
     background: #f3f4f6;
     color: var(--text-color);
@@ -636,21 +691,46 @@ button:hover {
     transition: all 0.2s ease;
 }
 
-.tab-link.active {
+.reference-tab-link.active {
     background: var(--primary);
     color: #fff;
     border-color: transparent;
     box-shadow: 0 10px 20px rgba(47, 91, 234, 0.2);
 }
 
-.tab-panel {
+.reference-tab-panel {
     display: none;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
-.tab-panel.active {
+.reference-tab-panel.active {
     display: flex;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.data-table th.actions,
+.data-table td.actions {
+    text-align: right;
+    width: 160px;
+}
+
+@media (max-width: 960px) {
+    .admin-layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        position: static;
+        width: 100%;
+    }
+
+    .section-link {
+        justify-content: space-between;
+    }
 }
 
 .grouping-board {

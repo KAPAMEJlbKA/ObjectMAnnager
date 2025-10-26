@@ -31,6 +31,14 @@ public final class DeviceTypeRules {
                         .addCableRequirement(new CableRequirement(CableFunction.SIGNAL, FUNCTION_LABELS.get(CableFunction.SIGNAL)))
                         .build());
 
+        register(List.of("сетевое устройство", "сетевой прибор", "сетевое оборудование"),
+                DeviceRequirements.builder()
+                        .camera(true)
+                        .requireViewingDepth(true)
+                        .requireAccessorySelection(true)
+                        .addCableRequirement(new CableRequirement(CableFunction.SIGNAL, FUNCTION_LABELS.get(CableFunction.SIGNAL)))
+                        .build());
+
         register(List.of("точка доступа wifi", "точка доступа wi-fi", "точка доступа wi fi"),
                 DeviceRequirements.builder()
                         .addCableRequirement(new CableRequirement(CableFunction.SIGNAL, FUNCTION_LABELS.get(CableFunction.SIGNAL)))

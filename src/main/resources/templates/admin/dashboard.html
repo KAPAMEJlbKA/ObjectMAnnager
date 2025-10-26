@@ -19,16 +19,19 @@
     </nav>
 </header>
 <main class="content">
-    <div class="tabs">
-        <nav class="tab-nav">
-            <button type="button" class="tab-link active" data-tab="connections">Подключения</button>
-            <button type="button" class="tab-link" data-tab="settings">Настройки</button>
-            <button type="button" class="tab-link" data-tab="objects">Объекты</button>
-            <button type="button" class="tab-link" data-tab="users">Пользователи</button>
-            <button type="button" class="tab-link" data-tab="references">Справочники</button>
-        </nav>
-        <div class="tab-panels">
-            <div class="tab-panel active" data-tab="connections">
+    <div class="admin-layout">
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <button type="button" class="section-link active" data-section="connections">Подключения</button>
+                <button type="button" class="section-link" data-section="settings">Настройки</button>
+                <button type="button" class="section-link" data-section="objects">Объекты</button>
+                <button type="button" class="section-link" data-section="users">Пользователи</button>
+                <button type="button" class="section-link" data-section="references">Справочники</button>
+                <button type="button" class="section-link" data-section="equipment">Оборудование</button>
+            </nav>
+        </aside>
+        <div class="section-content">
+            <section class="section-panel active" data-section="connections">
                 <section class="card">
                     <h2>PostgreSQL подключение</h2>
                     <p>Укажите параметры подключения. При сохранении мы проверим сокет-соединение и создадим необходимые таблицы.</p>
@@ -99,8 +102,8 @@
                         <button type="submit">Создать</button>
                     </form>
                 </section>
-            </div>
-            <div class="tab-panel" data-tab="settings">
+            </section>
+            <section class="section-panel" data-section="settings">
                 <section class="card">
                     <h2>Настройки карт</h2>
                     <p class="muted">Выберите сервис карт, который будет использоваться для ссылок на координаты объектов.</p>
@@ -152,8 +155,8 @@
                         </div>
                     </form>
                 </section>
-            </div>
-            <div class="tab-panel" data-tab="objects">
+            </section>
+            <section class="section-panel" data-section="objects">
                 <section class="card">
                     <h2>Объекты ожидающие решения</h2>
                     <p class="muted">Пользователи не видят объекты из этого списка. Администратор может удалить или перенести их.</p>
@@ -210,8 +213,8 @@
                         </article>
                     </div>
                 </section>
-            </div>
-            <div class="tab-panel" data-tab="users">
+            </section>
+            <section class="section-panel" data-section="users">
                 <section class="card">
                     <h2>Управление пользователями</h2>
                     <form method="post" action="/admin/users" class="inline-form" th:object="${userForm}">
@@ -242,108 +245,165 @@
                         </tbody>
                     </table>
                 </section>
-            </div>
-            <div class="tab-panel" data-tab="references">
+            </section>
+            <section class="section-panel" data-section="references">
                 <section class="card">
                     <h2>Справочники для первичных данных</h2>
-                    <div class="grid">
-                        <div>
-                            <h3>Типы конечных устройств</h3>
-                            <form method="post" action="/admin/device-types" class="inline-form" th:object="${deviceTypeForm}">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                <input type="text" th:field="*{name}" placeholder="Видеокамера" required>
-                                <button type="submit">Добавить</button>
-                            </form>
-                            <ul class="compact-list">
-                                <li th:if="${#lists.isEmpty(deviceTypes)}" class="muted">Список пуст.</li>
-                                <li th:each="type : ${deviceTypes}">
-                                    <div class="inline-form">
-                                        <span th:text="${type.name}"></span>
-                                        <form method="post" th:action="@{'/admin/device-types/' + ${type.id} + '/delete'}">
-                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <button type="submit" class="link-button danger">Удалить</button>
-                                        </form>
-                                    </div>
-                                </li>
-                            </ul>
+                    <div class="reference-tabs" data-storage-key="admin-reference-tab">
+                        <div class="reference-tab-nav">
+                            <button type="button" class="reference-tab-link active" data-ref-tab="device-types">Типы конечных устройств</button>
+                            <button type="button" class="reference-tab-link" data-ref-tab="mounting-elements">Монтажные элементы</button>
+                            <button type="button" class="reference-tab-link" data-ref-tab="installation-materials">Монтажные материалы</button>
+                            <button type="button" class="reference-tab-link" data-ref-tab="cable-types">Типы кабелей</button>
                         </div>
-                        <div>
-                            <h3>Монтажные элементы</h3>
-                            <form method="post" action="/admin/mounting-elements" class="inline-form" th:object="${mountingElementForm}">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                <input type="text" th:field="*{name}" placeholder="Монтажный шкаф" required>
-                                <button type="submit">Добавить</button>
-                            </form>
-                            <ul class="compact-list">
-                                <li th:if="${#lists.isEmpty(mountingElements)}" class="muted">Список пуст.</li>
-                                <li th:each="element : ${mountingElements}">
-                                    <div class="inline-form">
-                                        <span th:text="${element.name}"></span>
-                                        <form method="post" th:action="@{'/admin/mounting-elements/' + ${element.id} + '/delete'}">
-                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <button type="submit" class="link-button danger">Удалить</button>
-                                        </form>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                        <div>
-                            <h3>Монтажные материалы</h3>
-                            <form method="post" action="/admin/installation-materials" class="grid-form" th:object="${installationMaterialForm}">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                <input type="text" th:field="*{name}" placeholder="Гофротруба" required>
-                                <input type="text" th:field="*{unit}" placeholder="м, шт, коробка">
-                                <div class="form-row">
+                        <div class="reference-tab-panels">
+                            <div class="reference-tab-panel active" data-ref-tab="device-types">
+                                <h3>Типы конечных устройств</h3>
+                                <form method="post" action="/admin/device-types" class="inline-form" th:object="${deviceTypeForm}">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input type="text" th:field="*{name}" placeholder="Видеокамера" required>
                                     <button type="submit">Добавить</button>
+                                </form>
+                                <p th:if="${#lists.isEmpty(deviceTypes)}" class="muted">Список пуст.</p>
+                                <div th:if="${!#lists.isEmpty(deviceTypes)}" class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                        <tr>
+                                            <th>Название</th>
+                                            <th class="actions">Действия</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="type : ${deviceTypes}">
+                                            <td th:text="${type.name}"></td>
+                                            <td class="actions">
+                                                <form method="post" th:action="@{'/admin/device-types/' + ${type.id} + '/delete'}">
+                                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                    <button type="submit" class="link-button danger">Удалить</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
-                            </form>
-                            <ul class="compact-list">
-                                <li th:if="${#lists.isEmpty(installationMaterials)}" class="muted">Список пуст.</li>
-                                <li th:each="material : ${installationMaterials}">
-                                    <div class="inline-form">
-                                        <span th:text="${material.name} + (material.unit != null ? ' (' + material.unit + ')' : '')"></span>
-                                        <form method="post" th:action="@{'/admin/installation-materials/' + ${material.id} + '/delete'}">
-                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <button type="submit" class="link-button danger">Удалить</button>
-                                        </form>
+                            </div>
+                            <div class="reference-tab-panel" data-ref-tab="mounting-elements">
+                                <h3>Монтажные элементы</h3>
+                                <form method="post" action="/admin/mounting-elements" class="inline-form" th:object="${mountingElementForm}">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input type="text" th:field="*{name}" placeholder="Монтажный шкаф" required>
+                                    <button type="submit">Добавить</button>
+                                </form>
+                                <p th:if="${#lists.isEmpty(mountingElements)}" class="muted">Список пуст.</p>
+                                <div th:if="${!#lists.isEmpty(mountingElements)}" class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                        <tr>
+                                            <th>Название</th>
+                                            <th class="actions">Действия</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="element : ${mountingElements}">
+                                            <td th:text="${element.name}"></td>
+                                            <td class="actions">
+                                                <form method="post" th:action="@{'/admin/mounting-elements/' + ${element.id} + '/delete'}">
+                                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                    <button type="submit" class="link-button danger">Удалить</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="reference-tab-panel" data-ref-tab="installation-materials">
+                                <h3>Монтажные материалы</h3>
+                                <form method="post" action="/admin/installation-materials" class="grid-form" th:object="${installationMaterialForm}">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input type="text" th:field="*{name}" placeholder="Гофротруба" required>
+                                    <input type="text" th:field="*{unit}" placeholder="м, шт, коробка">
+                                    <div class="form-row">
+                                        <button type="submit">Добавить</button>
                                     </div>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="grid">
-                        <div>
-                            <h3>Типы кабелей</h3>
-                            <p class="muted">Категории: сигнальный, кабель для слаботочного питания, силовой.</p>
-                            <form method="post" action="/admin/cable-types" class="inline-form" th:object="${cableTypeForm}">
-                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                <input type="text" th:field="*{name}" placeholder="UTP 5e" required>
-                                <select th:field="*{function}">
-                                    <option th:each="function : ${T(com.kapamejlbka.objectmannage.model.CableFunction).values()}"
-                                            th:value="${function}"
-                                            th:text="${function.displayName}"></option>
-                                </select>
-                                <button type="submit">Добавить</button>
-                            </form>
-                            <ul class="compact-list">
-                                <li th:if="${#lists.isEmpty(cableTypes)}" class="muted">Список пуст.</li>
-                                <li th:each="cable : ${cableTypes}">
-                                    <div class="inline-form">
-                                        <span>
-                                            <strong th:text="${cable.name}"></strong>
-                                            <span class="badge secondary" th:text="${cable.function.displayName}"></span>
-                                        </span>
-                                        <form method="post" th:action="@{'/admin/cable-types/' + ${cable.id} + '/delete'}">
-                                            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                                            <button type="submit" class="link-button danger">Удалить</button>
-                                        </form>
-                                    </div>
-                                </li>
-                            </ul>
+                                </form>
+                                <p th:if="${#lists.isEmpty(installationMaterials)}" class="muted">Список пуст.</p>
+                                <div th:if="${!#lists.isEmpty(installationMaterials)}" class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                        <tr>
+                                            <th>Название</th>
+                                            <th>Единица</th>
+                                            <th class="actions">Действия</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="material : ${installationMaterials}">
+                                            <td th:text="${material.name}"></td>
+                                            <td th:text="${material.unit != null ? material.unit : '—'}"></td>
+                                            <td class="actions">
+                                                <form method="post" th:action="@{'/admin/installation-materials/' + ${material.id} + '/delete'}">
+                                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                    <button type="submit" class="link-button danger">Удалить</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            <div class="reference-tab-panel" data-ref-tab="cable-types">
+                                <h3>Типы кабелей</h3>
+                                <p class="muted">Категории: сигнальный, кабель для слаботочного питания, силовой.</p>
+                                <form method="post" action="/admin/cable-types" class="inline-form" th:object="${cableTypeForm}">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                    <input type="text" th:field="*{name}" placeholder="UTP 5e" required>
+                                    <select th:field="*{function}">
+                                        <option th:each="function : ${T(com.kapamejlbka.objectmannage.model.CableFunction).values()}"
+                                                th:value="${function}"
+                                                th:text="${function.displayName}"></option>
+                                    </select>
+                                    <button type="submit">Добавить</button>
+                                </form>
+                                <p th:if="${#lists.isEmpty(cableTypes)}" class="muted">Список пуст.</p>
+                                <div th:if="${!#lists.isEmpty(cableTypes)}" class="table-container">
+                                    <table class="data-table">
+                                        <thead>
+                                        <tr>
+                                            <th>Название</th>
+                                            <th>Категория</th>
+                                            <th class="actions">Действия</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="cable : ${cableTypes}">
+                                            <td>
+                                                <strong th:text="${cable.name}"></strong>
+                                            </td>
+                                            <td>
+                                                <span class="badge secondary" th:text="${cable.function.displayName}"></span>
+                                            </td>
+                                            <td class="actions">
+                                                <form method="post" th:action="@{'/admin/cable-types/' + ${cable.id} + '/delete'}">
+                                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                                    <button type="submit" class="link-button danger">Удалить</button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
-            </div>
+            </section>
+            <section class="section-panel" data-section="equipment">
+                <section class="card">
+                    <h2>Оборудование</h2>
+                    <p class="muted">Раздел в разработке. Мы вернёмся к нему позже.</p>
+                </section>
+            </section>
         </div>
     </div>
 </main>
@@ -352,38 +412,74 @@
 </footer>
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const tabLinks = Array.from(document.querySelectorAll('.tab-link'));
-        const panels = Array.from(document.querySelectorAll('.tab-panel'));
-        const STORAGE_TAB_KEY = 'admin-active-tab';
+        const sectionLinks = Array.from(document.querySelectorAll('.section-link'));
+        const sectionPanels = Array.from(document.querySelectorAll('.section-panel'));
+        const STORAGE_SECTION_KEY = 'admin-active-section';
         const STORAGE_SCROLL_KEY = 'admin-scroll-position';
-        let currentTab = localStorage.getItem(STORAGE_TAB_KEY) || '';
+        let currentSection = localStorage.getItem(STORAGE_SECTION_KEY) || '';
 
-        function activateTab(tab) {
-            if (!tabLinks.length) {
+        function activateSection(section) {
+            if (!sectionLinks.length) {
                 return;
             }
-            let targetTab = tab;
-            let targetLink = tabLinks.find(link => link.dataset.tab === targetTab);
+            let targetSection = section;
+            let targetLink = sectionLinks.find(link => link.dataset.section === targetSection);
             if (!targetLink) {
-                targetLink = tabLinks[0];
-                targetTab = targetLink?.dataset.tab || '';
+                targetLink = sectionLinks[0];
+                targetSection = targetLink?.dataset.section || '';
             }
             if (!targetLink) {
                 return;
             }
-            tabLinks.forEach(link => link.classList.toggle('active', link === targetLink));
-            panels.forEach(panel => panel.classList.toggle('active', panel.dataset.tab === targetTab));
-            currentTab = targetTab;
-            if (currentTab) {
-                localStorage.setItem(STORAGE_TAB_KEY, currentTab);
+            sectionLinks.forEach(link => link.classList.toggle('active', link === targetLink));
+            sectionPanels.forEach(panel => panel.classList.toggle('active', panel.dataset.section === targetSection));
+            currentSection = targetSection;
+            if (currentSection) {
+                localStorage.setItem(STORAGE_SECTION_KEY, currentSection);
             }
         }
 
-        activateTab(currentTab);
+        activateSection(currentSection);
 
-        tabLinks.forEach(link => {
+        sectionLinks.forEach(link => {
             link.addEventListener('click', () => {
-                activateTab(link.dataset.tab || '');
+                activateSection(link.dataset.section || '');
+            });
+        });
+
+        document.querySelectorAll('.reference-tabs').forEach(container => {
+            const storageKey = container.dataset.storageKey || 'admin-reference-tab';
+            const tabLinks = Array.from(container.querySelectorAll('.reference-tab-link'));
+            const tabPanels = Array.from(container.querySelectorAll('.reference-tab-panel'));
+            let currentTab = localStorage.getItem(storageKey) || '';
+
+            function activateTab(tab) {
+                if (!tabLinks.length) {
+                    return;
+                }
+                let targetTab = tab;
+                let targetLink = tabLinks.find(link => link.dataset.refTab === targetTab);
+                if (!targetLink) {
+                    targetLink = tabLinks[0];
+                    targetTab = targetLink?.dataset.refTab || '';
+                }
+                if (!targetLink) {
+                    return;
+                }
+                tabLinks.forEach(link => link.classList.toggle('active', link === targetLink));
+                tabPanels.forEach(panel => panel.classList.toggle('active', panel.dataset.refTab === targetTab));
+                currentTab = targetTab;
+                if (currentTab) {
+                    localStorage.setItem(storageKey, currentTab);
+                }
+            }
+
+            activateTab(currentTab);
+
+            tabLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    activateTab(link.dataset.refTab || '');
+                });
             });
         });
 
@@ -394,8 +490,8 @@
 
         window.addEventListener('beforeunload', () => {
             localStorage.setItem(STORAGE_SCROLL_KEY, String(window.scrollY));
-            if (currentTab) {
-                localStorage.setItem(STORAGE_TAB_KEY, currentTab);
+            if (currentSection) {
+                localStorage.setItem(STORAGE_SECTION_KEY, currentSection);
             }
         });
     });
