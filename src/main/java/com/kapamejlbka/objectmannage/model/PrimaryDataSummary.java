@@ -16,6 +16,8 @@ public class PrimaryDataSummary {
     private final List<CameraDetail> cameraDetails;
     private final List<MaterialGroupSummary> materialGroupSummaries;
     private final List<AdditionalMaterialItem> additionalMaterials;
+    private final List<MaterialTotal> materialTotals;
+    private final List<MaterialTotal> mountingElementTotals;
     private final int totalDeviceCount;
     private final int totalNodes;
     private final int unnamedConnectionAssignments;
@@ -34,6 +36,8 @@ public class PrimaryDataSummary {
         this.cameraDetails = Collections.unmodifiableList(new ArrayList<>(builder.cameraDetails));
         this.materialGroupSummaries = Collections.unmodifiableList(new ArrayList<>(builder.materialGroupSummaries));
         this.additionalMaterials = Collections.unmodifiableList(new ArrayList<>(builder.additionalMaterials));
+        this.materialTotals = Collections.unmodifiableList(new ArrayList<>(builder.materialTotals));
+        this.mountingElementTotals = Collections.unmodifiableList(new ArrayList<>(builder.mountingElementTotals));
         this.totalDeviceCount = builder.totalDeviceCount;
         this.totalNodes = builder.totalNodes;
         this.unnamedConnectionAssignments = builder.unnamedConnectionAssignments;
@@ -81,10 +85,6 @@ public class PrimaryDataSummary {
         return cableFunctionSummaries;
     }
 
-    public List<NodeSummary> getNodeSummaries() {
-        return nodeSummaries;
-    }
-
     public List<CameraDetail> getCameraDetails() {
         return cameraDetails;
     }
@@ -95,6 +95,18 @@ public class PrimaryDataSummary {
 
     public List<MaterialGroupSummary> getMaterialGroupSummaries() {
         return materialGroupSummaries;
+    }
+
+    public List<NodeSummary> getNodeSummaries() {
+        return nodeSummaries;
+    }
+
+    public List<MaterialTotal> getMaterialTotals() {
+        return materialTotals;
+    }
+
+    public List<MaterialTotal> getMountingElementTotals() {
+        return mountingElementTotals;
     }
 
     public int getTotalDeviceCount() {
@@ -132,6 +144,8 @@ public class PrimaryDataSummary {
         private final List<MaterialGroupSummary> materialGroupSummaries = new ArrayList<>();
         private final List<CameraDetail> cameraDetails = new ArrayList<>();
         private final List<AdditionalMaterialItem> additionalMaterials = new ArrayList<>();
+        private final List<MaterialTotal> materialTotals = new ArrayList<>();
+        private final List<MaterialTotal> mountingElementTotals = new ArrayList<>();
         private int totalDeviceCount;
         private int totalNodes;
         private int unnamedConnectionAssignments;
@@ -196,6 +210,20 @@ public class PrimaryDataSummary {
             return this;
         }
 
+        public Builder addMaterialTotal(MaterialTotal total) {
+            if (total != null) {
+                this.materialTotals.add(total);
+            }
+            return this;
+        }
+
+        public Builder addMountingElementTotal(MaterialTotal total) {
+            if (total != null) {
+                this.mountingElementTotals.add(total);
+            }
+            return this;
+        }
+
         public Builder withTotalDeviceCount(int totalDeviceCount) {
             this.totalDeviceCount = totalDeviceCount;
             return this;
@@ -242,6 +270,8 @@ public class PrimaryDataSummary {
                 this.materialGroupSummaries.clear();
                 this.cameraDetails.clear();
                 this.additionalMaterials.clear();
+                this.materialTotals.clear();
+                this.mountingElementTotals.clear();
                 this.totalDeviceCount = 0;
                 this.totalNodes = 0;
                 this.unnamedConnectionAssignments = 0;
@@ -322,6 +352,8 @@ public class PrimaryDataSummary {
         private final String layingMaterialUnit;
         private final String layingSurface;
         private final String layingSurfaceCategory;
+        private final List<NodeMaterialGroupSummary> materialGroups;
+        private final List<MaterialTotal> materialTotals;
 
         public NodeSummary(String name,
                            String mountingElementName,
@@ -330,7 +362,9 @@ public class PrimaryDataSummary {
                            String layingMaterialName,
                            String layingMaterialUnit,
                            String layingSurface,
-                           String layingSurfaceCategory) {
+                           String layingSurfaceCategory,
+                           List<NodeMaterialGroupSummary> materialGroups,
+                           List<MaterialTotal> materialTotals) {
             this.name = name;
             this.mountingElementName = mountingElementName;
             this.distanceToPower = distanceToPower;
@@ -339,6 +373,16 @@ public class PrimaryDataSummary {
             this.layingMaterialUnit = layingMaterialUnit;
             this.layingSurface = layingSurface;
             this.layingSurfaceCategory = layingSurfaceCategory;
+            if (materialGroups == null || materialGroups.isEmpty()) {
+                this.materialGroups = Collections.emptyList();
+            } else {
+                this.materialGroups = Collections.unmodifiableList(new ArrayList<>(materialGroups));
+            }
+            if (materialTotals == null || materialTotals.isEmpty()) {
+                this.materialTotals = Collections.emptyList();
+            } else {
+                this.materialTotals = Collections.unmodifiableList(new ArrayList<>(materialTotals));
+            }
         }
 
         public String getName() {
@@ -373,6 +417,36 @@ public class PrimaryDataSummary {
             return layingSurfaceCategory;
         }
 
+        public List<NodeMaterialGroupSummary> getMaterialGroups() {
+            return materialGroups;
+        }
+
+        public List<MaterialTotal> getMaterialTotals() {
+            return materialTotals;
+        }
+
+    }
+
+    public static class NodeMaterialGroupSummary {
+        private final String label;
+        private final List<MaterialUsageSummary> materials;
+
+        public NodeMaterialGroupSummary(String label, List<MaterialUsageSummary> materials) {
+            this.label = label;
+            if (materials == null || materials.isEmpty()) {
+                this.materials = Collections.emptyList();
+            } else {
+                this.materials = Collections.unmodifiableList(new ArrayList<>(materials));
+            }
+        }
+
+        public String getLabel() {
+            return label;
+        }
+
+        public List<MaterialUsageSummary> getMaterials() {
+            return materials;
+        }
     }
 
     public static class CameraDetail {
@@ -502,6 +576,30 @@ public class PrimaryDataSummary {
 
         public String getSurfaceLabel() {
             return surfaceLabel;
+        }
+    }
+
+    public static class MaterialTotal {
+        private final String name;
+        private final String unit;
+        private final double quantity;
+
+        public MaterialTotal(String name, String unit, double quantity) {
+            this.name = name;
+            this.unit = unit;
+            this.quantity = quantity;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getUnit() {
+            return unit;
+        }
+
+        public double getQuantity() {
+            return quantity;
         }
     }
 }
