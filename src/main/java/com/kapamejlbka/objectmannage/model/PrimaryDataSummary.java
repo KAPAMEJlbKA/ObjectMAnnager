@@ -364,6 +364,11 @@ public class PrimaryDataSummary {
         private final String layingMaterialUnit;
         private final String layingSurface;
         private final String layingSurfaceCategory;
+        private final int singleSocketCount;
+        private final int doubleSocketCount;
+        private final int breakerCount;
+        private final int breakerBoxCount;
+        private final int nshviCount;
         private final List<NodeMaterialGroupSummary> materialGroups;
         private final List<MaterialTotal> materialTotals;
 
@@ -375,6 +380,11 @@ public class PrimaryDataSummary {
                            String layingMaterialUnit,
                            String layingSurface,
                            String layingSurfaceCategory,
+                           int singleSocketCount,
+                           int doubleSocketCount,
+                           int breakerCount,
+                           int breakerBoxCount,
+                           int nshviCount,
                            List<NodeMaterialGroupSummary> materialGroups,
                            List<MaterialTotal> materialTotals) {
             this.name = name;
@@ -385,6 +395,11 @@ public class PrimaryDataSummary {
             this.layingMaterialUnit = layingMaterialUnit;
             this.layingSurface = layingSurface;
             this.layingSurfaceCategory = layingSurfaceCategory;
+            this.singleSocketCount = singleSocketCount;
+            this.doubleSocketCount = doubleSocketCount;
+            this.breakerCount = breakerCount;
+            this.breakerBoxCount = breakerBoxCount;
+            this.nshviCount = nshviCount;
             if (materialGroups == null || materialGroups.isEmpty()) {
                 this.materialGroups = Collections.emptyList();
             } else {
@@ -427,6 +442,26 @@ public class PrimaryDataSummary {
 
         public String getLayingSurfaceCategory() {
             return layingSurfaceCategory;
+        }
+
+        public int getSingleSocketCount() {
+            return singleSocketCount;
+        }
+
+        public int getDoubleSocketCount() {
+            return doubleSocketCount;
+        }
+
+        public int getBreakerCount() {
+            return breakerCount;
+        }
+
+        public int getBreakerBoxCount() {
+            return breakerBoxCount;
+        }
+
+        public int getNshviCount() {
+            return nshviCount;
         }
 
         public List<NodeMaterialGroupSummary> getMaterialGroups() {

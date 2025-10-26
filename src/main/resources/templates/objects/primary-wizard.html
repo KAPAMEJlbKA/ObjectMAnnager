@@ -283,6 +283,77 @@
                                 <input type="text" th:field="*{connectionPoints[__${iter.index}__].layingSurface}" data-field="layingSurface" placeholder="По стене, в коробе...">
                             </div>
                         </div>
+                        <div class="grid connection-accessories">
+                            <div>
+                                <label class="field-label">Одноместные розетки</label>
+                                <label class="switch">
+                                    <input type="checkbox"
+                                           th:field="*{connectionPoints[__${iter.index}__].singleSocketEnabled}"
+                                           data-field="singleSocketEnabled"
+                                           data-role="socket-toggle"
+                                           data-socket-type="single">
+                                    <span>Добавить</span>
+                                </label>
+                                <div class="stack small-gap"
+                                     data-role="single-socket-settings"
+                                     th:classappend="${!point.singleSocketEnabled} ? ' is-hidden' : ''">
+                                    <label>Количество</label>
+                                    <input type="number" min="1" step="1"
+                                           th:field="*{connectionPoints[__${iter.index}__].singleSocketCount}"
+                                           data-field="singleSocketCount">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="field-label">Двухместные розетки</label>
+                                <label class="switch">
+                                    <input type="checkbox"
+                                           th:field="*{connectionPoints[__${iter.index}__].doubleSocketEnabled}"
+                                           data-field="doubleSocketEnabled"
+                                           data-role="socket-toggle"
+                                           data-socket-type="double">
+                                    <span>Добавить</span>
+                                </label>
+                                <div class="stack small-gap"
+                                     data-role="double-socket-settings"
+                                     th:classappend="${!point.doubleSocketEnabled} ? ' is-hidden' : ''">
+                                    <label>Количество</label>
+                                    <input type="number" min="1" step="1"
+                                           th:field="*{connectionPoints[__${iter.index}__].doubleSocketCount}"
+                                           data-field="doubleSocketCount">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid connection-breakers">
+                            <div>
+                                <label class="field-label">Автоматические выключатели</label>
+                                <label class="switch">
+                                    <input type="checkbox"
+                                           th:field="*{connectionPoints[__${iter.index}__].breakersEnabled}"
+                                           data-field="breakersEnabled"
+                                           data-role="breaker-toggle">
+                                    <span>Добавить</span>
+                                </label>
+                                <div class="stack small-gap"
+                                     data-role="breaker-settings"
+                                     th:classappend="${!point.breakersEnabled} ? ' is-hidden' : ''">
+                                    <label>Количество</label>
+                                    <input type="number" min="2" step="1"
+                                           th:field="*{connectionPoints[__${iter.index}__].breakerCount}"
+                                           data-field="breakerCount">
+                                    <p class="muted small">При включении требуется минимум 2 шт.</p>
+                                </div>
+                            </div>
+                            <div>
+                                <label>Боксы под автоматы</label>
+                                <p class="muted" data-role="breaker-boxes"
+                                   th:text="${point.breakerBoxCount} > 0 ? point.breakerBoxCount + ' шт.' : '0 шт.'"></p>
+                            </div>
+                            <div>
+                                <label>Наконечники НШВИ</label>
+                                <p class="muted" data-role="nshvi-total"
+                                   th:text="${point.nshviCount} > 0 ? point.nshviCount + ' шт.' : '0 шт.'"></p>
+                            </div>
+                        </div>
                         <p class="connection-usage" data-role="usage">Устройства будут отображены после заполнения первого шага.</p>
                     </div>
                 </div>
@@ -336,6 +407,55 @@
                             <div>
                                 <label>Доп. описание поверхности</label>
                                 <input type="text" data-field="layingSurface" placeholder="По стене, в коробе...">
+                            </div>
+                        </div>
+                        <div class="grid connection-accessories">
+                            <div>
+                                <label class="field-label">Одноместные розетки</label>
+                                <label class="switch">
+                                    <input type="checkbox"
+                                           data-field="singleSocketEnabled"
+                                           data-role="socket-toggle"
+                                           data-socket-type="single">
+                                    <span>Добавить</span>
+                                </label>
+                                <div class="stack small-gap is-hidden" data-role="single-socket-settings">
+                                    <label>Количество</label>
+                                    <input type="number" min="1" step="1" data-field="singleSocketCount">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="field-label">Двухместные розетки</label>
+                                <label class="switch">
+                                    <input type="checkbox" data-field="doubleSocketEnabled" data-role="socket-toggle" data-socket-type="double" checked>
+                                    <span>Добавить</span>
+                                </label>
+                                <div class="stack small-gap" data-role="double-socket-settings">
+                                    <label>Количество</label>
+                                    <input type="number" min="1" step="1" data-field="doubleSocketCount" value="1">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid connection-breakers">
+                            <div>
+                                <label class="field-label">Автоматические выключатели</label>
+                                <label class="switch">
+                                    <input type="checkbox" data-field="breakersEnabled" data-role="breaker-toggle" checked>
+                                    <span>Добавить</span>
+                                </label>
+                                <div class="stack small-gap" data-role="breaker-settings">
+                                    <label>Количество</label>
+                                    <input type="number" min="2" step="1" data-field="breakerCount" value="2">
+                                    <p class="muted small">При включении требуется минимум 2 шт.</p>
+                                </div>
+                            </div>
+                            <div>
+                                <label>Боксы под автоматы</label>
+                                <p class="muted" data-role="breaker-boxes">1 шт.</p>
+                            </div>
+                            <div>
+                                <label>Наконечники НШВИ</label>
+                                <p class="muted" data-role="nshvi-total">8 шт.</p>
                             </div>
                         </div>
                         <p class="connection-usage" data-role="usage">Устройства будут отображены после заполнения первого шага.</p>
@@ -1618,6 +1738,80 @@
             }
         }
 
+        function parsePositiveInt(value) {
+            if (typeof value !== 'string') {
+                return 0;
+            }
+            const normalized = value.trim();
+            if (normalized.length === 0) {
+                return 0;
+            }
+            const parsed = Number.parseInt(normalized, 10);
+            return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+        }
+
+        function updateConnectionAccessories(row) {
+            if (!row) {
+                return;
+            }
+            const singleToggle = row.querySelector('input[data-field="singleSocketEnabled"]');
+            const singleSettings = row.querySelector('[data-role="single-socket-settings"]');
+            const singleInput = row.querySelector('input[data-field="singleSocketCount"]');
+            const singleEnabled = singleToggle instanceof HTMLInputElement && singleToggle.checked;
+            if (singleSettings) {
+                singleSettings.classList.toggle('is-hidden', !singleEnabled);
+            }
+            if (singleInput) {
+                singleInput.disabled = !singleEnabled;
+                if (singleEnabled && parsePositiveInt(singleInput.value) < 1) {
+                    singleInput.value = '1';
+                }
+            }
+
+            const doubleToggle = row.querySelector('input[data-field="doubleSocketEnabled"]');
+            const doubleSettings = row.querySelector('[data-role="double-socket-settings"]');
+            const doubleInput = row.querySelector('input[data-field="doubleSocketCount"]');
+            const doubleEnabled = doubleToggle instanceof HTMLInputElement && doubleToggle.checked;
+            if (doubleSettings) {
+                doubleSettings.classList.toggle('is-hidden', !doubleEnabled);
+            }
+            if (doubleInput) {
+                doubleInput.disabled = !doubleEnabled;
+                if (doubleEnabled && parsePositiveInt(doubleInput.value) < 1) {
+                    doubleInput.value = '1';
+                }
+            }
+
+            const breakerToggle = row.querySelector('input[data-field="breakersEnabled"]');
+            const breakerSettings = row.querySelector('[data-role="breaker-settings"]');
+            const breakerInput = row.querySelector('input[data-field="breakerCount"]');
+            const breakerEnabled = breakerToggle instanceof HTMLInputElement && breakerToggle.checked;
+            if (breakerSettings) {
+                breakerSettings.classList.toggle('is-hidden', !breakerEnabled);
+            }
+            if (breakerInput) {
+                breakerInput.disabled = !breakerEnabled;
+                if (breakerEnabled && parsePositiveInt(breakerInput.value) < 2) {
+                    breakerInput.value = '2';
+                }
+            }
+
+            const effectiveSingle = singleEnabled ? Math.max(parsePositiveInt(singleInput?.value ?? ''), 1) : 0;
+            const effectiveDouble = doubleEnabled ? Math.max(parsePositiveInt(doubleInput?.value ?? ''), 1) : 0;
+            const effectiveBreakers = breakerEnabled ? Math.max(parsePositiveInt(breakerInput?.value ?? ''), 2) : 0;
+            const breakerBoxes = effectiveBreakers > 0 ? Math.max(1, Math.ceil(effectiveBreakers / 2)) : 0;
+            const nshvi = (effectiveSingle + effectiveDouble) * 4 + effectiveBreakers * 2;
+
+            const breakerBoxesElement = row.querySelector('[data-role="breaker-boxes"]');
+            if (breakerBoxesElement) {
+                breakerBoxesElement.textContent = `${breakerBoxes} шт.`;
+            }
+            const nshviElement = row.querySelector('[data-role="nshvi-total"]');
+            if (nshviElement) {
+                nshviElement.textContent = `${nshvi} шт.`;
+            }
+        }
+
         function reindexConnectionPoints() {
             if (!connectionContainer) {
                 return;
@@ -1631,6 +1825,12 @@
                 const materialSelect = row.querySelector('select[data-field="layingMaterialId"]');
                 const surfaceCategorySelect = row.querySelector('select[data-field="layingSurfaceCategory"]');
                 const surfaceInput = row.querySelector('input[data-field="layingSurface"]');
+                const singleToggle = row.querySelector('input[data-field="singleSocketEnabled"]');
+                const singleCount = row.querySelector('input[data-field="singleSocketCount"]');
+                const doubleToggle = row.querySelector('input[data-field="doubleSocketEnabled"]');
+                const doubleCount = row.querySelector('input[data-field="doubleSocketCount"]');
+                const breakerToggle = row.querySelector('input[data-field="breakersEnabled"]');
+                const breakerCount = row.querySelector('input[data-field="breakerCount"]');
                 row.dataset.index = index.toString();
                 if (nameInput) {
                     nameInput.setAttribute('name', `connectionPoints[${index}].name`);
@@ -1654,6 +1854,25 @@
                 if (surfaceInput) {
                     surfaceInput.setAttribute('name', `connectionPoints[${index}].layingSurface`);
                 }
+                if (singleToggle) {
+                    singleToggle.setAttribute('name', `connectionPoints[${index}].singleSocketEnabled`);
+                }
+                if (singleCount) {
+                    singleCount.setAttribute('name', `connectionPoints[${index}].singleSocketCount`);
+                }
+                if (doubleToggle) {
+                    doubleToggle.setAttribute('name', `connectionPoints[${index}].doubleSocketEnabled`);
+                }
+                if (doubleCount) {
+                    doubleCount.setAttribute('name', `connectionPoints[${index}].doubleSocketCount`);
+                }
+                if (breakerToggle) {
+                    breakerToggle.setAttribute('name', `connectionPoints[${index}].breakersEnabled`);
+                }
+                if (breakerCount) {
+                    breakerCount.setAttribute('name', `connectionPoints[${index}].breakerCount`);
+                }
+                updateConnectionAccessories(row);
             });
             if (connectionEmptyMessage) {
                 connectionEmptyMessage.hidden = rows.length > 0;
@@ -2008,11 +2227,28 @@
 
         connectionContainer?.addEventListener('change', event => {
             const target = event.target;
-            if (!(target instanceof HTMLSelectElement)) {
+            if (!(target instanceof HTMLInputElement || target instanceof HTMLSelectElement)) {
                 return;
             }
-            if (target.getAttribute('data-field') === 'mountingElementId') {
+            const field = target.getAttribute('data-field');
+            if (target instanceof HTMLSelectElement && field === 'mountingElementId') {
                 syncAutoMountingRows();
+            }
+            if (field === 'singleSocketEnabled' || field === 'doubleSocketEnabled' || field === 'breakersEnabled') {
+                const row = target.closest('.connection-point');
+                updateConnectionAccessories(row);
+            }
+        });
+
+        connectionContainer?.addEventListener('input', event => {
+            const target = event.target;
+            if (!(target instanceof HTMLInputElement)) {
+                return;
+            }
+            const field = target.getAttribute('data-field');
+            if (field === 'singleSocketCount' || field === 'doubleSocketCount' || field === 'breakerCount') {
+                const row = target.closest('.connection-point');
+                updateConnectionAccessories(row);
             }
         });
 

@@ -155,6 +155,11 @@
                                     <th>Шкаф</th>
                                     <th>До точки питания</th>
                                     <th>Кабель</th>
+                                    <th>1-м розетки</th>
+                                    <th>2-м розетки</th>
+                                    <th>Автоматы</th>
+                                    <th>Боксы</th>
+                                    <th>НШВИ</th>
                                     <th>Материал прокладки</th>
                                     <th>Поверхность</th>
                                 </tr>
@@ -165,6 +170,11 @@
                                     <td th:text="${node.mountingElementName}"></td>
                                     <td th:text="${node.distanceToPower != null ? #numbers.formatDecimal(node.distanceToPower, 1, 2) + ' м' : '—'}"></td>
                                     <td th:text="${node.powerCableTypeName != null ? node.powerCableTypeName : '—'}"></td>
+                                    <td th:text="${node.singleSocketCount}"></td>
+                                    <td th:text="${node.doubleSocketCount}"></td>
+                                    <td th:text="${node.breakerCount}"></td>
+                                    <td th:text="${node.breakerBoxCount}"></td>
+                                    <td th:text="${node.nshviCount}"></td>
                                     <td>
                                         <span th:text="${node.layingMaterialName != null ? node.layingMaterialName : '—'}"></span>
                                         <span class="muted small" th:if="${node.layingMaterialUnit != null}" th:text="${' (' + node.layingMaterialUnit + ')'}"></span>
@@ -184,6 +194,10 @@
                                     <p class="muted small">
                                         <span th:text="${node.mountingElementName != null ? 'Монтажный элемент: ' + node.mountingElementName : 'Монтажный элемент не указан'}"></span>
                                         <span th:if="${node.powerCableTypeName != null}" th:text="${' • Кабель: ' + node.powerCableTypeName}"></span>
+                                        <span th:if="${node.singleSocketCount > 0 or node.doubleSocketCount > 0}" th:text="${' • Розетки: ' + node.singleSocketCount + '×1м, ' + node.doubleSocketCount + '×2м'}"></span>
+                                        <span th:if="${node.breakerCount > 0}" th:text="${' • Автоматы: ' + node.breakerCount + ' шт.'}"></span>
+                                        <span th:if="${node.breakerBoxCount > 0}" th:text="${' • Боксы: ' + node.breakerBoxCount + ' шт.'}"></span>
+                                        <span th:if="${node.nshviCount > 0}" th:text="${' • НШВИ: ' + node.nshviCount + ' шт.'}"></span>
                                     </p>
                                     <div th:if="${!#lists.isEmpty(node.materialTotals)}">
                                         <h6>Итого по узлу</h6>
