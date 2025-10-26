@@ -100,7 +100,6 @@ public class PrimaryDataSummaryService {
         int totalCameras = 0;
         int adapterCameras = 0;
         int plasticBoxCameras = 0;
-        int boxNodes = 0;
         double structureLengthWithoutMaterial = 0.0;
         int unnamedNodeIndex = 1;
 
@@ -204,10 +203,30 @@ public class PrimaryDataSummaryService {
                 String normalizedName = normalizeKey(trimmedName);
                 CableTypeData powerCable = resolveCable(point.getPowerCableTypeName(),
                         point.getPowerCableTypeId(), cableTypeData);
+                int singleSockets = Math.max(0, defaultInt(point.getSingleSocketCount()));
+                int doubleSockets = Math.max(0, defaultInt(point.getDoubleSocketCount()));
+                int breakerCount = Math.max(0, defaultInt(point.getBreakerCount()));
+                if (breakerCount > 0 && breakerCount < 2) {
+                    breakerCount = 2;
+                }
+                int breakerBoxes = Math.max(0, defaultInt(point.getBreakerBoxCount()));
+                if (breakerBoxes <= 0 && breakerCount > 0) {
+                    breakerBoxes = Math.max(1, (int) Math.ceil(breakerCount / 2.0));
+                }
+                int nshviCount = Math.max(0, defaultInt(point.getNshviCount()));
+                if (nshviCount <= 0) {
+                    nshviCount = (singleSockets + doubleSockets) * 4 + breakerCount * 2;
+                }
+
                 NodeContext context = new NodeContext(point,
                         displayName,
                         normalizedName,
-                        powerCable != null ? powerCable.name() : null);
+                        powerCable != null ? powerCable.name() : null,
+                        singleSockets,
+                        doubleSockets,
+                        breakerCount,
+                        breakerBoxes,
+                        nshviCount);
                 nodeContexts.add(context);
                 String normalizedDisplayName = normalizeKey(displayName);
                 if (normalizedName != null) {
@@ -220,9 +239,25 @@ public class PrimaryDataSummaryService {
                     nodeContextsByNormalizedName.putIfAbsent("__unnamed__" + unnamedNodeIndex++, context);
                 }
 
-                String elementName = point.getMountingElementName();
-                if (isBoxNode(elementName)) {
-                    boxNodes++;
+                if (singleSockets > 0) {
+                    addMaterial(context.totals, "Одноместная розетка", "шт", singleSockets);
+                    addMaterial(overallMaterialTotals, "Одноместная розетка", "шт", singleSockets);
+                }
+                if (doubleSockets > 0) {
+                    addMaterial(context.totals, "Двухместная розетка", "шт", doubleSockets);
+                    addMaterial(overallMaterialTotals, "Двухместная розетка", "шт", doubleSockets);
+                }
+                if (breakerCount > 0) {
+                    addMaterial(context.totals, "Автоматический выключатель 6А", "шт", breakerCount);
+                    addMaterial(overallMaterialTotals, "Автоматический выключатель 6А", "шт", breakerCount);
+                }
+                if (breakerBoxes > 0) {
+                    addMaterial(context.totals, "Бокс для автоматов", "шт", breakerBoxes);
+                    addMaterial(overallMaterialTotals, "Бокс для автоматов", "шт", breakerBoxes);
+                }
+                if (nshviCount > 0) {
+                    addMaterial(context.totals, "Наконечники НШВИ", "шт", nshviCount);
+                    addMaterial(overallMaterialTotals, "Наконечники НШВИ", "шт", nshviCount);
                 }
 
                 Double distanceToPower = point.getDistanceToPower();
@@ -388,7 +423,6 @@ public class PrimaryDataSummaryService {
                 totalCameras,
                 adapterCameras,
                 plasticBoxCameras);
-        accumulateNodeMaterials(additionalMaterials, boxNodes);
         accumulateCoefficientMaterials(additionalMaterials,
                 materialLengths,
                 structureLengthWithoutMaterial,
@@ -515,14 +549,6 @@ public class PrimaryDataSummaryService {
         return "Без названия";
     }
 
-    private boolean isBoxNode(String elementName) {
-        if (!StringUtils.hasText(elementName)) {
-            return false;
-        }
-        String normalized = Normalizer.normalize(elementName, Normalizer.Form.NFKD).toLowerCase();
-        return normalized.contains("ящ");
-    }
-
     private String resolveSurfaceLabel(SurfaceType surfaceType, String fallback) {
         if (surfaceType != null && surfaceType != SurfaceType.UNKNOWN) {
             return surfaceType.getDisplayName();
@@ -599,15 +625,6 @@ public class PrimaryDataSummaryService {
             String fastener = effective.getFastenerName();
             addMaterial(accumulator, "Крепёж для адаптеров (опция) — " + fastener, "шт", count * 4L);
         });
-    }
-
-    private void accumulateNodeMaterials(Map<String, MaterialAccumulator> accumulator, int boxNodes) {
-        if (boxNodes <= 0) {
-            return;
-        }
-        addMaterial(accumulator, "Двухместная розетка", "шт", boxNodes);
-        addMaterial(accumulator, "Бокс для автоматов", "шт", boxNodes);
-        addMaterial(accumulator, "Автоматический выключатель 6А", "шт", boxNodes * 2L);
     }
 
     private void accumulateCoefficientMaterials(Map<String, MaterialAccumulator> accumulator,
@@ -757,6 +774,11 @@ public class PrimaryDataSummaryService {
                     point.getLayingMaterialUnit(),
                     point.getLayingSurface(),
                     point.getLayingSurfaceCategory(),
+                    context.singleSocketCount,
+                    context.doubleSocketCount,
+                    context.breakerCount,
+                    context.breakerBoxCount,
+                    context.nshviCount,
                     groups,
                     totals));
         }
@@ -943,17 +965,32 @@ public class PrimaryDataSummaryService {
         private final String displayName;
         private final String normalizedName;
         private final String powerCableName;
+        private final int singleSocketCount;
+        private final int doubleSocketCount;
+        private final int breakerCount;
+        private final int breakerBoxCount;
+        private final int nshviCount;
         private final Map<String, List<MaterialUsageSummary>> groupMaterials = new LinkedHashMap<>();
         private final Map<String, MaterialAccumulator> totals = new LinkedHashMap<>();
 
         NodeContext(PrimaryDataSnapshot.ConnectionPoint point,
                     String displayName,
                     String normalizedName,
-                    String powerCableName) {
+                    String powerCableName,
+                    int singleSocketCount,
+                    int doubleSocketCount,
+                    int breakerCount,
+                    int breakerBoxCount,
+                    int nshviCount) {
             this.point = point;
             this.displayName = displayName;
             this.normalizedName = normalizedName;
             this.powerCableName = powerCableName;
+            this.singleSocketCount = singleSocketCount;
+            this.doubleSocketCount = doubleSocketCount;
+            this.breakerCount = breakerCount;
+            this.breakerBoxCount = breakerBoxCount;
+            this.nshviCount = nshviCount;
         }
     }
 
@@ -1060,6 +1097,10 @@ public class PrimaryDataSummaryService {
 
     private double defaultDouble(Double value) {
         return value == null ? 0.0 : value;
+    }
+
+    private int defaultInt(Integer value) {
+        return value == null ? 0 : value;
     }
 
     private record CableTypeData(String name, CableFunction function) {

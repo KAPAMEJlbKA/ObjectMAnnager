@@ -269,6 +269,19 @@ public class PdfReportService {
                 if (node.getDistanceToPower() != null && node.getDistanceToPower() > 0) {
                     info.add(String.format(Locale.getDefault(), "Расстояние до питания: %.2f м", node.getDistanceToPower()));
                 }
+                if (node.getSingleSocketCount() > 0 || node.getDoubleSocketCount() > 0) {
+                    info.add(String.format(Locale.getDefault(), "Розетки: %d одноместн., %d двухместн.",
+                            node.getSingleSocketCount(), node.getDoubleSocketCount()));
+                }
+                if (node.getBreakerCount() > 0) {
+                    info.add(String.format(Locale.getDefault(), "Автоматические выключатели: %d шт.", node.getBreakerCount()));
+                }
+                if (node.getBreakerBoxCount() > 0) {
+                    info.add(String.format(Locale.getDefault(), "Боксы под автоматы: %d шт.", node.getBreakerBoxCount()));
+                }
+                if (node.getNshviCount() > 0) {
+                    info.add(String.format(Locale.getDefault(), "Наконечники НШВИ: %d шт.", node.getNshviCount()));
+                }
                 if (!info.isEmpty()) {
                     writeBulletList(info, 11f);
                 }

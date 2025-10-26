@@ -748,6 +748,34 @@ public class ObjectController {
                         SurfaceType.resolve(pointForm.getLayingSurfaceCategory())
                                 .ifPresent(surfaceType -> pointForm.setLayingSurface(surfaceType.getDisplayName()));
                     }
+                    Integer singleSockets = point.getSingleSocketCount();
+                    if (singleSockets != null && singleSockets > 0) {
+                        pointForm.setSingleSocketEnabled(true);
+                        pointForm.setSingleSocketCount(singleSockets);
+                    } else {
+                        pointForm.setSingleSocketEnabled(false);
+                        pointForm.setSingleSocketCount(null);
+                    }
+                    Integer doubleSockets = point.getDoubleSocketCount();
+                    if (doubleSockets != null) {
+                        if (doubleSockets > 0) {
+                            pointForm.setDoubleSocketEnabled(true);
+                            pointForm.setDoubleSocketCount(doubleSockets);
+                        } else {
+                            pointForm.setDoubleSocketEnabled(false);
+                            pointForm.setDoubleSocketCount(1);
+                        }
+                    }
+                    Integer breakers = point.getBreakerCount();
+                    if (breakers != null) {
+                        if (breakers > 0) {
+                            pointForm.setBreakersEnabled(true);
+                            pointForm.setBreakerCount(Math.max(breakers, 2));
+                        } else {
+                            pointForm.setBreakersEnabled(false);
+                            pointForm.setBreakerCount(2);
+                        }
+                    }
                     form.connectionPoints.add(pointForm);
                 }
             }
@@ -1165,6 +1193,17 @@ public class ObjectController {
                                     snapshotPoint.setLayingSurface(trim(connectionPoint.getLayingSurface()));
                                     snapshotPoint.setLayingSurfaceCategory(trim(connectionPoint.getLayingSurfaceCategory()));
                                 });
+                connectionPoint.normalizeAccessories();
+                int singleSockets = connectionPoint.getEffectiveSingleSocketCount();
+                int doubleSockets = connectionPoint.getEffectiveDoubleSocketCount();
+                int breakers = connectionPoint.getEffectiveBreakerCount();
+                int breakerBoxes = connectionPoint.getBreakerBoxCount();
+                int nshvi = connectionPoint.getNshviCount();
+                snapshotPoint.setSingleSocketCount(singleSockets > 0 ? singleSockets : null);
+                snapshotPoint.setDoubleSocketCount(doubleSockets > 0 ? doubleSockets : null);
+                snapshotPoint.setBreakerCount(breakers > 0 ? breakers : null);
+                snapshotPoint.setBreakerBoxCount(breakerBoxes > 0 ? breakerBoxes : null);
+                snapshotPoint.setNshviCount(nshvi > 0 ? nshvi : null);
                 connectionPointSnapshots.add(snapshotPoint);
             }
             snapshot.setConnectionPoints(connectionPointSnapshots);
@@ -1396,6 +1435,12 @@ public class ObjectController {
             private UUID layingMaterialId;
             private String layingSurface;
             private String layingSurfaceCategory;
+            private boolean singleSocketEnabled;
+            private Integer singleSocketCount;
+            private boolean doubleSocketEnabled = true;
+            private Integer doubleSocketCount = 1;
+            private boolean breakersEnabled = true;
+            private Integer breakerCount = 2;
 
             public String getName() {
                 return name;
@@ -1451,6 +1496,114 @@ public class ObjectController {
 
             public void setLayingSurfaceCategory(String layingSurfaceCategory) {
                 this.layingSurfaceCategory = layingSurfaceCategory;
+            }
+
+            public boolean isSingleSocketEnabled() {
+                return singleSocketEnabled;
+            }
+
+            public void setSingleSocketEnabled(boolean singleSocketEnabled) {
+                this.singleSocketEnabled = singleSocketEnabled;
+            }
+
+            public Integer getSingleSocketCount() {
+                return singleSocketCount;
+            }
+
+            public void setSingleSocketCount(Integer singleSocketCount) {
+                this.singleSocketCount = singleSocketCount;
+            }
+
+            public boolean isDoubleSocketEnabled() {
+                return doubleSocketEnabled;
+            }
+
+            public void setDoubleSocketEnabled(boolean doubleSocketEnabled) {
+                this.doubleSocketEnabled = doubleSocketEnabled;
+            }
+
+            public Integer getDoubleSocketCount() {
+                return doubleSocketCount;
+            }
+
+            public void setDoubleSocketCount(Integer doubleSocketCount) {
+                this.doubleSocketCount = doubleSocketCount;
+            }
+
+            public boolean isBreakersEnabled() {
+                return breakersEnabled;
+            }
+
+            public void setBreakersEnabled(boolean breakersEnabled) {
+                this.breakersEnabled = breakersEnabled;
+            }
+
+            public Integer getBreakerCount() {
+                return breakerCount;
+            }
+
+            public void setBreakerCount(Integer breakerCount) {
+                this.breakerCount = breakerCount;
+            }
+
+            public void normalizeAccessories() {
+                if (singleSocketEnabled) {
+                    singleSocketCount = ensureMinimum(singleSocketCount, 1);
+                } else {
+                    singleSocketCount = null;
+                }
+                if (doubleSocketEnabled) {
+                    doubleSocketCount = ensureMinimum(doubleSocketCount, 1);
+                } else {
+                    doubleSocketCount = null;
+                }
+                if (breakersEnabled) {
+                    breakerCount = ensureMinimum(breakerCount, 2);
+                } else {
+                    breakerCount = null;
+                }
+            }
+
+            public int getEffectiveSingleSocketCount() {
+                if (!singleSocketEnabled) {
+                    return 0;
+                }
+                return ensureMinimum(singleSocketCount, 1);
+            }
+
+            public int getEffectiveDoubleSocketCount() {
+                if (!doubleSocketEnabled) {
+                    return 0;
+                }
+                return ensureMinimum(doubleSocketCount, 1);
+            }
+
+            public int getEffectiveBreakerCount() {
+                if (!breakersEnabled) {
+                    return 0;
+                }
+                return ensureMinimum(breakerCount, 2);
+            }
+
+            public int getBreakerBoxCount() {
+                int breakers = getEffectiveBreakerCount();
+                if (breakers <= 0) {
+                    return 0;
+                }
+                return Math.max(1, (int) Math.ceil(breakers / 2.0));
+            }
+
+            public int getNshviCount() {
+                int sockets = getEffectiveSingleSocketCount() + getEffectiveDoubleSocketCount();
+                int breakers = getEffectiveBreakerCount();
+                return sockets * 4 + breakers * 2;
+            }
+
+            private int ensureMinimum(Integer value, int minimum) {
+                if (value == null || value < minimum) {
+                    return minimum;
+                }
+                return value;
             }
         }
 

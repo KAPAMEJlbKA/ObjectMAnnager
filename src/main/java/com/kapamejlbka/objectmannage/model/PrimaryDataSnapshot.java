@@ -194,6 +194,11 @@ public class PrimaryDataSnapshot {
         private String layingMaterialUnit;
         private String layingSurface;
         private String layingSurfaceCategory;
+        private Integer singleSocketCount;
+        private Integer doubleSocketCount;
+        private Integer breakerCount;
+        private Integer breakerBoxCount;
+        private Integer nshviCount;
 
         public String getName() {
             return name;
@@ -281,6 +286,46 @@ public class PrimaryDataSnapshot {
 
         public void setLayingSurfaceCategory(String layingSurfaceCategory) {
             this.layingSurfaceCategory = layingSurfaceCategory;
+        }
+
+        public Integer getSingleSocketCount() {
+            return singleSocketCount;
+        }
+
+        public void setSingleSocketCount(Integer singleSocketCount) {
+            this.singleSocketCount = singleSocketCount;
+        }
+
+        public Integer getDoubleSocketCount() {
+            return doubleSocketCount;
+        }
+
+        public void setDoubleSocketCount(Integer doubleSocketCount) {
+            this.doubleSocketCount = doubleSocketCount;
+        }
+
+        public Integer getBreakerCount() {
+            return breakerCount;
+        }
+
+        public void setBreakerCount(Integer breakerCount) {
+            this.breakerCount = breakerCount;
+        }
+
+        public Integer getBreakerBoxCount() {
+            return breakerBoxCount;
+        }
+
+        public void setBreakerBoxCount(Integer breakerBoxCount) {
+            this.breakerBoxCount = breakerBoxCount;
+        }
+
+        public Integer getNshviCount() {
+            return nshviCount;
+        }
+
+        public void setNshviCount(Integer nshviCount) {
+            this.nshviCount = nshviCount;
         }
     }
 
