@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.UUID;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
@@ -398,6 +399,7 @@ public class PrimaryDataSummaryService {
 
         List<PrimaryDataSummary.MaterialTotal> materialTotals = buildMaterialTotals(overallMaterialTotals);
         List<PrimaryDataSummary.MaterialTotal> mountingTotals = buildMaterialTotals(mountingElementTotals);
+        String overallMaterialSummaryText = buildOverallMaterialSummary(materialTotals);
 
         PrimaryDataSummary.Builder builder = PrimaryDataSummary.builder()
                 .withHasData(true)
@@ -428,6 +430,7 @@ public class PrimaryDataSummaryService {
         materialTotals.forEach(builder::addMaterialTotal);
         mountingTotals.forEach(builder::addMountingElementTotal);
         materialGroupSummaries.forEach(builder::addMaterialGroupSummary);
+        builder.withOverallMaterialSummary(overallMaterialSummaryText);
         return builder.build();
     }
 
@@ -767,6 +770,30 @@ public class PrimaryDataSummaryService {
                         Comparator.nullsLast(String::compareToIgnoreCase)))
                 .forEach(acc -> result.add(new PrimaryDataSummary.MaterialTotal(acc.name(), acc.unit(), acc.quantity())));
         return result;
+    }
+
+    private String buildOverallMaterialSummary(List<PrimaryDataSummary.MaterialTotal> totals) {
+        if (totals == null || totals.isEmpty()) {
+            return null;
+        }
+        StringJoiner joiner = new StringJoiner(", ");
+        for (PrimaryDataSummary.MaterialTotal total : totals) {
+            if (total == null) {
+                continue;
+            }
+            double quantity = total.getQuantity();
+            if (quantity <= 0.0) {
+                continue;
+            }
+            String name = trimText(total.getName());
+            if (!StringUtils.hasText(name)) {
+                name = "Материал не указан";
+            }
+            String formattedQuantity = formatQuantity(quantity, total.getUnit());
+            joiner.add(name + " — " + formattedQuantity);
+        }
+        String summary = joiner.toString();
+        return StringUtils.hasText(summary) ? summary : null;
     }
 
     private void addNodeMaterial(NodeContext context,

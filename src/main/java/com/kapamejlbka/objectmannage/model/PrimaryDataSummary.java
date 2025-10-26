@@ -18,6 +18,7 @@ public class PrimaryDataSummary {
     private final List<AdditionalMaterialItem> additionalMaterials;
     private final List<MaterialTotal> materialTotals;
     private final List<MaterialTotal> mountingElementTotals;
+    private final String overallMaterialSummary;
     private final int totalDeviceCount;
     private final int totalNodes;
     private final int unnamedConnectionAssignments;
@@ -38,6 +39,7 @@ public class PrimaryDataSummary {
         this.additionalMaterials = Collections.unmodifiableList(new ArrayList<>(builder.additionalMaterials));
         this.materialTotals = Collections.unmodifiableList(new ArrayList<>(builder.materialTotals));
         this.mountingElementTotals = Collections.unmodifiableList(new ArrayList<>(builder.mountingElementTotals));
+        this.overallMaterialSummary = builder.overallMaterialSummary;
         this.totalDeviceCount = builder.totalDeviceCount;
         this.totalNodes = builder.totalNodes;
         this.unnamedConnectionAssignments = builder.unnamedConnectionAssignments;
@@ -109,6 +111,10 @@ public class PrimaryDataSummary {
         return mountingElementTotals;
     }
 
+    public String getOverallMaterialSummary() {
+        return overallMaterialSummary;
+    }
+
     public int getTotalDeviceCount() {
         return totalDeviceCount;
     }
@@ -146,6 +152,7 @@ public class PrimaryDataSummary {
         private final List<AdditionalMaterialItem> additionalMaterials = new ArrayList<>();
         private final List<MaterialTotal> materialTotals = new ArrayList<>();
         private final List<MaterialTotal> mountingElementTotals = new ArrayList<>();
+        private String overallMaterialSummary;
         private int totalDeviceCount;
         private int totalNodes;
         private int unnamedConnectionAssignments;
@@ -221,6 +228,11 @@ public class PrimaryDataSummary {
             if (total != null) {
                 this.mountingElementTotals.add(total);
             }
+            return this;
+        }
+
+        public Builder withOverallMaterialSummary(String summary) {
+            this.overallMaterialSummary = summary;
             return this;
         }
 

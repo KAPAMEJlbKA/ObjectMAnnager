@@ -65,6 +65,13 @@
                             <li th:if="${primarySummary.unnamedConnectionAssignments > 0}">
                                 Без названия: <strong th:text="${primarySummary.unnamedConnectionAssignments}"></strong>
                             </li>
+                            <li>
+                                Материалы по объекту:
+                                <span th:if="${primarySummary.overallMaterialSummary != null}">
+                                    <strong th:text="${primarySummary.overallMaterialSummary}"></strong>
+                                </span>
+                                <span class="muted" th:if="${primarySummary.overallMaterialSummary == null}">нет данных</span>
+                            </li>
                             <li th:if="${#lists.isEmpty(primarySummary.cableFunctionSummaries)}">Длины кабелей: <span class="muted">нет данных</span></li>
                             <li th:each="functionSummary : ${primarySummary.cableFunctionSummaries}">
                                 <span th:text="${functionSummary.functionName} + ':'"></span>
