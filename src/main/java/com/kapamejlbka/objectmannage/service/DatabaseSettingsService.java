@@ -12,16 +12,33 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
+import javax.sql.DataSource;
 import org.springframework.stereotype.Service;
 
 @Service
 public class DatabaseSettingsService {
 
     private final DatabaseConnectionSettingsRepository repository;
+    private final DataSource dataSource;
 
-    public DatabaseSettingsService(DatabaseConnectionSettingsRepository repository) {
+    public DatabaseSettingsService(DatabaseConnectionSettingsRepository repository, DataSource dataSource) {
         this.repository = repository;
+        this.dataSource = dataSource;
+    }
+
+    public void ensureConnectionSchema() {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate("ALTER TABLE database_connections ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT FALSE");
+            statement.executeUpdate("UPDATE database_connections SET active = FALSE WHERE active IS NULL");
+        } catch (SQLException ex) {
+            if (!isMissingTableException(ex)) {
+                throw new IllegalStateException("Не удалось обновить таблицу подключений", ex);
+            }
+        }
     }
 
     public Collection<DatabaseConnectionSettings> findAll() {
@@ -87,6 +104,31 @@ public class DatabaseSettingsService {
                 });
     }
 
+    @Transactional
+    public boolean activateConnection(UUID id) {
+        DatabaseConnectionSettings target = repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Подключение не найдено"));
+
+        revalidateConnection(target);
+
+        if (!target.isInitialized()) {
+            target.setActive(false);
+            return false;
+        }
+
+        List<DatabaseConnectionSettings> allConnections = repository.findAll();
+        for (DatabaseConnectionSettings connection : allConnections) {
+            boolean shouldActivate = connection.getId().equals(id);
+            connection.setActive(shouldActivate);
+        }
+        return true;
+    }
+
+    @Transactional
+    public void deactivateConnection(UUID id) {
+        repository.findById(id).ifPresent(connection -> connection.setActive(false));
+    }
+
     private void refreshH2Settings(DatabaseConnectionSettings settings, String url, Path databasePath,
                                    boolean existedBefore, boolean allowCreate) {
         Path parentDirectory = databasePath != null ? databasePath.getParent() : null;
@@ -120,6 +162,25 @@ public class DatabaseSettingsService {
             settings.setStatusMessage("Ошибка подключения к H2: " + ex.getMessage());
         }
         settings.setLastVerifiedAt(LocalDateTime.now());
+    }
+
+    private void revalidateConnection(DatabaseConnectionSettings settings) {
+        if (settings.getDatabaseType() == DatabaseType.H2) {
+            String url = settings.getDatabaseName();
+            if (url == null || url.isBlank()) {
+                settings.setInitialized(false);
+                settings.setStatusMessage("URL H2 базы данных не задан");
+                settings.setLastVerifiedAt(LocalDateTime.now());
+                return;
+            }
+            Path databasePath = extractDatabasePath(url);
+            boolean existedBefore = databasePath != null
+                    && (Files.exists(withExtension(databasePath, ".mv.db"))
+                    || Files.exists(withExtension(databasePath, ".h2.db")));
+            refreshH2Settings(settings, url, databasePath, existedBefore, false);
+        } else {
+            verifyAndInitialize(settings);
+        }
     }
 
     private Path extractDatabasePath(String url) {
@@ -234,5 +295,14 @@ public class DatabaseSettingsService {
         } catch (SQLException ignored) {
             // Если команда не поддерживается БД или тип уже обновлён, просто пропускаем
         }
+    }
+
+    private boolean isMissingTableException(SQLException ex) {
+        String sqlState = ex.getSQLState();
+        if ("42S02".equals(sqlState) || "42P01".equals(sqlState) || ex.getErrorCode() == 42102) {
+            return true;
+        }
+        String message = ex.getMessage();
+        return message != null && message.contains("database_connections") && message.contains("not found");
     }
 }

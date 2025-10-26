@@ -41,6 +41,9 @@ public class DatabaseConnectionSettings {
     @Column(length = 1024)
     private String statusMessage;
 
+    @Column(nullable = false)
+    private boolean active;
+
     public UUID getId() {
         return id;
     }
@@ -123,5 +126,13 @@ public class DatabaseConnectionSettings {
 
     public void setStatusMessage(String statusMessage) {
         this.statusMessage = statusMessage;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

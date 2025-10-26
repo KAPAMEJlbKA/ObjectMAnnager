@@ -114,6 +114,18 @@ public class AdminController {
         return "redirect:/admin";
     }
 
+    @PostMapping("/admin/database/{id}/connect")
+    public String connectToDatabase(@PathVariable UUID id) {
+        databaseSettingsService.activateConnection(id);
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/database/{id}/disconnect")
+    public String disconnectFromDatabase(@PathVariable UUID id) {
+        databaseSettingsService.deactivateConnection(id);
+        return "redirect:/admin";
+    }
+
     @PostMapping("/admin/database/h2")
     public String createH2(@ModelAttribute("h2Form") H2Form form) {
         databaseSettingsService.createLocalH2Store(form.getName());
