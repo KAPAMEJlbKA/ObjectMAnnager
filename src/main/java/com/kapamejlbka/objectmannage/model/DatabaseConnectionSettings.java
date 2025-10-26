@@ -41,6 +41,7 @@ public class DatabaseConnectionSettings {
     @Column(length = 1024)
     private String statusMessage;
 
+    @Column(nullable = false)
     private boolean active;
 
     public UUID getId() {

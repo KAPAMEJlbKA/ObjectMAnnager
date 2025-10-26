@@ -27,6 +27,7 @@ public class ObjectmannageApplication {
     @Bean
     CommandLineRunner bootstrap(UserService userService, DatabaseSettingsService databaseSettingsService) {
         return args -> {
+            databaseSettingsService.ensureConnectionSchema();
             databaseSettingsService.refreshLocalStores();
             userService.ensureDefaultUsers();
         };

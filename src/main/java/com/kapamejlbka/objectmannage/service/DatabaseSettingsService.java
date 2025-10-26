@@ -15,15 +15,30 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import javax.sql.DataSource;
 import org.springframework.stereotype.Service;
 
 @Service
 public class DatabaseSettingsService {
 
     private final DatabaseConnectionSettingsRepository repository;
+    private final DataSource dataSource;
 
-    public DatabaseSettingsService(DatabaseConnectionSettingsRepository repository) {
+    public DatabaseSettingsService(DatabaseConnectionSettingsRepository repository, DataSource dataSource) {
         this.repository = repository;
+        this.dataSource = dataSource;
+    }
+
+    public void ensureConnectionSchema() {
+        try (Connection connection = dataSource.getConnection();
+             Statement statement = connection.createStatement()) {
+            statement.executeUpdate("ALTER TABLE database_connections ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT FALSE");
+            statement.executeUpdate("UPDATE database_connections SET active = FALSE WHERE active IS NULL");
+        } catch (SQLException ex) {
+            if (!isMissingTableException(ex)) {
+                throw new IllegalStateException("Не удалось обновить таблицу подключений", ex);
+            }
+        }
     }
 
     public Collection<DatabaseConnectionSettings> findAll() {
@@ -280,5 +295,14 @@ public class DatabaseSettingsService {
         } catch (SQLException ignored) {
             // Если команда не поддерживается БД или тип уже обновлён, просто пропускаем
         }
+    }
+
+    private boolean isMissingTableException(SQLException ex) {
+        String sqlState = ex.getSQLState();
+        if ("42S02".equals(sqlState) || "42P01".equals(sqlState) || ex.getErrorCode() == 42102) {
+            return true;
+        }
+        String message = ex.getMessage();
+        return message != null && message.contains("database_connections") && message.contains("not found");
     }
 }
