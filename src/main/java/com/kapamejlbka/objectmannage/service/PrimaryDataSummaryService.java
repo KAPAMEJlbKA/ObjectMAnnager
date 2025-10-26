@@ -538,6 +538,26 @@ public class PrimaryDataSummaryService {
                 stats.addSurfaceLength(point.getLayingSurfaceCategory(), length);
             }
         }
+        if (snapshot.getMountingElements() != null) {
+            for (PrimaryDataSnapshot.MountingRequirement requirement : snapshot.getMountingElements()) {
+                if (requirement == null || requirement.getMaterials() == null) {
+                    continue;
+                }
+                for (PrimaryDataSnapshot.MountingMaterial material : requirement.getMaterials()) {
+                    if (material == null) {
+                        continue;
+                    }
+                    double length = parseLength(material.getAmount());
+                    if (length <= 0) {
+                        continue;
+                    }
+                    if (!isMeterUnit(material.getUnit()) && !looksLikeMeters(material.getAmount())) {
+                        continue;
+                    }
+                    stats.addMaterialLength(material.getMaterialName(), length);
+                }
+            }
+        }
         return stats;
     }
 
