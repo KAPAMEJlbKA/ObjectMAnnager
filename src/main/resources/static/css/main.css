@@ -572,6 +572,33 @@ button:hover {
     color: #991b1b;
 }
 
+.connection-endpoint {
+    max-width: 260px;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+.connections-table th.actions,
+.connections-table td.actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.connections-actions {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.connections-actions form {
+    margin: 0;
+}
+
+.connections-actions button {
+    padding: 0.5rem 1rem;
+}
+
 .upload-form {
     display: grid;
     gap: 0.75rem;
@@ -656,6 +683,7 @@ button:hover {
     display: flex;
     flex-direction: column;
     gap: 2rem;
+    min-width: 0;
 }
 
 .section-panel {
