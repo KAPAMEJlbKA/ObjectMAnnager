@@ -14,6 +14,8 @@ import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableFunctionSumma
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.CableLengthSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.DeviceTypeSummary;
 import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.NodeSummary;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.MaterialGroupSummary;
+import com.kapamejlbka.objectmannage.model.PrimaryDataSummary.MaterialUsageSummary;
 import com.kapamejlbka.objectmannage.model.SurfaceType;
 import com.kapamejlbka.objectmannage.repository.CableTypeRepository;
 import com.kapamejlbka.objectmannage.repository.DeviceCableProfileRepository;
@@ -25,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -74,6 +77,7 @@ public class PrimaryDataSummaryService {
         Map<String, Integer> deviceTypeCounts = new LinkedHashMap<>();
         Map<String, CableLengthAccumulator> cableLengthMap = new LinkedHashMap<>();
         List<NodeSummary> nodeSummaries = new ArrayList<>();
+        List<MaterialGroupSummary> materialGroupSummaries = new ArrayList<>();
         Map<String, MaterialAccumulator> additionalMaterials = new LinkedHashMap<>();
         EnumMap<SurfaceType, Integer> cameraCountsBySurface = new EnumMap<>(SurfaceType.class);
         EnumMap<SurfaceType, Integer> adapterCountsBySurface = new EnumMap<>(SurfaceType.class);
@@ -265,6 +269,7 @@ public class PrimaryDataSummaryService {
         Integer declaredAssignments = recordedConnectionPoints > 0 ? recordedConnectionPoints : null;
 
         MaterialLengthStats materialLengths = collectMaterialLengths(snapshot);
+        materialGroupSummaries = summarizeMaterialGroups(snapshot);
         accumulateCameraMaterials(additionalMaterials,
                 cameraCountsBySurface,
                 adapterCountsBySurface,
@@ -291,6 +296,7 @@ public class PrimaryDataSummaryService {
         cableSummaries.forEach(builder::addCableLengthSummary);
         functionSummaries.forEach(builder::addCableFunctionSummary);
         nodeSummaries.forEach(builder::addNodeSummary);
+        materialGroupSummaries.forEach(builder::addMaterialGroupSummary);
         cameraDetails.stream()
                 .sorted(Comparator
                         .comparing((PrimaryDataSummary.CameraDetail detail) -> detail.getDeviceTypeName(),
@@ -305,6 +311,42 @@ public class PrimaryDataSummaryService {
                 .map(acc -> new AdditionalMaterialItem(acc.name(), acc.unit(), acc.quantity()))
                 .forEach(builder::addAdditionalMaterial);
         return builder.build();
+    }
+
+    private List<MaterialGroupSummary> summarizeMaterialGroups(PrimaryDataSnapshot snapshot) {
+        List<MaterialGroupSummary> summaries = new ArrayList<>();
+        if (snapshot == null || snapshot.getMaterialGroups() == null) {
+            return summaries;
+        }
+        for (PrimaryDataSnapshot.MaterialGroup group : snapshot.getMaterialGroups()) {
+            if (group == null) {
+                continue;
+            }
+            String label = determineGroupLabel(group.getGroupLabel(), group.getGroupName());
+            String surface = resolveSurfaceLabel(
+                    SurfaceType.resolve(group.getSurfaceCategory()).orElse(null),
+                    group.getSurface());
+            List<MaterialUsageSummary> materials = new ArrayList<>();
+            if (group.getMaterials() != null) {
+                for (PrimaryDataSnapshot.MaterialUsage usage : group.getMaterials()) {
+                    if (usage == null) {
+                        continue;
+                    }
+                    String name = trimText(usage.getMaterialName());
+                    String amount = combineAmountWithUnit(usage.getAmount(), usage.getUnit());
+                    String usageSurface = resolveSurfaceLabel(
+                            SurfaceType.resolve(usage.getLayingSurfaceCategory()).orElse(null),
+                            usage.getLayingSurface());
+                    if (!StringUtils.hasText(name) && !StringUtils.hasText(amount)
+                            && !StringUtils.hasText(usageSurface)) {
+                        continue;
+                    }
+                    materials.add(new MaterialUsageSummary(name, amount, usageSurface));
+                }
+            }
+            summaries.add(new MaterialGroupSummary(label, surface, materials));
+        }
+        return summaries;
     }
 
     private double accumulateExplicitDeviceCables(PrimaryDataSnapshot.DeviceGroup group,
@@ -378,6 +420,16 @@ public class PrimaryDataSummaryService {
         return normalized.contains("камера");
     }
 
+    private String determineGroupLabel(String label, String fallback) {
+        if (StringUtils.hasText(label)) {
+            return label.trim();
+        }
+        if (StringUtils.hasText(fallback)) {
+            return fallback.trim();
+        }
+        return "Без названия";
+    }
+
     private boolean isBoxNode(String elementName) {
         if (!StringUtils.hasText(elementName)) {
             return false;
@@ -398,6 +450,27 @@ public class PrimaryDataSummaryService {
 
     private String resolveAccessoryLabel(CameraInstallationOption option) {
         return option != null ? option.getDisplayName() : "Не указано";
+    }
+
+    private String combineAmountWithUnit(String rawAmount, String rawUnit) {
+        String amount = trimText(rawAmount);
+        String unit = trimText(rawUnit);
+        if (!StringUtils.hasText(unit)) {
+            return amount;
+        }
+        if (!StringUtils.hasText(amount)) {
+            return unit;
+        }
+        String normalizedAmount = amount.toLowerCase(Locale.ROOT);
+        String normalizedUnit = unit.toLowerCase(Locale.ROOT);
+        if (normalizedAmount.contains(normalizedUnit)) {
+            return amount;
+        }
+        return amount + " " + unit;
+    }
+
+    private String trimText(String value) {
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 
     private void accumulateCameraMaterials(Map<String, MaterialAccumulator> accumulator,

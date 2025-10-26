@@ -421,7 +421,9 @@
                                             <label>Материал</label>
                                             <select th:field="*{mountingElements[__${iter.index}__].materials[__${mIndex.index}__].materialId}" data-field="materialId">
                                                 <option value="">Не выбран</option>
-                                                <option th:each="materialOption : ${installationMaterials}" th:value="${materialOption.id}" th:text="${materialOption.name}"></option>
+                                                <option th:each="materialOption : ${installationMaterials}"
+                                                        th:value="${materialOption.id}"
+                                                        th:text="${materialOption.name + (#strings.isEmpty(materialOption.unit) ? '' : ' (' + materialOption.unit + ')')}"></option>
                                             </select>
                                         </div>
                                         <div>
@@ -461,7 +463,9 @@
                                         <label>Материал</label>
                                         <select data-field="materialId">
                                             <option value="">Не выбран</option>
-                                            <option th:each="materialOption : ${installationMaterials}" th:value="${materialOption.id}" th:text="${materialOption.name}"></option>
+                                            <option th:each="materialOption : ${installationMaterials}"
+                                                    th:value="${materialOption.id}"
+                                                    th:text="${materialOption.name + (#strings.isEmpty(materialOption.unit) ? '' : ' (' + materialOption.unit + ')')}"></option>
                                         </select>
                                     </div>
                                     <div>
@@ -483,7 +487,9 @@
                                 <label>Материал</label>
                                 <select data-field="materialId">
                                     <option value="">Не выбран</option>
-                                    <option th:each="materialOption : ${installationMaterials}" th:value="${materialOption.id}" th:text="${materialOption.name}"></option>
+                                    <option th:each="materialOption : ${installationMaterials}"
+                                            th:value="${materialOption.id}"
+                                            th:text="${materialOption.name + (#strings.isEmpty(materialOption.unit) ? '' : ' (' + materialOption.unit + ')')}"></option>
                                 </select>
                             </div>
                             <div>
@@ -509,7 +515,9 @@
                                         <label>Материал</label>
                                         <select th:field="*{materialGroups[__${gIndex.index}__].materials[__${uIndex.index}__].materialId}" data-field="materialId">
                                             <option value="">Не выбран</option>
-                                            <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                                            <option th:each="material : ${installationMaterials}"
+                                                    th:value="${material.id}"
+                                                    th:text="${material.name + (#strings.isEmpty(material.unit) ? '' : ' (' + material.unit + ')')}"></option>
                                         </select>
                                     </div>
                                     <div>
@@ -548,7 +556,9 @@
                                         <label>Материал</label>
                                         <select data-field="materialId">
                                             <option value="">Не выбран</option>
-                                            <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                                            <option th:each="material : ${installationMaterials}"
+                                                    th:value="${material.id}"
+                                                    th:text="${material.name + (#strings.isEmpty(material.unit) ? '' : ' (' + material.unit + ')')}"></option>
                                         </select>
                                     </div>
                                     <div>
@@ -580,7 +590,9 @@
                                 <label>Материал</label>
                                 <select data-field="materialId">
                                     <option value="">Не выбран</option>
-                                    <option th:each="material : ${installationMaterials}" th:value="${material.id}" th:text="${material.name}"></option>
+                                    <option th:each="material : ${installationMaterials}"
+                                            th:value="${material.id}"
+                                            th:text="${material.name + (#strings.isEmpty(material.unit) ? '' : ' (' + material.unit + ')')}"></option>
                                 </select>
                             </div>
                             <div>
