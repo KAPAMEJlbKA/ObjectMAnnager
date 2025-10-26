@@ -2,7 +2,6 @@ package com.kapamejlbka.objectmannage.web;
 
 import com.kapamejlbka.objectmannage.model.CableFunction;
 import com.kapamejlbka.objectmannage.model.CableType;
-import com.kapamejlbka.objectmannage.model.DeviceCableProfile;
 import com.kapamejlbka.objectmannage.model.DeviceType;
 import com.kapamejlbka.objectmannage.model.ManagedObject;
 import com.kapamejlbka.objectmannage.model.MapProvider;
@@ -12,7 +11,6 @@ import com.kapamejlbka.objectmannage.model.InstallationMaterial;
 import com.kapamejlbka.objectmannage.repository.ProjectCustomerRepository;
 import com.kapamejlbka.objectmannage.repository.CableTypeRepository;
 import com.kapamejlbka.objectmannage.repository.DeviceTypeRepository;
-import com.kapamejlbka.objectmannage.repository.DeviceCableProfileRepository;
 import com.kapamejlbka.objectmannage.repository.MountingElementRepository;
 import com.kapamejlbka.objectmannage.repository.InstallationMaterialRepository;
 import com.kapamejlbka.objectmannage.service.DatabaseSettingsService;
@@ -27,7 +25,6 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Base64;
-import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,7 +49,6 @@ public class AdminController {
     private final ProjectCustomerRepository customerRepository;
     private final DeviceTypeRepository deviceTypeRepository;
     private final CableTypeRepository cableTypeRepository;
-    private final DeviceCableProfileRepository deviceCableProfileRepository;
     private final MountingElementRepository mountingElementRepository;
     private final InstallationMaterialRepository installationMaterialRepository;
     private final ApplicationSettingsService applicationSettingsService;
@@ -63,7 +59,6 @@ public class AdminController {
                            ProjectCustomerRepository customerRepository,
                            DeviceTypeRepository deviceTypeRepository,
                            CableTypeRepository cableTypeRepository,
-                           DeviceCableProfileRepository deviceCableProfileRepository,
                            MountingElementRepository mountingElementRepository,
                            InstallationMaterialRepository installationMaterialRepository,
                            ApplicationSettingsService applicationSettingsService,
@@ -73,7 +68,6 @@ public class AdminController {
         this.customerRepository = customerRepository;
         this.deviceTypeRepository = deviceTypeRepository;
         this.cableTypeRepository = cableTypeRepository;
-        this.deviceCableProfileRepository = deviceCableProfileRepository;
         this.mountingElementRepository = mountingElementRepository;
         this.installationMaterialRepository = installationMaterialRepository;
         this.applicationSettingsService = applicationSettingsService;
@@ -100,18 +94,8 @@ public class AdminController {
         model.addAttribute("installationMaterialForm", new InstallationMaterialForm());
         model.addAttribute("deviceTypes", deviceTypeRepository.findAll());
         List<CableType> cableTypes = cableTypeRepository.findAll();
-        List<DeviceCableProfile> cableProfiles = deviceCableProfileRepository.findAll();
-        Comparator<String> comparator = Comparator.nullsLast(String::compareToIgnoreCase);
-        cableProfiles.sort(Comparator
-                .comparing((DeviceCableProfile profile) -> profile.getDeviceType() != null
-                        ? profile.getDeviceType().getName() : null, comparator)
-                .thenComparing(profile -> profile.getEndpointName(), comparator)
-                .thenComparing(profile -> profile.getCableType() != null
-                        ? profile.getCableType().getName() : null, comparator));
         model.addAttribute("cableTypeForm", new CableTypeForm());
-        model.addAttribute("deviceCableProfileForm", new DeviceCableProfileForm());
         model.addAttribute("cableTypes", cableTypes);
-        model.addAttribute("deviceCableProfiles", cableProfiles);
         model.addAttribute("mountingElements", mountingElementRepository.findAll());
         model.addAttribute("installationMaterials", installationMaterialRepository.findAll());
         return "admin/dashboard";
@@ -195,35 +179,6 @@ public class AdminController {
     @PostMapping("/admin/cable-types/{id}/delete")
     public String deleteCableType(@PathVariable UUID id) {
         cableTypeRepository.deleteById(id);
-        return "redirect:/admin";
-    }
-
-    @PostMapping("/admin/device-cable-profiles")
-    public String createDeviceCableProfile(@ModelAttribute("deviceCableProfileForm") DeviceCableProfileForm form) {
-        if (form.getDeviceTypeId() == null
-                || form.getCableTypeId() == null
-                || form.getEndpointName() == null
-                || form.getEndpointName().isBlank()) {
-            return "redirect:/admin";
-        }
-        String endpoint = form.getEndpointName().trim();
-        if (deviceCableProfileRepository.existsByDeviceType_IdAndCableType_IdAndEndpointNameIgnoreCase(
-                form.getDeviceTypeId(), form.getCableTypeId(), endpoint)) {
-            return "redirect:/admin";
-        }
-        DeviceType deviceType = deviceTypeRepository.findById(form.getDeviceTypeId()).orElse(null);
-        CableType cableType = cableTypeRepository.findById(form.getCableTypeId()).orElse(null);
-        if (deviceType == null || cableType == null) {
-            return "redirect:/admin";
-        }
-        DeviceCableProfile profile = new DeviceCableProfile(deviceType, cableType, endpoint);
-        deviceCableProfileRepository.save(profile);
-        return "redirect:/admin";
-    }
-
-    @PostMapping("/admin/device-cable-profiles/{id}/delete")
-    public String deleteDeviceCableProfile(@PathVariable UUID id) {
-        deviceCableProfileRepository.deleteById(id);
         return "redirect:/admin";
     }
 
@@ -542,39 +497,6 @@ public class AdminController {
 
         public void setFunction(CableFunction function) {
             this.function = function == null ? CableFunction.SIGNAL : function;
-        }
-    }
-
-    public static class DeviceCableProfileForm {
-        @NotNull
-        private UUID deviceTypeId;
-        @NotNull
-        private UUID cableTypeId;
-        @NotBlank
-        private String endpointName;
-
-        public UUID getDeviceTypeId() {
-            return deviceTypeId;
-        }
-
-        public void setDeviceTypeId(UUID deviceTypeId) {
-            this.deviceTypeId = deviceTypeId;
-        }
-
-        public UUID getCableTypeId() {
-            return cableTypeId;
-        }
-
-        public void setCableTypeId(UUID cableTypeId) {
-            this.cableTypeId = cableTypeId;
-        }
-
-        public String getEndpointName() {
-            return endpointName;
-        }
-
-        public void setEndpointName(String endpointName) {
-            this.endpointName = endpointName;
         }
     }
 
