@@ -963,6 +963,10 @@
         let storedDiagramData = parseDiagramValue(nodeDiagramInput?.value ?? '');
         let nodeDiagramRefreshHandle = null;
 
+        function isDeviceDetailsPhaseActive() {
+            return (deviceStepElement?.dataset.activePhase || '') === 'details';
+        }
+
         function applyDevicePhaseVisibility(phase) {
             if (!deviceStepElement) {
                 return;
@@ -978,6 +982,10 @@
                     element.setAttribute('hidden', 'hidden');
                     element.classList.add('is-phase-hidden');
                 }
+            });
+            getDeviceGroups().forEach(group => {
+                updateCameraFieldsForGroup(group);
+                updateCableFieldsForGroup(group);
             });
         }
 
@@ -1785,19 +1793,21 @@
             const accessorySelect = group.querySelector('select[data-field="cameraAccessory"]');
             const depthInput = group.querySelector('input[data-field="cameraViewingDepth"]');
             const cameraFields = group.querySelector('[data-role="camera-fields"]');
-            const cameraSelected = isCameraDevice(typeSelect);
+            const detailsActive = isDeviceDetailsPhaseActive();
+            const cameraTypeSelected = isCameraDevice(typeSelect);
+            const cameraVisible = detailsActive && cameraTypeSelected;
             if (cameraFields) {
-                cameraFields.classList.toggle('is-hidden', !cameraSelected);
+                cameraFields.classList.toggle('is-hidden', !cameraVisible);
             }
             if (accessorySelect) {
-                accessorySelect.disabled = !cameraSelected;
-                if (!cameraSelected) {
+                accessorySelect.disabled = !cameraVisible;
+                if (detailsActive && !cameraTypeSelected) {
                     accessorySelect.value = '';
                 }
             }
             if (depthInput) {
-                depthInput.disabled = !cameraSelected;
-                if (!cameraSelected) {
+                depthInput.disabled = !cameraVisible;
+                if (detailsActive && !cameraTypeSelected) {
                     depthInput.value = '';
                 }
             }
@@ -1824,7 +1834,8 @@
                 return;
             }
             const typeSelect = group.querySelector('select[data-field="deviceTypeId"]');
-            const requiredFunctions = getRequiredCableFunctions(typeSelect);
+            const detailsActive = isDeviceDetailsPhaseActive();
+            const requiredFunctions = detailsActive ? getRequiredCableFunctions(typeSelect) : [];
             const container = group.querySelector('[data-role="cable-fields"]');
             if (!container) {
                 return;
@@ -1836,20 +1847,20 @@
                 field.classList.toggle('is-hidden', !required);
                 const select = field.querySelector('select');
                 if (select) {
-                    select.disabled = !required;
+                    select.disabled = !detailsActive || !required;
                     select.required = required;
-                    if (!required) {
+                    if (detailsActive && !required) {
                         select.value = '';
                     }
                 }
             });
-            container.classList.toggle('is-hidden', requiredFunctions.length === 0);
+            container.classList.toggle('is-hidden', !detailsActive || requiredFunctions.length === 0);
             const signalField = fields.find(field => (field.dataset.cableFunction || '').toUpperCase() === 'SIGNAL');
             if (signalField) {
                 const labelElement = signalField.querySelector('label');
                 if (labelElement) {
                     const defaultLabel = labelElement.dataset.defaultLabel || labelElement.textContent || '';
-                    if (requiresGenericCableLabel(typeSelect)) {
+                    if (detailsActive && requiresGenericCableLabel(typeSelect)) {
                         labelElement.textContent = 'Кабель';
                     } else if (defaultLabel) {
                         labelElement.textContent = defaultLabel;
