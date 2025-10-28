@@ -1247,7 +1247,10 @@ public class ObjectController {
                 group.setDeviceTypeId(form.getDeviceTypeId());
                 DeviceType type = form.getDeviceTypeId() != null ? deviceTypeMap.get(form.getDeviceTypeId()) : null;
                 group.setDeviceTypeName(type != null ? type.getName() : null);
-                group.setQuantity(form.getDeviceCount() != null ? form.getDeviceCount() : 0);
+                int quantity = form.getDeviceCount() != null && form.getDeviceCount() > 0
+                        ? form.getDeviceCount()
+                        : 1;
+                group.setQuantity(quantity);
                 group.setInstallLocation(trim(form.getInstallLocation()));
                 SurfaceType.resolve(form.getInstallSurfaceCategory())
                         .ifPresentOrElse(surfaceType -> group.setInstallSurfaceCategory(surfaceType.getCode()),
