@@ -84,11 +84,10 @@
                                         <label>Место установки / название камеры</label>
                                         <input type="text" th:field="*{deviceGroups[__${iter.index}__].installLocation}" data-field="installLocation" placeholder="Например, Камера на входе">
                                     </div>
-                                    <div>
-                                        <label>Количество устройств</label>
-                                        <input type="number" min="0" step="1" class="device-count" th:field="*{deviceGroups[__${iter.index}__].deviceCount}" data-field="deviceCount">
-                                    </div>
                                 </div>
+                                <input type="hidden"
+                                       th:field="*{deviceGroups[__${iter.index}__].deviceCount}"
+                                       data-field="deviceCount">
                                 <div class="grid" data-phase="details">
                                     <div>
                                         <label>Тип устройства</label>
@@ -101,20 +100,13 @@
                                                     th:data-camera="${cameraDeviceFlags[type.id]} ? 'true' : 'false'"></option>
                                         </select>
                                     </div>
-                                    <div>
-                                        <label>Поверхность установки</label>
-                                        <select th:field="*{deviceGroups[__${iter.index}__].installSurfaceCategory}" data-field="installSurfaceCategory">
-                                            <option value="">Не выбрана</option>
-                                            <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
-                                        </select>
-                                    </div>
                                 </div>
-                                <div class="grid" data-phase="details">
-                                    <div>
-                                        <label>Название узла подключения</label>
-                                        <input type="text" th:field="*{deviceGroups[__${iter.index}__].connectionPoint}" data-field="connectionPoint" placeholder="Распред. коробка...">
-                                    </div>
-                                </div>
+                                <input type="hidden"
+                                       th:field="*{deviceGroups[__${iter.index}__].installSurfaceCategory}"
+                                       data-field="installSurfaceCategory">
+                                <input type="hidden"
+                                       th:field="*{deviceGroups[__${iter.index}__].connectionPoint}"
+                                       data-field="connectionPoint">
                                 <div class="grid camera-settings" data-role="camera-fields" data-phase="details"
                                      th:classappend="${!(group.deviceTypeId != null and cameraDeviceFlags[group.deviceTypeId])
                                                         and #strings.isEmpty(group.cameraAccessory)
@@ -172,12 +164,9 @@
                                            th:errors="*{deviceGroups[__${iter.index}__].lowVoltageCableTypeId}"></p>
                                     </div>
                                 </div>
-                                <div class="grid" data-phase="details">
-                                    <div>
-                                        <label>Расстояние до точки подключения (м)</label>
-                                        <input type="number" min="0" step="0.1" th:field="*{deviceGroups[__${iter.index}__].distanceToConnectionPoint}" data-field="distanceToConnectionPoint" placeholder="Например, 12">
-                                    </div>
-                                </div>
+                                <input type="hidden"
+                                       th:field="*{deviceGroups[__${iter.index}__].distanceToConnectionPoint}"
+                                       data-field="distanceToConnectionPoint">
                                 <button type="button" class="link-button danger remove-device" data-phase="naming" th:if="${iter.index > 0}">Удалить</button>
                             </div>
                         </div>
@@ -191,11 +180,8 @@
                                         <label>Место установки / название камеры</label>
                                         <input type="text" data-field="installLocation" placeholder="Например, Камера на входе">
                                     </div>
-                                    <div>
-                                        <label>Количество устройств</label>
-                                        <input type="number" min="0" step="1" class="device-count" data-field="deviceCount">
-                                    </div>
                                 </div>
+                                <input type="hidden" data-field="deviceCount" value="1">
                                 <div class="grid" data-phase="details">
                                     <div>
                                         <label>Тип устройства</label>
@@ -208,20 +194,9 @@
                                                     th:data-camera="${cameraDeviceFlags[type.id]} ? 'true' : 'false'"></option>
                                         </select>
                                     </div>
-                                    <div>
-                                        <label>Поверхность установки</label>
-                                        <select data-field="installSurfaceCategory">
-                                            <option value="">Не выбрана</option>
-                                            <option th:each="surface : ${surfaceTypes}" th:value="${surface.code}" th:text="${surface.displayName}"></option>
-                                        </select>
-                                    </div>
                                 </div>
-                                <div class="grid" data-phase="details">
-                                    <div>
-                                        <label>Название узла подключения</label>
-                                        <input type="text" data-field="connectionPoint" placeholder="Распред. коробка...">
-                                    </div>
-                                </div>
+                                <input type="hidden" data-field="installSurfaceCategory">
+                                <input type="hidden" data-field="connectionPoint">
                                 <div class="grid camera-settings is-hidden" data-role="camera-fields" data-phase="details">
                                     <div>
                                         <label>Комплектация камеры (адаптер или пластиковая коробка)</label>
@@ -258,17 +233,11 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="grid" data-phase="details">
-                                    <div>
-                                        <label>Расстояние до точки подключения (м)</label>
-                                        <input type="number" min="0" step="0.1" data-field="distanceToConnectionPoint" placeholder="Например, 12">
-                                    </div>
-                                </div>
+                                <input type="hidden" data-field="distanceToConnectionPoint">
                                 <button type="button" class="link-button danger remove-device" data-phase="naming">Удалить</button>
                             </div>
                         </template>
                         <button type="button" class="button secondary" id="add-device-group" data-phase="naming">Добавить устройство</button>
-                        <p class="muted" data-phase="naming details"><strong>Всего узлов подключения:</strong> <span id="connection-total" th:text="${totalConnectionPoints}">0</span></p>
                     </div>
                 </div>
             </section>
@@ -994,6 +963,10 @@
         let storedDiagramData = parseDiagramValue(nodeDiagramInput?.value ?? '');
         let nodeDiagramRefreshHandle = null;
 
+        function isDeviceDetailsPhaseActive() {
+            return (deviceStepElement?.dataset.activePhase || '') === 'details';
+        }
+
         function applyDevicePhaseVisibility(phase) {
             if (!deviceStepElement) {
                 return;
@@ -1009,6 +982,10 @@
                     element.setAttribute('hidden', 'hidden');
                     element.classList.add('is-phase-hidden');
                 }
+            });
+            getDeviceGroups().forEach(group => {
+                updateCameraFieldsForGroup(group);
+                updateCableFieldsForGroup(group);
             });
         }
 
@@ -1456,7 +1433,7 @@
                 const typeSelect = group.querySelector('select[data-field="deviceTypeId"]');
                 const typeLabel = typeSelect?.selectedOptions?.[0]?.text?.trim() ?? `Устройство №${index + 1}`;
                 const countInput = group.querySelector('input[data-field="deviceCount"]');
-                const count = countInput?.value?.trim();
+                const count = countInput?.value?.trim() || '1';
                 const locationInput = group.querySelector('input[data-field="installLocation"]');
                 const location = locationInput?.value?.trim() ?? '';
                 const nodeId = `device-${index}`;
@@ -1470,7 +1447,7 @@
                     id: nodeId,
                     title: typeLabel,
                     subtitle: location,
-                    meta: count ? `× ${count}` : '',
+                    meta: '',
                     type: isCameraDevice(typeSelect) ? 'camera' : 'device',
                     connectionId,
                     x: stored ? clamp(Number(stored.x), 0, 1) : undefined,
@@ -1816,19 +1793,21 @@
             const accessorySelect = group.querySelector('select[data-field="cameraAccessory"]');
             const depthInput = group.querySelector('input[data-field="cameraViewingDepth"]');
             const cameraFields = group.querySelector('[data-role="camera-fields"]');
-            const cameraSelected = isCameraDevice(typeSelect);
+            const detailsActive = isDeviceDetailsPhaseActive();
+            const cameraTypeSelected = isCameraDevice(typeSelect);
+            const cameraVisible = detailsActive && cameraTypeSelected;
             if (cameraFields) {
-                cameraFields.classList.toggle('is-hidden', !cameraSelected);
+                cameraFields.classList.toggle('is-hidden', !cameraVisible);
             }
             if (accessorySelect) {
-                accessorySelect.disabled = !cameraSelected;
-                if (!cameraSelected) {
+                accessorySelect.disabled = !cameraVisible;
+                if (detailsActive && !cameraTypeSelected) {
                     accessorySelect.value = '';
                 }
             }
             if (depthInput) {
-                depthInput.disabled = !cameraSelected;
-                if (!cameraSelected) {
+                depthInput.disabled = !cameraVisible;
+                if (detailsActive && !cameraTypeSelected) {
                     depthInput.value = '';
                 }
             }
@@ -1855,7 +1834,8 @@
                 return;
             }
             const typeSelect = group.querySelector('select[data-field="deviceTypeId"]');
-            const requiredFunctions = getRequiredCableFunctions(typeSelect);
+            const detailsActive = isDeviceDetailsPhaseActive();
+            const requiredFunctions = detailsActive ? getRequiredCableFunctions(typeSelect) : [];
             const container = group.querySelector('[data-role="cable-fields"]');
             if (!container) {
                 return;
@@ -1867,20 +1847,20 @@
                 field.classList.toggle('is-hidden', !required);
                 const select = field.querySelector('select');
                 if (select) {
-                    select.disabled = !required;
+                    select.disabled = !detailsActive || !required;
                     select.required = required;
-                    if (!required) {
+                    if (detailsActive && !required) {
                         select.value = '';
                     }
                 }
             });
-            container.classList.toggle('is-hidden', requiredFunctions.length === 0);
+            container.classList.toggle('is-hidden', !detailsActive || requiredFunctions.length === 0);
             const signalField = fields.find(field => (field.dataset.cableFunction || '').toUpperCase() === 'SIGNAL');
             if (signalField) {
                 const labelElement = signalField.querySelector('label');
                 if (labelElement) {
                     const defaultLabel = labelElement.dataset.defaultLabel || labelElement.textContent || '';
-                    if (requiresGenericCableLabel(typeSelect)) {
+                    if (detailsActive && requiresGenericCableLabel(typeSelect)) {
                         labelElement.textContent = 'Кабель';
                     } else if (defaultLabel) {
                         labelElement.textContent = defaultLabel;
@@ -2467,7 +2447,7 @@
             const connectionName = connectionInput?.value.trim() || '';
             return {
                 typeName: typeName || '',
-                count: countInput?.value.trim() || '',
+                count: countInput?.value.trim() || '1',
                 installLocation: installInput?.value.trim() || '',
                 connectionPoint: connectionName,
                 connectionKey: normalizeConnectionName(connectionName),
@@ -2508,17 +2488,8 @@
                 if (data.typeName) {
                     parts.push(data.typeName);
                 }
-                if (data.count) {
-                    parts.push(`${data.count} шт.`);
-                }
                 if (data.installLocation) {
                     parts.push(`Установка: ${data.installLocation}`);
-                }
-                if (data.connectionPoint) {
-                    parts.push(`Подключение: ${data.connectionPoint}`);
-                }
-                if (data.distance) {
-                    parts.push(`Расстояние: ${data.distance} м`);
                 }
                 if (data.isCamera && data.accessory) {
                     parts.push(`Комплектация: ${data.accessory}`);
@@ -2541,12 +2512,7 @@
                 summary.textContent = parts.length > 0
                     ? parts.join(' • ')
                     : 'Заполните информацию на первом шаге, чтобы увидеть сводку.';
-                const countValue = Number.parseInt(data.count.replace(',', '.'), 10);
-                const distanceValue = Number.parseFloat(data.distance.replace(',', '.'));
-                const length = Number.isFinite(countValue) && Number.isFinite(distanceValue)
-                    ? Math.max(countValue, 0) * Math.max(distanceValue, 0)
-                    : 0;
-                card.dataset.totalLength = Number.isFinite(length) ? length.toString() : '0';
+                card.dataset.totalLength = '0';
             });
         }
 
