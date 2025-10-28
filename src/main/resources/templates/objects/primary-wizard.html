@@ -952,6 +952,8 @@
         const nodeDiagramResetButton = document.getElementById('node-diagram-reset');
         const unlinkZone = document.getElementById('node-unlink-area');
         const wizardForm = document.querySelector('.wizard-form');
+        const totalDeviceCountInput = wizardForm?.querySelector('input[name="totalDeviceCount"]');
+        const deviceGroupsLockedToTotal = true;
         document.querySelectorAll('[data-role="device-step-placeholder"]').forEach(placeholder => {
             const phaseKey = placeholder.dataset.phase;
             if (phaseKey) {
@@ -2121,7 +2123,18 @@
                 }
                 const removeButton = group.querySelector('.remove-device');
                 if (removeButton) {
-                    removeButton.style.display = index === 0 ? 'none' : '';
+                    if (deviceGroupsLockedToTotal) {
+                        removeButton.hidden = true;
+                        removeButton.setAttribute('aria-hidden', 'true');
+                        removeButton.setAttribute('tabindex', '-1');
+                        removeButton.disabled = true;
+                    } else {
+                        removeButton.hidden = false;
+                        removeButton.removeAttribute('aria-hidden');
+                        removeButton.removeAttribute('tabindex');
+                        removeButton.disabled = false;
+                        removeButton.style.display = index === 0 ? 'none' : '';
+                    }
                 }
                 updateCameraFieldsForGroup(group);
                 updateCableFieldsForGroup(group);
@@ -2131,6 +2144,46 @@
             refreshGroupColumnsFromCards();
             syncConnectionPointsFromDevices();
             scheduleNodeDiagramRefresh();
+        }
+
+        function syncDeviceGroupsWithTotalCount() {
+            if (!deviceGroupsLockedToTotal) {
+                return false;
+            }
+            const desiredRaw = Number.parseInt(totalDeviceCountInput?.value ?? '', 10);
+            if (!Number.isFinite(desiredRaw) || desiredRaw < 0) {
+                reindexDeviceGroups();
+                updateDeviceRelatedSummaries();
+                return true;
+            }
+            let groups = getDeviceGroups();
+            const desiredCount = desiredRaw;
+            while (groups.length < desiredCount) {
+                if (!(deviceTemplate instanceof HTMLTemplateElement) || !deviceContainer) {
+                    break;
+                }
+                const clone = deviceTemplate.content.firstElementChild?.cloneNode(true);
+                if (!clone) {
+                    break;
+                }
+                deviceContainer.appendChild(clone);
+                groups = getDeviceGroups();
+            }
+            while (groups.length > desiredCount) {
+                const group = groups.pop();
+                if (!group) {
+                    break;
+                }
+                const index = Number.parseInt(group.dataset.index ?? '', 10);
+                if (Number.isFinite(index)) {
+                    removeDeviceCard(index);
+                }
+                group.remove();
+                groups = getDeviceGroups();
+            }
+            reindexDeviceGroups();
+            updateDeviceRelatedSummaries();
+            return true;
         }
 
         function getDeviceCards() {
@@ -2495,6 +2548,12 @@
                     : 0;
                 card.dataset.totalLength = Number.isFinite(length) ? length.toString() : '0';
             });
+        }
+
+        function updateDeviceRelatedSummaries() {
+            updateDeviceSummaries();
+            updateGroupCapacities();
+            validateMaterialCapacity();
         }
 
         function refreshGroupColumnsFromCards() {
@@ -3125,14 +3184,23 @@
             });
         }
 
-        addDeviceButton?.addEventListener('click', () => {
-            if (!(deviceTemplate instanceof HTMLTemplateElement) || !deviceContainer) {
-                return;
+        if (deviceGroupsLockedToTotal) {
+            if (addDeviceButton) {
+                addDeviceButton.hidden = true;
+                addDeviceButton.setAttribute('aria-hidden', 'true');
+                addDeviceButton.setAttribute('tabindex', '-1');
+                addDeviceButton.disabled = true;
             }
-            const clone = deviceTemplate.content.firstElementChild.cloneNode(true);
-            deviceContainer.appendChild(clone);
-            reindexDeviceGroups();
-        });
+        } else {
+            addDeviceButton?.addEventListener('click', () => {
+                if (!(deviceTemplate instanceof HTMLTemplateElement) || !deviceContainer) {
+                    return;
+                }
+                const clone = deviceTemplate.content.firstElementChild.cloneNode(true);
+                deviceContainer.appendChild(clone);
+                reindexDeviceGroups();
+            });
+        }
 
         deviceContainer?.addEventListener('input', event => {
             const target = event.target;
@@ -3182,21 +3250,23 @@
             }
         });
 
-        deviceContainer?.addEventListener('click', event => {
-            const target = event.target;
-            if (!(target instanceof HTMLElement)) {
-                return;
-            }
-            if (target.classList.contains('remove-device')) {
-                const group = target.closest('.device-group');
-                if (group && deviceContainer.children.length > 1) {
-                    const index = Number.parseInt(group.dataset.index ?? '', 10);
-                    group.remove();
-                    removeDeviceCard(Number.isFinite(index) ? index : -1);
-                    reindexDeviceGroups();
+        if (!deviceGroupsLockedToTotal) {
+            deviceContainer?.addEventListener('click', event => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) {
+                    return;
                 }
-            }
-        });
+                if (target.classList.contains('remove-device')) {
+                    const group = target.closest('.device-group');
+                    if (group && deviceContainer.children.length > 1) {
+                        const index = Number.parseInt(group.dataset.index ?? '', 10);
+                        group.remove();
+                        removeDeviceCard(Number.isFinite(index) ? index : -1);
+                        reindexDeviceGroups();
+                    }
+                }
+            });
+        }
 
         connectionContainer?.addEventListener('focusin', event => {
             const target = event.target;
@@ -3204,6 +3274,14 @@
                 target.dataset.originalValue = target.value.trim();
             }
         });
+
+        if (deviceGroupsLockedToTotal) {
+            const handleTotalDeviceCountChange = () => {
+                syncDeviceGroupsWithTotalCount();
+            };
+            totalDeviceCountInput?.addEventListener('input', handleTotalDeviceCountChange);
+            totalDeviceCountInput?.addEventListener('change', handleTotalDeviceCountChange);
+        }
 
         connectionContainer?.addEventListener('focusout', event => {
             const target = event.target;
@@ -3538,7 +3616,11 @@
         reindexWorkspaces();
         reindexConnectionPoints();
         reindexMountingRows();
-        reindexDeviceGroups();
+        const deviceGroupsSynced = syncDeviceGroupsWithTotalCount();
+        if (!deviceGroupsSynced) {
+            reindexDeviceGroups();
+            updateDeviceRelatedSummaries();
+        }
         syncAutoMountingRows();
         refreshNodeDiagram();
         moveDeviceStepToPhase(stepPhaseMap.get(initialStep) || null);
