@@ -368,7 +368,7 @@ public class ObjectController {
         model.addAttribute("availableMountingElements", mountingElements);
         model.addAttribute("installationMaterials", materials);
         model.addAttribute("cableTypes", cableTypes);
-        model.addAttribute("wizardActiveStep", Math.max(0, Math.min(activeStep, 7)));
+        model.addAttribute("wizardActiveStep", Math.max(0, Math.min(activeStep, 8)));
         Map<UUID, String> deviceTypeRequirements = deviceTypes.stream()
                 .filter(type -> type.getId() != null)
                 .collect(Collectors.toMap(DeviceType::getId, type -> {
@@ -408,18 +408,26 @@ public class ObjectController {
             if (field == null) {
                 continue;
             }
-            if (field.startsWith("totalDeviceCount") || field.startsWith("totalNodeCount")) {
+            if (field.startsWith("totalDeviceCount")
+                    || field.startsWith("totalNodeCount")
+                    || field.startsWith("workspaceCount")) {
                 step = Math.max(step, 0);
             } else if (field.startsWith("nodeConnectionMethod") || field.startsWith("nodeConnectionDiagram")) {
-                step = Math.max(step, 3);
-            } else if (field.startsWith("workspaceCount") || field.startsWith("mainWorkspaceLocation")) {
-                step = Math.max(step, 2);
+                step = Math.max(step, 4);
+            } else if (field.startsWith("mainWorkspaceLocation")) {
+                step = Math.max(step, 8);
             } else if (field.startsWith("materialGroups")) {
                 step = Math.max(step, 6);
             } else if (field.startsWith("mountingElements")) {
                 step = Math.max(step, 7);
             } else if (field.startsWith("connectionPoints")) {
                 step = Math.max(step, 7);
+            } else if (field.startsWith("workspaces")) {
+                if (field.contains("name")) {
+                    step = Math.max(step, 3);
+                } else {
+                    step = Math.max(step, 8);
+                }
             } else if (field.startsWith("deviceGroups")) {
                 if (field.contains("groupLabel")) {
                     step = Math.max(step, 5);
@@ -428,7 +436,10 @@ public class ObjectController {
                 } else if (field.contains("signalCableType")
                         || field.contains("lowVoltageCableType")
                         || field.contains("distanceToConnectionPoint")
-                        || field.contains("installSurface")) {
+                        || field.contains("installSurface")
+                        || field.contains("cameraAccessory")
+                        || field.contains("cameraViewingDepth")
+                        || field.contains("deviceTypeId")) {
                     step = Math.max(step, 4);
                 } else {
                     step = Math.max(step, 1);
@@ -671,6 +682,8 @@ public class ObjectController {
         private List<MountingSelectionForm> mountingElements = new ArrayList<>();
         @Valid
         private List<MaterialGroupForm> materialGroups = new ArrayList<>();
+        @Valid
+        private List<WorkspaceForm> workspaces = new ArrayList<>();
 
         public PrimaryDataWizardForm() {
             if (deviceGroups.isEmpty()) {
@@ -682,6 +695,9 @@ public class ObjectController {
             if (materialGroups.isEmpty()) {
                 materialGroups.add(new MaterialGroupForm());
             }
+            if (workspaces.isEmpty()) {
+                workspaces.add(new WorkspaceForm());
+            }
         }
 
         public static PrimaryDataWizardForm empty(List<MountingElement> mountingElements,
@@ -690,6 +706,7 @@ public class ObjectController {
             form.mountingElements.clear();
             form.connectionPoints = new ArrayList<>();
             form.connectionPoints.add(new ConnectionPointForm());
+            ensureWorkspaceRows(form.workspaces);
             ensureMaterialRows(form.materialGroups);
             ensureMountingMaterialRows(form.mountingElements);
             return form;
@@ -858,6 +875,19 @@ public class ObjectController {
                 form.materialGroups.add(new MaterialGroupForm());
             }
             ensureMaterialRows(form.materialGroups);
+
+            form.workspaces.clear();
+            if (snapshot != null && snapshot.getWorkspaces() != null) {
+                for (PrimaryDataSnapshot.Workspace workspace : snapshot.getWorkspaces()) {
+                    WorkspaceForm workspaceForm = new WorkspaceForm();
+                    workspaceForm.setName(workspace.getName());
+                    workspaceForm.setLocation(workspace.getLocation());
+                    workspaceForm.setEquipment(workspace.getEquipment());
+                    workspaceForm.setAssignedNode(workspace.getAssignedNode());
+                    form.workspaces.add(workspaceForm);
+                }
+            }
+            ensureWorkspaceRows(form.workspaces);
             return form;
         }
 
@@ -874,6 +904,12 @@ public class ObjectController {
                 if (selection != null) {
                     selection.ensureMaterialRows();
                 }
+            }
+        }
+
+        private static void ensureWorkspaceRows(List<WorkspaceForm> workspaces) {
+            if (workspaces.isEmpty()) {
+                workspaces.add(new WorkspaceForm());
             }
         }
 
@@ -1377,6 +1413,20 @@ public class ObjectController {
                 materialGroupsSnapshot.add(group);
             }
             snapshot.setMaterialGroups(materialGroupsSnapshot);
+
+            List<PrimaryDataSnapshot.Workspace> snapshotWorkspaces = new ArrayList<>();
+            for (WorkspaceForm workspaceForm : workspaces) {
+                if (workspaceForm == null || workspaceForm.isEmpty()) {
+                    continue;
+                }
+                PrimaryDataSnapshot.Workspace workspace = new PrimaryDataSnapshot.Workspace();
+                workspace.setName(trim(workspaceForm.getName()));
+                workspace.setLocation(trim(workspaceForm.getLocation()));
+                workspace.setEquipment(trim(workspaceForm.getEquipment()));
+                workspace.setAssignedNode(trim(workspaceForm.getAssignedNode()));
+                snapshotWorkspaces.add(workspace);
+            }
+            snapshot.setWorkspaces(snapshotWorkspaces);
             return snapshot;
         }
 
@@ -1438,6 +1488,14 @@ public class ObjectController {
 
         public void setWorkspaceCount(Integer workspaceCount) {
             this.workspaceCount = workspaceCount;
+        }
+
+        public List<WorkspaceForm> getWorkspaces() {
+            return workspaces;
+        }
+
+        public void setWorkspaces(List<WorkspaceForm> workspaces) {
+            this.workspaces = workspaces;
         }
 
         private String trim(String value) {
@@ -1929,6 +1987,52 @@ public class ObjectController {
 
             public void setLayingSurfaceCategory(String layingSurfaceCategory) {
                 this.layingSurfaceCategory = layingSurfaceCategory;
+            }
+        }
+
+        public static class WorkspaceForm {
+            private String name;
+            private String location;
+            private String equipment;
+            private String assignedNode;
+
+            public boolean isEmpty() {
+                return !StringUtils.hasText(name)
+                        && !StringUtils.hasText(location)
+                        && !StringUtils.hasText(equipment)
+                        && !StringUtils.hasText(assignedNode);
+            }
+
+            public String getName() {
+                return name;
+            }
+
+            public void setName(String name) {
+                this.name = name;
+            }
+
+            public String getLocation() {
+                return location;
+            }
+
+            public void setLocation(String location) {
+                this.location = location;
+            }
+
+            public String getEquipment() {
+                return equipment;
+            }
+
+            public void setEquipment(String equipment) {
+                this.equipment = equipment;
+            }
+
+            public String getAssignedNode() {
+                return assignedNode;
+            }
+
+            public void setAssignedNode(String assignedNode) {
+                this.assignedNode = assignedNode;
             }
         }
     }

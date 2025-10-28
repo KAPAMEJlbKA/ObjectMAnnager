@@ -1048,6 +1048,33 @@ button:hover {
     color: #b45309;
 }
 
+.diagram-node[data-node-type="workspace"] {
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow: 0 14px 28px rgba(16, 185, 129, 0.18);
+    background: #ecfdf5;
+}
+
+.diagram-node[data-node-type="workspace"] .diagram-node-title {
+    color: #047857;
+}
+
+.node-diagram-unlink {
+    margin: 1rem 0 0;
+    padding: 0.75rem 1rem;
+    border: 1px dashed rgba(15, 23, 42, 0.35);
+    border-radius: 12px;
+    text-align: center;
+    color: rgba(15, 23, 42, 0.7);
+    background: rgba(248, 250, 252, 0.8);
+    font-size: 0.9rem;
+}
+
+.node-diagram-unlink.is-active {
+    border-color: rgba(239, 68, 68, 0.7);
+    background: rgba(254, 226, 226, 0.85);
+    color: #b91c1c;
+}
+
 .diagram-link {
     stroke: rgba(15, 23, 42, 0.28);
     stroke-width: 2;
