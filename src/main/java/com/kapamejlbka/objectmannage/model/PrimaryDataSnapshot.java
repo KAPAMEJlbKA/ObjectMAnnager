@@ -16,6 +16,7 @@ public class PrimaryDataSnapshot {
     private String nodeConnectionMethod;
     private String nodeConnectionDiagram;
     private String mainWorkspaceLocation;
+    private Integer workspaceCount;
 
     public List<DeviceGroup> getDeviceGroups() {
         return deviceGroups;
@@ -95,6 +96,14 @@ public class PrimaryDataSnapshot {
 
     public void setMainWorkspaceLocation(String mainWorkspaceLocation) {
         this.mainWorkspaceLocation = mainWorkspaceLocation;
+    }
+
+    public Integer getWorkspaceCount() {
+        return workspaceCount;
+    }
+
+    public void setWorkspaceCount(Integer workspaceCount) {
+        this.workspaceCount = workspaceCount;
     }
 
     public static class DeviceGroup {
