@@ -655,9 +655,11 @@ public class ObjectController {
     public static class PrimaryDataWizardForm {
         private static final Pattern LENGTH_PATTERN = Pattern.compile("(-?\\d+(?:[.,]\\d+)?)");
         private static final double LENGTH_TOLERANCE = 0.0001;
+        private static final int NODE_DIAGRAM_MAX_LENGTH = 20000;
         private Integer totalDeviceCount;
         private Integer totalNodeCount;
         private String nodeConnectionMethod;
+        private String nodeConnectionDiagram;
         private String mainWorkspaceLocation;
         @Valid
         private List<DeviceGroupForm> deviceGroups = new ArrayList<>();
@@ -698,6 +700,7 @@ public class ObjectController {
             form.setTotalDeviceCount(snapshot != null ? snapshot.getTotalDeviceCount() : null);
             form.setTotalNodeCount(snapshot != null ? snapshot.getTotalNodeCount() : null);
             form.setNodeConnectionMethod(snapshot != null ? snapshot.getNodeConnectionMethod() : null);
+            form.setNodeConnectionDiagram(snapshot != null ? snapshot.getNodeConnectionDiagram() : null);
             form.setMainWorkspaceLocation(snapshot != null ? snapshot.getMainWorkspaceLocation() : null);
             form.deviceGroups.clear();
             if (snapshot != null && snapshot.getDeviceGroups() != null) {
@@ -1158,6 +1161,11 @@ public class ObjectController {
                 bindingResult.rejectValue("nodeConnectionMethod", "nodeConnectionMethod.length", "Описание соединения слишком длинное");
             }
 
+            if (nodeConnectionDiagram != null && nodeConnectionDiagram.length() > NODE_DIAGRAM_MAX_LENGTH) {
+                bindingResult.rejectValue("nodeConnectionDiagram", "nodeConnectionDiagram.length",
+                        String.format(Locale.getDefault(), "Схема содержит слишком много данных (максимум %d символов)", NODE_DIAGRAM_MAX_LENGTH));
+            }
+
             if (mainWorkspaceLocation != null && mainWorkspaceLocation.length() > 255) {
                 bindingResult.rejectValue("mainWorkspaceLocation", "mainWorkspaceLocation.length", "Название рабочего места должно быть короче 255 символов");
             }
@@ -1171,6 +1179,7 @@ public class ObjectController {
             snapshot.setTotalDeviceCount(getTotalDeviceCount());
             snapshot.setTotalNodeCount(getTotalNodeCount());
             snapshot.setNodeConnectionMethod(trim(nodeConnectionMethod));
+            snapshot.setNodeConnectionDiagram(trim(nodeConnectionDiagram));
             snapshot.setMainWorkspaceLocation(trim(mainWorkspaceLocation));
             Map<UUID, DeviceType> deviceTypeMap = deviceTypes.stream()
                     .filter(type -> type.getId() != null)
@@ -1388,6 +1397,18 @@ public class ObjectController {
                 this.nodeConnectionMethod = nodeConnectionMethod.trim();
             } else {
                 this.nodeConnectionMethod = null;
+            }
+        }
+
+        public String getNodeConnectionDiagram() {
+            return nodeConnectionDiagram;
+        }
+
+        public void setNodeConnectionDiagram(String nodeConnectionDiagram) {
+            if (StringUtils.hasText(nodeConnectionDiagram)) {
+                this.nodeConnectionDiagram = nodeConnectionDiagram.trim();
+            } else {
+                this.nodeConnectionDiagram = null;
             }
         }
 

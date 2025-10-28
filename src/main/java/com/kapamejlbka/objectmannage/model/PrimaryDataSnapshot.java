@@ -14,6 +14,7 @@ public class PrimaryDataSnapshot {
     private Integer totalDeviceCount;
     private Integer totalNodeCount;
     private String nodeConnectionMethod;
+    private String nodeConnectionDiagram;
     private String mainWorkspaceLocation;
 
     public List<DeviceGroup> getDeviceGroups() {
@@ -78,6 +79,14 @@ public class PrimaryDataSnapshot {
 
     public void setNodeConnectionMethod(String nodeConnectionMethod) {
         this.nodeConnectionMethod = nodeConnectionMethod;
+    }
+
+    public String getNodeConnectionDiagram() {
+        return nodeConnectionDiagram;
+    }
+
+    public void setNodeConnectionDiagram(String nodeConnectionDiagram) {
+        this.nodeConnectionDiagram = nodeConnectionDiagram;
     }
 
     public String getMainWorkspaceLocation() {

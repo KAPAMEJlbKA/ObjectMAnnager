@@ -66,10 +66,31 @@
 
             <section class="wizard-step" data-step-index="4" hidden>
                 <h3>Шаг 5. Соединения узлов</h3>
-                <p class="muted">Опишите, как узлы будут соединены между собой: последовательность, используемые каналы и особенности прокладки.</p>
-                <label for="node-connection-method">Описание соединения узлов</label>
-                <textarea id="node-connection-method" th:field="*{nodeConnectionMethod}" rows="4" placeholder="Например, узлы А и Б соединяются через существующий кабельный лоток."></textarea>
-                <p class="field-error" th:if="${#fields.hasErrors('nodeConnectionMethod')}" th:errors="*{nodeConnectionMethod}"></p>
+                <p class="muted">Настройте визуальную схему соединения узлов и при необходимости дополните её текстовым описанием. Перетаскивайте элементы схемы, чтобы расположить их на плане.</p>
+                <div class="node-diagram-panel">
+                    <div class="node-diagram-board" id="node-diagram-board">
+                        <svg class="node-diagram-links" id="node-diagram-links" preserveAspectRatio="none"></svg>
+                        <div class="node-diagram-layer" id="node-diagram-layer"></div>
+                        <p class="node-diagram-empty" id="node-diagram-empty">Добавьте устройства и точки подключения, чтобы построить схему.</p>
+                    </div>
+                    <aside class="node-diagram-sidebar">
+                        <h4>Подсказки</h4>
+                        <ul class="muted small">
+                            <li>Узлы создаются автоматически по заполненным точкам подключения.</li>
+                            <li>Камеры и другие устройства появляются после заполнения шагов 1–3.</li>
+                            <li>Перетаскивайте элементы, чтобы расположить их на холсте, связи обновляются автоматически.</li>
+                        </ul>
+                        <button type="button" class="button tertiary" id="node-diagram-reset">Сбросить расположение</button>
+                    </aside>
+                </div>
+                <input type="hidden" id="node-diagram-data" th:field="*{nodeConnectionDiagram}">
+                <p class="field-error" th:if="${#fields.hasErrors('nodeConnectionDiagram')}" th:errors="*{nodeConnectionDiagram}"></p>
+                <div class="node-diagram-notes">
+                    <label for="node-connection-method">Текстовое описание соединения узлов</label>
+                    <textarea id="node-connection-method" th:field="*{nodeConnectionMethod}" rows="4" placeholder="Например, узлы А и Б соединяются через существующий кабельный лоток."></textarea>
+                    <p class="field-error" th:if="${#fields.hasErrors('nodeConnectionMethod')}" th:errors="*{nodeConnectionMethod}"></p>
+                    <p class="muted small">Текст используется в отчёте наряду с графической схемой.</p>
+                </div>
             </section>
 
             <section class="wizard-step" data-step-index="5" hidden>
@@ -835,6 +856,12 @@
         const prevButton = document.querySelector('[data-action="prev-step"]');
         const nextButton = document.querySelector('[data-action="next-step"]');
         const finishButton = document.querySelector('[data-role="finish"]');
+        const nodeDiagramBoard = document.getElementById('node-diagram-board');
+        const nodeDiagramLayer = document.getElementById('node-diagram-layer');
+        const nodeDiagramLinks = document.getElementById('node-diagram-links');
+        const nodeDiagramEmpty = document.getElementById('node-diagram-empty');
+        const nodeDiagramInput = document.getElementById('node-diagram-data');
+        const nodeDiagramResetButton = document.getElementById('node-diagram-reset');
         const wizardForm = document.querySelector('.wizard-form');
         document.querySelectorAll('[data-role="device-step-placeholder"]').forEach(placeholder => {
             const phaseKey = placeholder.dataset.phase;
@@ -853,6 +880,9 @@
             : 0;
 
         let currentStep = 0;
+        let nodeDiagramModel = { nodes: [], edges: [] };
+        let storedDiagramData = parseDiagramValue(nodeDiagramInput?.value ?? '');
+        let nodeDiagramRefreshHandle = null;
 
         function applyDevicePhaseVisibility(phase) {
             if (!deviceStepElement) {
@@ -977,6 +1007,350 @@
         function normalizeConnectionName(value) {
             return (value || '').trim().toLowerCase();
         }
+
+        function parseDiagramValue(raw) {
+            if (!raw || typeof raw !== 'string') {
+                return { nodes: [], edges: [] };
+            }
+            try {
+                const parsed = JSON.parse(raw);
+                if (parsed && Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+                    return {
+                        nodes: parsed.nodes.filter(node => node && typeof node.id === 'string'),
+                        edges: parsed.edges.filter(edge => edge && typeof edge.from === 'string' && typeof edge.to === 'string')
+                    };
+                }
+            } catch (error) {
+                console.warn('Не удалось разобрать сохранённую схему узлов', error);
+            }
+            return { nodes: [], edges: [] };
+        }
+
+        function clamp(value, min, max) {
+            if (!Number.isFinite(value)) {
+                return min;
+            }
+            if (value < min) {
+                return min;
+            }
+            if (value > max) {
+                return max;
+            }
+            return value;
+        }
+
+        function scheduleNodeDiagramRefresh() {
+            if (!nodeDiagramBoard) {
+                return;
+            }
+            if (nodeDiagramRefreshHandle !== null) {
+                cancelAnimationFrame(nodeDiagramRefreshHandle);
+            }
+            nodeDiagramRefreshHandle = requestAnimationFrame(() => {
+                nodeDiagramRefreshHandle = null;
+                refreshNodeDiagram();
+            });
+        }
+
+        function refreshNodeDiagram() {
+            if (!nodeDiagramBoard || !nodeDiagramLayer) {
+                return;
+            }
+            const storedPositions = new Map();
+            if (storedDiagramData && Array.isArray(storedDiagramData.nodes)) {
+                storedDiagramData.nodes.forEach(node => {
+                    if (node && typeof node.id === 'string') {
+                        storedPositions.set(node.id, node);
+                    }
+                });
+            }
+            nodeDiagramModel = buildNodeDiagramModel(storedPositions);
+            renderNodeDiagram(nodeDiagramModel);
+            persistNodeDiagram(nodeDiagramModel);
+        }
+
+        function buildNodeDiagramModel(storedPositions) {
+            const nodes = [];
+            const edges = [];
+            const connectionNodes = [];
+            const deviceNodes = [];
+            const connectionIdMap = new Map();
+
+            const connectionRows = Array.from(connectionContainer?.querySelectorAll('.connection-point') ?? []);
+            connectionRows.forEach((row, index) => {
+                const nameInput = row.querySelector('input[data-field="name"]');
+                const rawName = nameInput?.value?.trim() ?? '';
+                const normalized = normalizeConnectionName(rawName);
+                const key = normalized || `__index_${index}`;
+                const id = `connection-${key}`;
+                const stored = storedPositions.get(id);
+                const node = {
+                    id,
+                    title: rawName || `Узел ${index + 1}`,
+                    subtitle: '',
+                    meta: '',
+                    type: 'connection',
+                    x: stored ? clamp(Number(stored.x), 0, 1) : undefined,
+                    y: stored ? clamp(Number(stored.y), 0, 1) : undefined
+                };
+                nodes.push(node);
+                connectionNodes.push(node);
+                if (normalized) {
+                    connectionIdMap.set(normalized, id);
+                }
+                if (rawName) {
+                    connectionIdMap.set(rawName, id);
+                }
+            });
+
+            const groups = getDeviceGroups();
+            groups.forEach((group, index) => {
+                const typeSelect = group.querySelector('select[data-field="deviceTypeId"]');
+                const typeLabel = typeSelect?.selectedOptions?.[0]?.text?.trim() ?? `Устройство №${index + 1}`;
+                const countInput = group.querySelector('input[data-field="deviceCount"]');
+                const count = countInput?.value?.trim();
+                const locationInput = group.querySelector('input[data-field="installLocation"]');
+                const location = locationInput?.value?.trim() ?? '';
+                const nodeId = `device-${index}`;
+                const stored = storedPositions.get(nodeId);
+                const connectionInput = group.querySelector('input[data-field="connectionPoint"]');
+                const connectionName = connectionInput?.value?.trim();
+                const connectionKey = connectionName ? (normalizeConnectionName(connectionName) || connectionName) : null;
+                const connectionId = connectionKey ? connectionIdMap.get(connectionKey) ?? null : null;
+
+                const node = {
+                    id: nodeId,
+                    title: typeLabel,
+                    subtitle: location,
+                    meta: count ? `× ${count}` : '',
+                    type: isCameraDevice(typeSelect) ? 'camera' : 'device',
+                    connectionId,
+                    x: stored ? clamp(Number(stored.x), 0, 1) : undefined,
+                    y: stored ? clamp(Number(stored.y), 0, 1) : undefined
+                };
+                nodes.push(node);
+                deviceNodes.push(node);
+
+                if (connectionId) {
+                    edges.push({ from: nodeId, to: connectionId });
+                }
+            });
+
+            autoLayoutNodePositions(connectionNodes, deviceNodes);
+            return { nodes, edges };
+        }
+
+        function autoLayoutNodePositions(connectionNodes, deviceNodes) {
+            const padding = 0.08;
+            const topY = 0.18;
+            const connectionCount = connectionNodes.length;
+            connectionNodes.forEach((node, index) => {
+                if (!Number.isFinite(node.x) || !Number.isFinite(node.y)) {
+                    const fraction = connectionCount > 1 ? index / (connectionCount - 1) : 0.5;
+                    node.x = clamp(fraction, padding, 1 - padding);
+                    node.y = topY;
+                } else {
+                    node.x = clamp(node.x, padding, 1 - padding);
+                    node.y = clamp(node.y, padding, 0.5);
+                }
+            });
+
+            const deviceCount = deviceNodes.length;
+            if (deviceCount === 0) {
+                return;
+            }
+            const columns = Math.max(1, Math.ceil(Math.sqrt(deviceCount)));
+            deviceNodes.forEach((node, index) => {
+                if (Number.isFinite(node.x) && Number.isFinite(node.y)) {
+                    node.x = clamp(node.x, padding, 1 - padding);
+                    node.y = clamp(node.y, 0.35, 0.95);
+                    return;
+                }
+                const row = Math.floor(index / columns);
+                const col = index % columns;
+                const columnFraction = columns > 1 ? col / (columns - 1) : 0.5;
+                const rowSpacing = 0.25;
+                const y = 0.45 + row * rowSpacing;
+                node.x = clamp(columnFraction, padding, 1 - padding);
+                node.y = clamp(y, 0.4, 0.95);
+            });
+        }
+
+        function renderNodeDiagram(model) {
+            if (!nodeDiagramLayer || !nodeDiagramBoard) {
+                return;
+            }
+            nodeDiagramLayer.innerHTML = '';
+            if (nodeDiagramLinks) {
+                while (nodeDiagramLinks.firstChild) {
+                    nodeDiagramLinks.removeChild(nodeDiagramLinks.firstChild);
+                }
+            }
+            const nodes = Array.isArray(model.nodes) ? model.nodes : [];
+            const isEmpty = nodes.length === 0;
+            if (nodeDiagramEmpty) {
+                nodeDiagramEmpty.hidden = !isEmpty;
+            }
+            nodeDiagramBoard.classList.toggle('is-empty', isEmpty);
+            const fragment = document.createDocumentFragment();
+            nodes.forEach(node => {
+                const element = document.createElement('div');
+                element.classList.add('diagram-node');
+                element.dataset.nodeId = node.id;
+                element.dataset.nodeType = node.type ?? 'device';
+
+                const title = document.createElement('p');
+                title.classList.add('diagram-node-title');
+                title.textContent = node.title ?? '';
+                element.appendChild(title);
+
+                if (node.meta) {
+                    const meta = document.createElement('span');
+                    meta.classList.add('diagram-node-meta');
+                    meta.textContent = node.meta;
+                    element.appendChild(meta);
+                }
+
+                if (node.subtitle) {
+                    const subtitle = document.createElement('p');
+                    subtitle.classList.add('diagram-node-subtitle');
+                    subtitle.textContent = node.subtitle;
+                    element.appendChild(subtitle);
+                }
+
+                fragment.appendChild(element);
+                updateNodeElementPosition(element, node);
+                enableNodeDragging(element, node, model);
+            });
+            nodeDiagramLayer.appendChild(fragment);
+            updateNodeDiagramEdges(model);
+        }
+
+        function updateNodeElementPosition(element, node) {
+            if (!element || !node) {
+                return;
+            }
+            const left = clamp(Number(node.x), 0, 1) * 100;
+            const top = clamp(Number(node.y), 0, 1) * 100;
+            element.style.left = `${left}%`;
+            element.style.top = `${top}%`;
+        }
+
+        function updateNodeDiagramEdges(model) {
+            if (!nodeDiagramBoard || !nodeDiagramLinks) {
+                return;
+            }
+            const rect = nodeDiagramBoard.getBoundingClientRect();
+            const width = rect.width || 1;
+            const height = rect.height || 1;
+            nodeDiagramLinks.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            nodeDiagramLinks.setAttribute('width', String(width));
+            nodeDiagramLinks.setAttribute('height', String(height));
+            while (nodeDiagramLinks.firstChild) {
+                nodeDiagramLinks.removeChild(nodeDiagramLinks.firstChild);
+            }
+            const nodeMap = new Map();
+            (model.nodes ?? []).forEach(node => {
+                nodeMap.set(node.id, node);
+            });
+            (model.edges ?? []).forEach(edge => {
+                const from = nodeMap.get(edge.from);
+                const to = nodeMap.get(edge.to);
+                if (!from || !to) {
+                    return;
+                }
+                if (!Number.isFinite(from.x) || !Number.isFinite(from.y) || !Number.isFinite(to.x) || !Number.isFinite(to.y)) {
+                    return;
+                }
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.classList.add('diagram-link');
+                line.setAttribute('x1', String(clamp(from.x, 0, 1) * width));
+                line.setAttribute('y1', String(clamp(from.y, 0, 1) * height));
+                line.setAttribute('x2', String(clamp(to.x, 0, 1) * width));
+                line.setAttribute('y2', String(clamp(to.y, 0, 1) * height));
+                nodeDiagramLinks.appendChild(line);
+            });
+        }
+
+        function enableNodeDragging(element, node, model) {
+            if (!element || !node) {
+                return;
+            }
+            element.addEventListener('pointerdown', event => {
+                if (!nodeDiagramBoard) {
+                    return;
+                }
+                event.preventDefault();
+                element.setPointerCapture(event.pointerId);
+                element.classList.add('is-dragging');
+
+                const handleMove = moveEvent => {
+                    const rect = nodeDiagramBoard.getBoundingClientRect();
+                    const width = rect.width || 1;
+                    const height = rect.height || 1;
+                    const x = clamp((moveEvent.clientX - rect.left) / width, 0.02, 0.98);
+                    const y = clamp((moveEvent.clientY - rect.top) / height, 0.02, 0.98);
+                    node.x = x;
+                    node.y = y;
+                    updateNodeElementPosition(element, node);
+                    updateNodeDiagramEdges(model);
+                };
+
+                const finish = () => {
+                    element.removeEventListener('pointermove', handleMove);
+                    element.removeEventListener('pointerup', finish);
+                    element.removeEventListener('lostpointercapture', finish);
+                    element.classList.remove('is-dragging');
+                    persistNodeDiagram(model);
+                };
+
+                element.addEventListener('pointermove', handleMove);
+                element.addEventListener('pointerup', finish);
+                element.addEventListener('lostpointercapture', finish);
+            });
+        }
+
+        function persistNodeDiagram(model) {
+            if (!nodeDiagramInput) {
+                return;
+            }
+            const nodes = (model.nodes ?? []).map(node => ({
+                id: node.id,
+                type: node.type,
+                title: node.title,
+                subtitle: node.subtitle,
+                meta: node.meta,
+                x: Number.isFinite(node.x) ? Number(node.x.toFixed(4)) : null,
+                y: Number.isFinite(node.y) ? Number(node.y.toFixed(4)) : null
+            }));
+            const edges = (model.edges ?? []).map(edge => ({ from: edge.from, to: edge.to }));
+            const payload = { nodes, edges };
+            nodeDiagramInput.value = JSON.stringify(payload);
+            storedDiagramData = payload;
+        }
+
+        nodeDiagramResetButton?.addEventListener('click', event => {
+            event.preventDefault();
+            storedDiagramData = { nodes: [], edges: [] };
+            if (nodeDiagramInput) {
+                nodeDiagramInput.value = '';
+            }
+            refreshNodeDiagram();
+        });
+
+        window.addEventListener('resize', () => {
+            updateNodeDiagramEdges(nodeDiagramModel);
+        });
+
+        wizardForm?.addEventListener('input', event => {
+            const target = event.target;
+            if (!(target instanceof HTMLElement)) {
+                return;
+            }
+            if (target.matches('input[data-field="connectionPoint"], input[data-field="deviceCount"], input[data-field="installLocation"], select[data-field="deviceTypeId"], input[data-field="name"]')) {
+                scheduleNodeDiagramRefresh();
+            }
+        });
 
         function requiresGenericCableLabel(select) {
             if (!(select instanceof HTMLSelectElement)) {
@@ -1316,6 +1690,7 @@
             ensureDeviceCards();
             refreshGroupColumnsFromCards();
             syncConnectionPointsFromDevices();
+            scheduleNodeDiagramRefresh();
         }
 
         function getDeviceCards() {
@@ -1986,6 +2361,7 @@
             if (connectionEmptyMessage) {
                 connectionEmptyMessage.hidden = rows.length > 0;
             }
+            scheduleNodeDiagramRefresh();
         }
 
         function syncConnectionPointsFromDevices() {
@@ -2038,6 +2414,7 @@
             reindexConnectionPoints();
             updateConnectionPointUsage(usageMap);
             syncAutoMountingRows();
+            scheduleNodeDiagramRefresh();
         }
 
         function updateConnectionPointUsage(usageMap) {
@@ -2596,6 +2973,7 @@
         reindexMountingRows();
         reindexDeviceGroups();
         syncAutoMountingRows();
+        refreshNodeDiagram();
         moveDeviceStepToPhase(stepPhaseMap.get(initialStep) || 'installation');
         showStep(initialStep);
     });
