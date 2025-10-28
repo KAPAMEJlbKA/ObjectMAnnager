@@ -11,6 +11,10 @@ public class PrimaryDataSnapshot {
     private List<MountingRequirement> mountingElements = new ArrayList<>();
     private List<MaterialGroup> materialGroups = new ArrayList<>();
     private int totalConnectionPoints;
+    private Integer totalDeviceCount;
+    private Integer totalNodeCount;
+    private String nodeConnectionMethod;
+    private String mainWorkspaceLocation;
 
     public List<DeviceGroup> getDeviceGroups() {
         return deviceGroups;
@@ -50,6 +54,38 @@ public class PrimaryDataSnapshot {
 
     public void setTotalConnectionPoints(int totalConnectionPoints) {
         this.totalConnectionPoints = totalConnectionPoints;
+    }
+
+    public Integer getTotalDeviceCount() {
+        return totalDeviceCount;
+    }
+
+    public void setTotalDeviceCount(Integer totalDeviceCount) {
+        this.totalDeviceCount = totalDeviceCount;
+    }
+
+    public Integer getTotalNodeCount() {
+        return totalNodeCount;
+    }
+
+    public void setTotalNodeCount(Integer totalNodeCount) {
+        this.totalNodeCount = totalNodeCount;
+    }
+
+    public String getNodeConnectionMethod() {
+        return nodeConnectionMethod;
+    }
+
+    public void setNodeConnectionMethod(String nodeConnectionMethod) {
+        this.nodeConnectionMethod = nodeConnectionMethod;
+    }
+
+    public String getMainWorkspaceLocation() {
+        return mainWorkspaceLocation;
+    }
+
+    public void setMainWorkspaceLocation(String mainWorkspaceLocation) {
+        this.mainWorkspaceLocation = mainWorkspaceLocation;
     }
 
     public static class DeviceGroup {

@@ -368,7 +368,7 @@ public class ObjectController {
         model.addAttribute("availableMountingElements", mountingElements);
         model.addAttribute("installationMaterials", materials);
         model.addAttribute("cableTypes", cableTypes);
-        model.addAttribute("wizardActiveStep", Math.max(0, Math.min(activeStep, 3)));
+        model.addAttribute("wizardActiveStep", Math.max(0, Math.min(activeStep, 8)));
         Map<UUID, String> deviceTypeRequirements = deviceTypes.stream()
                 .filter(type -> type.getId() != null)
                 .collect(Collectors.toMap(DeviceType::getId, type -> {
@@ -408,23 +408,37 @@ public class ObjectController {
             if (field == null) {
                 continue;
             }
-            if (field.startsWith("materialGroups") || field.startsWith("mountingElements")) {
-                step = Math.max(step, 3);
+            if (field.startsWith("totalDeviceCount") || field.startsWith("totalNodeCount")) {
+                step = Math.max(step, 0);
+            } else if (field.startsWith("nodeConnectionMethod")) {
+                step = Math.max(step, 4);
+            } else if (field.startsWith("mainWorkspaceLocation")) {
+                step = Math.max(step, 5);
+            } else if (field.startsWith("materialGroups")) {
+                step = Math.max(step, 7);
+            } else if (field.startsWith("mountingElements")) {
+                step = Math.max(step, 8);
             } else if (field.startsWith("connectionPoints")) {
-                step = Math.max(step, 1);
+                step = Math.max(step, 2);
             } else if (field.startsWith("deviceGroups")) {
                 if (field.contains("groupLabel")) {
+                    step = Math.max(step, 3);
+                } else if (field.contains("connectionPoint")
+                        || field.contains("signalCableType")
+                        || field.contains("lowVoltageCableType")) {
                     step = Math.max(step, 2);
+                } else if (field.contains("distanceToConnectionPoint")) {
+                    step = Math.max(step, 6);
                 } else {
-                    step = Math.max(step, 0);
+                    step = Math.max(step, 1);
                 }
             }
         }
-        if (step < 3) {
+        if (step < 7) {
             for (ObjectError error : bindingResult.getGlobalErrors()) {
                 String code = error.getCode();
                 if (code != null && code.startsWith("materialGroups")) {
-                    step = Math.max(step, 3);
+                    step = Math.max(step, 7);
                 }
             }
         }
@@ -641,6 +655,10 @@ public class ObjectController {
     public static class PrimaryDataWizardForm {
         private static final Pattern LENGTH_PATTERN = Pattern.compile("(-?\\d+(?:[.,]\\d+)?)");
         private static final double LENGTH_TOLERANCE = 0.0001;
+        private Integer totalDeviceCount;
+        private Integer totalNodeCount;
+        private String nodeConnectionMethod;
+        private String mainWorkspaceLocation;
         @Valid
         private List<DeviceGroupForm> deviceGroups = new ArrayList<>();
         @Valid
@@ -677,6 +695,10 @@ public class ObjectController {
                                                           List<MountingElement> mountingElements,
                                                           List<InstallationMaterial> materials) {
             PrimaryDataWizardForm form = new PrimaryDataWizardForm();
+            form.setTotalDeviceCount(snapshot != null ? snapshot.getTotalDeviceCount() : null);
+            form.setTotalNodeCount(snapshot != null ? snapshot.getTotalNodeCount() : null);
+            form.setNodeConnectionMethod(snapshot != null ? snapshot.getNodeConnectionMethod() : null);
+            form.setMainWorkspaceLocation(snapshot != null ? snapshot.getMainWorkspaceLocation() : null);
             form.deviceGroups.clear();
             if (snapshot != null && snapshot.getDeviceGroups() != null) {
                 for (PrimaryDataSnapshot.DeviceGroup group : snapshot.getDeviceGroups()) {
@@ -987,6 +1009,20 @@ public class ObjectController {
             return unique.size();
         }
 
+        private int countDefinedConnectionPoints() {
+            Set<String> names = new LinkedHashSet<>();
+            for (ConnectionPointForm point : connectionPoints) {
+                if (point == null) {
+                    continue;
+                }
+                String name = point.getName();
+                if (StringUtils.hasText(name)) {
+                    names.add(name.trim());
+                }
+            }
+            return names.size();
+        }
+
         public void validate(BindingResult bindingResult, List<DeviceType> deviceTypes) {
             Map<UUID, DeviceType> typeMap = deviceTypes == null ? Collections.emptyMap()
                     : deviceTypes.stream()
@@ -1092,6 +1128,39 @@ public class ObjectController {
                     bindingResult.reject("materialGroups.capacity", message);
                 }
             }
+
+            int actualDevices = 0;
+            for (DeviceGroupForm group : deviceGroups) {
+                if (group != null && group.getDeviceCount() != null) {
+                    actualDevices += Math.max(group.getDeviceCount(), 0);
+                }
+            }
+            if (totalDeviceCount != null) {
+                if (totalDeviceCount < 0) {
+                    bindingResult.rejectValue("totalDeviceCount", "totalDeviceCount.negative", "Количество устройств не может быть отрицательным");
+                } else if (actualDevices > 0 && totalDeviceCount != actualDevices) {
+                    bindingResult.rejectValue("totalDeviceCount", "totalDeviceCount.mismatch",
+                            String.format(Locale.getDefault(), "Указано %d устройств, но по карточкам заполнено %d.", totalDeviceCount, actualDevices));
+                }
+            }
+
+            int definedNodes = countDefinedConnectionPoints();
+            if (totalNodeCount != null) {
+                if (totalNodeCount < 0) {
+                    bindingResult.rejectValue("totalNodeCount", "totalNodeCount.negative", "Количество узлов не может быть отрицательным");
+                } else if (definedNodes > 0 && totalNodeCount != definedNodes) {
+                    bindingResult.rejectValue("totalNodeCount", "totalNodeCount.mismatch",
+                            String.format(Locale.getDefault(), "Указано %d узлов, но настроено %d.", totalNodeCount, definedNodes));
+                }
+            }
+
+            if (nodeConnectionMethod != null && nodeConnectionMethod.length() > 2000) {
+                bindingResult.rejectValue("nodeConnectionMethod", "nodeConnectionMethod.length", "Описание соединения слишком длинное");
+            }
+
+            if (mainWorkspaceLocation != null && mainWorkspaceLocation.length() > 255) {
+                bindingResult.rejectValue("mainWorkspaceLocation", "mainWorkspaceLocation.length", "Название рабочего места должно быть короче 255 символов");
+            }
         }
 
         public PrimaryDataSnapshot toSnapshot(List<DeviceType> deviceTypes,
@@ -1099,6 +1168,10 @@ public class ObjectController {
                                               List<InstallationMaterial> materials,
                                               List<CableType> cableTypes) {
             PrimaryDataSnapshot snapshot = new PrimaryDataSnapshot();
+            snapshot.setTotalDeviceCount(getTotalDeviceCount());
+            snapshot.setTotalNodeCount(getTotalNodeCount());
+            snapshot.setNodeConnectionMethod(trim(nodeConnectionMethod));
+            snapshot.setMainWorkspaceLocation(trim(mainWorkspaceLocation));
             Map<UUID, DeviceType> deviceTypeMap = deviceTypes.stream()
                     .filter(type -> type.getId() != null)
                     .collect(Collectors.toMap(DeviceType::getId, Function.identity()));
@@ -1288,6 +1361,46 @@ public class ObjectController {
             }
             snapshot.setMaterialGroups(materialGroupsSnapshot);
             return snapshot;
+        }
+
+        public Integer getTotalDeviceCount() {
+            return totalDeviceCount;
+        }
+
+        public void setTotalDeviceCount(Integer totalDeviceCount) {
+            this.totalDeviceCount = totalDeviceCount;
+        }
+
+        public Integer getTotalNodeCount() {
+            return totalNodeCount;
+        }
+
+        public void setTotalNodeCount(Integer totalNodeCount) {
+            this.totalNodeCount = totalNodeCount;
+        }
+
+        public String getNodeConnectionMethod() {
+            return nodeConnectionMethod;
+        }
+
+        public void setNodeConnectionMethod(String nodeConnectionMethod) {
+            if (StringUtils.hasText(nodeConnectionMethod)) {
+                this.nodeConnectionMethod = nodeConnectionMethod.trim();
+            } else {
+                this.nodeConnectionMethod = null;
+            }
+        }
+
+        public String getMainWorkspaceLocation() {
+            return mainWorkspaceLocation;
+        }
+
+        public void setMainWorkspaceLocation(String mainWorkspaceLocation) {
+            if (StringUtils.hasText(mainWorkspaceLocation)) {
+                this.mainWorkspaceLocation = mainWorkspaceLocation.trim();
+            } else {
+                this.mainWorkspaceLocation = null;
+            }
         }
 
         private String trim(String value) {

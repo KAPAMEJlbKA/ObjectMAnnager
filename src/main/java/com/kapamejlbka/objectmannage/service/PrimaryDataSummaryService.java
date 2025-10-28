@@ -435,10 +435,17 @@ public class PrimaryDataSummaryService {
         List<PrimaryDataSummary.MaterialTotal> mountingTotals = buildMaterialTotals(mountingElementTotals);
         String overallMaterialSummaryText = buildOverallMaterialSummary(materialTotals);
 
+        int declaredDeviceCount = snapshot.getTotalDeviceCount() != null && snapshot.getTotalDeviceCount() > 0
+                ? snapshot.getTotalDeviceCount()
+                : totalDevices;
+        int declaredNodeCount = snapshot.getTotalNodeCount() != null && snapshot.getTotalNodeCount() > 0
+                ? snapshot.getTotalNodeCount()
+                : nodeSummaries.size();
+
         PrimaryDataSummary.Builder builder = PrimaryDataSummary.builder()
                 .withHasData(true)
-                .withTotalDeviceCount(totalDevices)
-                .withTotalNodes(nodeSummaries.size())
+                .withTotalDeviceCount(declaredDeviceCount)
+                .withTotalNodes(declaredNodeCount)
                 .withUnnamedConnectionAssignments(unnamedAssignments)
                 .withDeclaredConnectionAssignments(declaredAssignments)
                 .withTotalCableLength(totalCableLength)
