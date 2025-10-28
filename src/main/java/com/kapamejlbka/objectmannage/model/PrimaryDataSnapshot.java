@@ -10,6 +10,7 @@ public class PrimaryDataSnapshot {
     private List<ConnectionPoint> connectionPoints = new ArrayList<>();
     private List<MountingRequirement> mountingElements = new ArrayList<>();
     private List<MaterialGroup> materialGroups = new ArrayList<>();
+    private List<Workspace> workspaces = new ArrayList<>();
     private int totalConnectionPoints;
     private Integer totalDeviceCount;
     private Integer totalNodeCount;
@@ -48,6 +49,14 @@ public class PrimaryDataSnapshot {
 
     public void setMaterialGroups(List<MaterialGroup> materialGroups) {
         this.materialGroups = materialGroups;
+    }
+
+    public List<Workspace> getWorkspaces() {
+        return workspaces;
+    }
+
+    public void setWorkspaces(List<Workspace> workspaces) {
+        this.workspaces = workspaces;
     }
 
     public int getTotalConnectionPoints() {
@@ -104,6 +113,45 @@ public class PrimaryDataSnapshot {
 
     public void setWorkspaceCount(Integer workspaceCount) {
         this.workspaceCount = workspaceCount;
+    }
+
+    public static class Workspace {
+        private String name;
+        private String location;
+        private String equipment;
+        private String assignedNode;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getLocation() {
+            return location;
+        }
+
+        public void setLocation(String location) {
+            this.location = location;
+        }
+
+        public String getEquipment() {
+            return equipment;
+        }
+
+        public void setEquipment(String equipment) {
+            this.equipment = equipment;
+        }
+
+        public String getAssignedNode() {
+            return assignedNode;
+        }
+
+        public void setAssignedNode(String assignedNode) {
+            this.assignedNode = assignedNode;
+        }
     }
 
     public static class DeviceGroup {
