@@ -1,11 +1,8 @@
 package com.kapamejlbka.objectmanager.web;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kapamejlbka.objectmanager.model.MapProvider;
 import com.kapamejlbka.objectmanager.model.ManagedObject;
 import com.kapamejlbka.objectmanager.model.ObjectChange;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot;
 import com.kapamejlbka.objectmanager.model.PrimaryDataSummary;
 import com.kapamejlbka.objectmanager.repository.ObjectChangeRepository;
 import com.kapamejlbka.objectmanager.service.ApplicationSettingsService;
@@ -15,7 +12,6 @@ import com.kapamejlbka.objectmanager.service.PrimaryDataSummaryService;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -34,20 +30,17 @@ public class ObjectViewController extends ObjectController {
     private final ApplicationSettingsService applicationSettingsService;
     private final PrimaryDataSummaryService primaryDataSummaryService;
     private final PdfReportService pdfReportService;
-    private final ObjectMapper objectMapper;
 
     public ObjectViewController(ManagedObjectService managedObjectService,
                                 ObjectChangeRepository objectChangeRepository,
                                 ApplicationSettingsService applicationSettingsService,
                                 PrimaryDataSummaryService primaryDataSummaryService,
-                                PdfReportService pdfReportService,
-                                ObjectProvider<ObjectMapper> objectMapperProvider) {
+                                PdfReportService pdfReportService) {
         this.managedObjectService = managedObjectService;
         this.objectChangeRepository = objectChangeRepository;
         this.applicationSettingsService = applicationSettingsService;
         this.primaryDataSummaryService = primaryDataSummaryService;
         this.pdfReportService = pdfReportService;
-        this.objectMapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
     }
 
     @GetMapping
@@ -66,7 +59,7 @@ public class ObjectViewController extends ObjectController {
         model.addAttribute("mapProvider", mapProvider);
         model.addAttribute("coordinateDisplay", formatCoordinates(managedObject.getLatitude(), managedObject.getLongitude()));
         model.addAttribute("mapLink", buildMapLink(mapProvider, managedObject.getLatitude(), managedObject.getLongitude()));
-        PrimaryDataSummary primarySummary = primaryDataSummaryService.summarize(managedObject.getPrimaryData());
+        PrimaryDataSummary primarySummary = primaryDataSummaryService.buildSummary(managedObject.getPrimaryData());
         model.addAttribute("primarySummary", primarySummary);
         return "objects/detail";
     }
@@ -74,9 +67,7 @@ public class ObjectViewController extends ObjectController {
     @GetMapping("/{id}/report.pdf")
     public ResponseEntity<byte[]> downloadReport(@PathVariable UUID id) {
         ManagedObject managedObject = managedObjectService.getById(id);
-        PrimaryDataSummary summary = primaryDataSummaryService.summarize(managedObject.getPrimaryData());
-        PrimaryDataSnapshot snapshot = parseSnapshot(managedObject.getPrimaryData());
-        byte[] pdf = pdfReportService.buildObjectReport(managedObject, snapshot, summary);
+        byte[] pdf = pdfReportService.buildObjectReport(id);
         ContentDisposition disposition = ContentDisposition.attachment()
                 .filename(buildReportFileName(managedObject), StandardCharsets.UTF_8)
                 .build();
@@ -84,17 +75,6 @@ public class ObjectViewController extends ObjectController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
                 .body(pdf);
-    }
-
-    private PrimaryDataSnapshot parseSnapshot(String primaryData) {
-        if (!StringUtils.hasText(primaryData)) {
-            return new PrimaryDataSnapshot();
-        }
-        try {
-            return objectMapper.readValue(primaryData, PrimaryDataSnapshot.class);
-        } catch (JsonProcessingException e) {
-            return new PrimaryDataSnapshot();
-        }
     }
 
     private String buildReportFileName(ManagedObject managedObject) {
