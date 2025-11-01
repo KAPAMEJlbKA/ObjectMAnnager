@@ -19,16 +19,20 @@ public class ReferenceDataInitializer implements ApplicationRunner {
 
     private final DeviceTypeRepository deviceTypeRepository;
     private final CableTypeRepository cableTypeRepository;
+    private final UserService userService;
 
     public ReferenceDataInitializer(DeviceTypeRepository deviceTypeRepository,
-                                    CableTypeRepository cableTypeRepository) {
+                                    CableTypeRepository cableTypeRepository,
+                                    UserService userService) {
         this.deviceTypeRepository = deviceTypeRepository;
         this.cableTypeRepository = cableTypeRepository;
+        this.userService = userService;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        userService.createAdminIfNotExists();
         ensureDeviceTypes();
         ensureCableTypes();
     }
