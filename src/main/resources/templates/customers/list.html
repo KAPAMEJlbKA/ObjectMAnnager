@@ -1,24 +1,11 @@
-<!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{layout :: layout(~{::title}, 'customers', ~{::content}, ~{::extraHead}, ~{::extraScripts})}">
 <head>
-    <meta charset="UTF-8">
     <title>Заказчики</title>
-    <link rel="stylesheet" href="/css/main.css">
+    <th:block th:fragment="extraHead"></th:block>
 </head>
 <body>
-<header class="topbar">
-    <h1>Object Manager</h1>
-    <nav>
-        <a href="/objects">Объекты</a>
-        <a href="/customers" class="active">Заказчики</a>
-        <a href="/admin" sec:authorize="hasRole('ADMIN')">Администрирование</a>
-        <form method="post" action="/logout">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <button type="submit" class="link-button">Выход</button>
-        </form>
-    </nav>
-</header>
-<main class="content">
+<th:block th:fragment="content">
     <section class="card">
         <h2>Создать заказчика</h2>
         <form method="post" action="/customers" class="grid-form" th:object="${form}">
@@ -97,61 +84,60 @@
             </tbody>
         </table>
     </section>
-</main>
-<footer class="footer">
-    <p>Object Manager &copy; 2025</p>
-</footer>
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const container = document.getElementById('customer-phones');
-        const addButton = document.getElementById('add-phone');
-        const template = document.getElementById('phone-template');
+</th:block>
+<th:block th:fragment="extraScripts">
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('customer-phones');
+            const addButton = document.getElementById('add-phone');
+            const template = document.getElementById('phone-template');
 
-        function reindexRows() {
-            const rows = container.querySelectorAll('.phone-row');
-            rows.forEach((row, index) => {
-                row.dataset.index = index.toString();
-                const input = row.querySelector('input');
-                if (input) {
-                    input.name = `contactPhones[${index}]`;
-                }
-                const removeButton = row.querySelector('.remove-phone');
-                if (removeButton) {
-                    removeButton.style.display = index === 0 ? 'none' : '';
-                }
-            });
-        }
-
-        if (addButton) {
-            addButton.addEventListener('click', () => {
-                if (!(template instanceof HTMLTemplateElement)) {
-                    return;
-                }
-                const fragment = template.content.firstElementChild?.cloneNode(true);
-                if (!(fragment instanceof HTMLElement)) {
-                    return;
-                }
-                container.appendChild(fragment);
-                reindexRows();
-            });
-        }
-
-        container?.addEventListener('click', (event) => {
-            const target = event.target;
-            if (!(target instanceof HTMLElement)) {
-                return;
+            function reindexRows() {
+                const rows = container.querySelectorAll('.phone-row');
+                rows.forEach((row, index) => {
+                    row.dataset.index = index.toString();
+                    const input = row.querySelector('input');
+                    if (input) {
+                        input.name = `contactPhones[${index}]`;
+                    }
+                    const removeButton = row.querySelector('.remove-phone');
+                    if (removeButton) {
+                        removeButton.style.display = index === 0 ? 'none' : '';
+                    }
+                });
             }
-            if (target.classList.contains('remove-phone')) {
-                const row = target.closest('.phone-row');
-                if (row && container.children.length > 1) {
-                    row.remove();
+
+            if (addButton) {
+                addButton.addEventListener('click', () => {
+                    if (!(template instanceof HTMLTemplateElement)) {
+                        return;
+                    }
+                    const fragment = template.content.firstElementChild?.cloneNode(true);
+                    if (!(fragment instanceof HTMLElement)) {
+                        return;
+                    }
+                    container.appendChild(fragment);
                     reindexRows();
-                }
+                });
             }
-        });
 
-        reindexRows();
-    });
-</script>
+            container?.addEventListener('click', (event) => {
+                const target = event.target;
+                if (!(target instanceof HTMLElement)) {
+                    return;
+                }
+                if (target.classList.contains('remove-phone')) {
+                    const row = target.closest('.phone-row');
+                    if (row && container.children.length > 1) {
+                        row.remove();
+                        reindexRows();
+                    }
+                }
+            });
+
+            reindexRows();
+        });
+    </script>
+</th:block>
 </body>
 </html>
