@@ -133,8 +133,8 @@
                     <form method="post" action="/admin/settings/map-provider" class="inline-form" th:object="${mapSettingsForm}">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <select th:field="*{mapProvider}">
-                            <option th:value="${T(com.kapamejlbka.objectmannage.model.MapProvider).YANDEX}">Яндекс.Карты</option>
-                            <option th:value="${T(com.kapamejlbka.objectmannage.model.MapProvider).GOOGLE}">Google Maps</option>
+                            <option th:value="${T(com.kapamejlbka.objectmanager.model.MapProvider).YANDEX}">Яндекс.Карты</option>
+                            <option th:value="${T(com.kapamejlbka.objectmanager.model.MapProvider).GOOGLE}">Google Maps</option>
                         </select>
                         <button type="submit">Сохранить</button>
                     </form>
@@ -382,7 +382,7 @@
                                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                     <input type="text" th:field="*{name}" placeholder="UTP 5e" required>
                                     <select th:field="*{function}">
-                                        <option th:each="function : ${T(com.kapamejlbka.objectmannage.model.CableFunction).values()}"
+                                        <option th:each="function : ${T(com.kapamejlbka.objectmanager.model.CableFunction).values()}"
                                                 th:value="${function}"
                                                 th:text="${function.displayName}"></option>
                                     </select>

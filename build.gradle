@@ -51,7 +51,7 @@ dependencies {
 }
 
 springBoot {
-    mainClass = 'com.kapamejlbka.objectmannage.ObjectmannageApplication'
+    mainClass = 'com.kapamejlbka.objectmanager.ObjectManagerApplication'
 }
 
 tasks.named('test') {
