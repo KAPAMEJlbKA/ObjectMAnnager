@@ -39,6 +39,14 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @Transactional
+    public void createAdminIfNotExists() {
+        if (userRepository.count() > 0) {
+            return;
+        }
+        createUser("admin", "admin", true);
+    }
+
     public void ensureDefaultUsers() {
         if (userRepository.findByUsernameIgnoreCase("admin").isEmpty()) {
             createUser("admin", "admin", true);
