@@ -1,16 +1,26 @@
 services:
+  app:
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/objectmannager
+      SPRING_DATASOURCE_USERNAME: objectmannager
+      SPRING_DATASOURCE_PASSWORD: secret
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+    depends_on:
+      - db
   activemq:
     image: 'apache/activemq-classic:latest'
     ports:
       - '61616'
-  postgres:
-    image: 'postgres:latest'
+  db:
+    image: 'postgres:15'
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      POSTGRES_DB: objectmannager
+      POSTGRES_PASSWORD: secret
+      POSTGRES_USER: objectmannager
     ports:
-      - '5432'
+      - '5432:5432'
+    volumes:
+      - db_data:/var/lib/postgresql/data
   pulsar:
     image: 'apachepulsar/pulsar:latest'
     ports:
@@ -21,3 +31,5 @@ services:
     image: 'openzipkin/zipkin:latest'
     ports:
       - '9411'
+volumes:
+  db_data:
