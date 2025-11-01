@@ -122,6 +122,7 @@ public class ManagedObjectService {
             recordChange(managedObject, editor, ObjectChangeType.UPDATED,
                     "primaryData", managedObject.getPrimaryData(), primaryData);
             managedObject.setPrimaryData(primaryData);
+            managedObject.setPrimaryDataVersion(2);
             managedObject.setUpdatedAt(LocalDateTime.now());
             managedObjectRepository.save(managedObject);
         }

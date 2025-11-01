@@ -37,6 +37,9 @@ public class ManagedObject {
     @Column
     private String primaryData;
 
+    @Column(name = "primary_data_version")
+    private Integer primaryDataVersion;
+
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
     private ProjectCustomer customer;
@@ -66,6 +69,7 @@ public class ManagedObject {
     private List<ObjectChange> changes = new ArrayList<>();
 
     public ManagedObject() {
+        this.primaryDataVersion = 1;
     }
 
     public ManagedObject(String name, String description, String primaryData,
@@ -78,6 +82,7 @@ public class ManagedObject {
         this.longitude = longitude;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
+        this.primaryDataVersion = 1;
     }
 
     public UUID getId() {
@@ -106,6 +111,14 @@ public class ManagedObject {
 
     public void setPrimaryData(String primaryData) {
         this.primaryData = primaryData;
+    }
+
+    public Integer getPrimaryDataVersion() {
+        return primaryDataVersion;
+    }
+
+    public void setPrimaryDataVersion(Integer primaryDataVersion) {
+        this.primaryDataVersion = primaryDataVersion;
     }
 
     public ProjectCustomer getCustomer() {
