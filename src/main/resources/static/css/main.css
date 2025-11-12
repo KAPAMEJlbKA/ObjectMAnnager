@@ -104,6 +104,10 @@ body {
     flex-wrap: wrap;
 }
 
+.card-actions form {
+    margin: 0;
+}
+
 .card h2, .card h3 {
     margin-top: 0;
 }
@@ -198,6 +202,25 @@ button:hover {
     color: #991b1b;
     padding: 0.75rem 1rem;
     border-radius: 8px;
+}
+
+.flash {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+.flash.success {
+    background: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.flash.error {
+    background: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #fecaca;
 }
 
 .inline-form {
@@ -597,6 +620,41 @@ button:hover {
 
 .connections-actions button {
     padding: 0.5rem 1rem;
+}
+
+.pagination {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+}
+
+.page-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 999px;
+    background: #e5e7eb;
+    color: var(--text-color);
+    text-decoration: none;
+    font-weight: 600;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.page-link:hover {
+    background: #cbd5f5;
+}
+
+.page-link.active {
+    background: var(--primary);
+    color: #fff;
+}
+
+.page-link.disabled {
+    pointer-events: none;
+    opacity: 0.5;
 }
 
 .upload-form {
