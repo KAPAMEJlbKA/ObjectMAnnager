@@ -21,6 +21,7 @@
     <nav>
         <a href="/" class="@("".equals(activePage) ? "active" : "")">Главная</a>
         <a href="/sites" class="@(activePage.equals("sites") ? "active" : "")">Площадки</a>
+        <a href="/devices" class="@(activePage.equals("devices") ? "active" : "")">Оборудование</a>
     </nav>
 </header>
 <main class="content">

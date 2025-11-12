@@ -6,9 +6,11 @@ import com.kapamejlbka.objectmannage.web.form.SiteForm;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -58,5 +60,10 @@ public class SiteService {
         Site site = siteRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Site not found: " + id));
         siteRepository.delete(site);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Site> findAllSorted() {
+        return siteRepository.findAll(Sort.by(Sort.Direction.ASC, "name"));
     }
 }

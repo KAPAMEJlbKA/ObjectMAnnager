@@ -1,0 +1,64 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-device-table
+      author: assistant
+      changes:
+        - createTable:
+            tableName: device
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: site_id
+                  type: uuid
+                  constraints:
+                    nullable: false
+              - column:
+                  name: type
+                  type: varchar(20)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: model
+                  type: varchar(100)
+              - column:
+                  name: serial
+                  type: varchar(100)
+              - column:
+                  name: ip
+                  type: varchar(45)
+              - column:
+                  name: location_note
+                  type: varchar(255)
+              - column:
+                  name: installed_at
+                  type: date
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: device
+            baseColumnNames: site_id
+            referencedTableName: site
+            referencedColumnNames: id
+            constraintName: fk_device_site
+            onDelete: CASCADE
+        - addCheckConstraint:
+            tableName: device
+            constraintName: chk_device_type
+            checkConstraint: "type IN ('CAMERA','NVR','SWITCH','ACCESS_POINT','OTHER')"
+        - createIndex:
+            tableName: device
+            indexName: idx_device_site_type
+            columns:
+              - column:
+                  name: site_id
+              - column:
+                  name: type
