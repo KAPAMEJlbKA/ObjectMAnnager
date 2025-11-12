@@ -1,0 +1,37 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-site-table
+      author: assistant
+      changes:
+        - createTable:
+            tableName: site
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(100)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: city
+                  type: varchar(80)
+              - column:
+                  name: address
+                  type: varchar(255)
+              - column:
+                  name: contact_name
+                  type: varchar(80)
+              - column:
+                  name: contact_phone
+                  type: varchar(32)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
