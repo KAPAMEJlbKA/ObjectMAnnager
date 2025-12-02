@@ -10,7 +10,7 @@ import org.hibernate.annotations.UuidGenerator;
 import java.time.Instant;
 import java.util.UUID;
 
-@Entity
+@Entity(name = "LegacySite")
 @Table(name = "site")
 public class Site {
 
