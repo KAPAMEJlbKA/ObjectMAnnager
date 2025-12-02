@@ -6,7 +6,9 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.springframework.stereotype.Component;
 
+@Component
 public class ExpressionEvaluator {
 
     private enum TokenType {
