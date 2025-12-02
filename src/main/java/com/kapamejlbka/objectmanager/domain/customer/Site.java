@@ -4,33 +4,37 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import java.util.List;
 
 @Entity
-@Table(name = "customers")
-public class Customer {
+@Table(name = "sites")
+public class Site {
 
     @Id
     @GeneratedValue
     private Long id;
 
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "customer_id", nullable = false)
+    private Customer customer;
+
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "tax_number")
-    private String taxNumber;
+    @Column(columnDefinition = "text")
+    private String description;
 
-    private String country;
+    private Double latitude;
 
-    private String city;
+    private Double longitude;
 
-    @Column(name = "address_line")
-    private String addressLine;
+    @Column(name = "full_address")
+    private String fullAddress;
 
     @Column(name = "contact_name")
     private String contactName;
@@ -44,17 +48,14 @@ public class Customer {
     @Column(name = "contact_email")
     private String contactEmail;
 
-    @Column(columnDefinition = "text")
-    private String notes;
+    @Column(name = "use_customer_contact")
+    private boolean useCustomerContact;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    @OneToMany(mappedBy = "customer")
-    private List<Site> sites;
 
     @PrePersist
     public void prePersist() {
@@ -76,6 +77,14 @@ public class Customer {
         return id;
     }
 
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public void setCustomer(Customer customer) {
+        this.customer = customer;
+    }
+
     public String getName() {
         return name;
     }
@@ -84,36 +93,36 @@ public class Customer {
         this.name = name;
     }
 
-    public String getTaxNumber() {
-        return taxNumber;
+    public String getDescription() {
+        return description;
     }
 
-    public void setTaxNumber(String taxNumber) {
-        this.taxNumber = taxNumber;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    public String getCountry() {
-        return country;
+    public Double getLatitude() {
+        return latitude;
     }
 
-    public void setCountry(String country) {
-        this.country = country;
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
     }
 
-    public String getCity() {
-        return city;
+    public Double getLongitude() {
+        return longitude;
     }
 
-    public void setCity(String city) {
-        this.city = city;
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
     }
 
-    public String getAddressLine() {
-        return addressLine;
+    public String getFullAddress() {
+        return fullAddress;
     }
 
-    public void setAddressLine(String addressLine) {
-        this.addressLine = addressLine;
+    public void setFullAddress(String fullAddress) {
+        this.fullAddress = fullAddress;
     }
 
     public String getContactName() {
@@ -148,12 +157,12 @@ public class Customer {
         this.contactEmail = contactEmail;
     }
 
-    public String getNotes() {
-        return notes;
+    public boolean isUseCustomerContact() {
+        return useCustomerContact;
     }
 
-    public void setNotes(String notes) {
-        this.notes = notes;
+    public void setUseCustomerContact(boolean useCustomerContact) {
+        this.useCustomerContact = useCustomerContact;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -170,13 +179,5 @@ public class Customer {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
-    }
-
-    public List<Site> getSites() {
-        return sites;
-    }
-
-    public void setSites(List<Site> sites) {
-        this.sites = sites;
     }
 }
