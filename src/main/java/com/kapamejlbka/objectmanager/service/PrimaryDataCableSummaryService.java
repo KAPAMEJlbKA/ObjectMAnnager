@@ -1,12 +1,12 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.CableFunction;
-import com.kapamejlbka.objectmanager.model.CableType;
-import com.kapamejlbka.objectmanager.model.DeviceCableProfile;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot;
-import com.kapamejlbka.objectmanager.model.SurfaceType;
-import com.kapamejlbka.objectmanager.repository.CableTypeRepository;
-import com.kapamejlbka.objectmanager.repository.DeviceCableProfileRepository;
+import com.kapamejlbka.objectmanager.domain.device.CableFunction;
+import com.kapamejlbka.objectmanager.domain.device.CableType;
+import com.kapamejlbka.objectmanager.domain.device.DeviceCableProfile;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot;
+import com.kapamejlbka.objectmanager.domain.device.SurfaceType;
+import com.kapamejlbka.objectmanager.domain.device.repository.CableTypeRepository;
+import com.kapamejlbka.objectmanager.domain.device.repository.DeviceCableProfileRepository;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;

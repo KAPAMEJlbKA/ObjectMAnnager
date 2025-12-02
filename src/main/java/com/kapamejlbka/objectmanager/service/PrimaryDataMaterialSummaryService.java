@@ -1,16 +1,16 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot.ConnectionPoint;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot.MaterialGroup;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot.MaterialUsage;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot.MountingMaterial;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot.MountingRequirement;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.MaterialGroupSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.MaterialUsageSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.NodeSummary;
-import com.kapamejlbka.objectmanager.model.SurfaceType;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot.ConnectionPoint;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot.MaterialGroup;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot.MaterialUsage;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot.MountingMaterial;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot.MountingRequirement;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.MaterialGroupSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.MaterialUsageSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.NodeSummary;
+import com.kapamejlbka.objectmanager.domain.device.SurfaceType;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.Comparator;

@@ -1,9 +1,9 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.ManagedObject;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.AdditionalMaterialItem;
+import com.kapamejlbka.objectmanager.domain.customer.ManagedObject;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.AdditionalMaterialItem;
 import com.kapamejlbka.objectmanager.service.PrimaryDataParser.ParsingResult;
 import com.kapamejlbka.objectmanager.service.PrimaryDataParser.SchemaVersion;
 import java.io.ByteArrayOutputStream;

@@ -1,6 +1,6 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.CableFunction;
+import com.kapamejlbka.objectmanager.domain.device.CableFunction;
 
 class CableLengthAccumulator {
 

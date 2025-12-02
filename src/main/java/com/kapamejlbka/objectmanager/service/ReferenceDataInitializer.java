@@ -1,10 +1,10 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.CableFunction;
-import com.kapamejlbka.objectmanager.model.CableType;
-import com.kapamejlbka.objectmanager.model.DeviceType;
-import com.kapamejlbka.objectmanager.repository.CableTypeRepository;
-import com.kapamejlbka.objectmanager.repository.DeviceTypeRepository;
+import com.kapamejlbka.objectmanager.domain.device.CableFunction;
+import com.kapamejlbka.objectmanager.domain.device.CableType;
+import com.kapamejlbka.objectmanager.domain.device.DeviceType;
+import com.kapamejlbka.objectmanager.domain.device.repository.CableTypeRepository;
+import com.kapamejlbka.objectmanager.domain.device.repository.DeviceTypeRepository;
 import jakarta.transaction.Transactional;
 import java.util.HashSet;
 import java.util.Locale;

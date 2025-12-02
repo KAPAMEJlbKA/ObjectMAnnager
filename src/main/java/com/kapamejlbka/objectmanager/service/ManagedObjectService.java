@@ -1,15 +1,15 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.ManagedObject;
-import com.kapamejlbka.objectmanager.model.ObjectChange;
-import com.kapamejlbka.objectmanager.model.ObjectChangeType;
-import com.kapamejlbka.objectmanager.model.ProjectCustomer;
-import com.kapamejlbka.objectmanager.model.StoredFile;
+import com.kapamejlbka.objectmanager.domain.customer.ManagedObject;
+import com.kapamejlbka.objectmanager.domain.customer.ObjectChange;
+import com.kapamejlbka.objectmanager.domain.customer.ObjectChangeType;
+import com.kapamejlbka.objectmanager.domain.customer.ProjectCustomer;
+import com.kapamejlbka.objectmanager.domain.customer.StoredFile;
 import com.kapamejlbka.objectmanager.model.UserAccount;
-import com.kapamejlbka.objectmanager.repository.ManagedObjectRepository;
-import com.kapamejlbka.objectmanager.repository.ObjectChangeRepository;
-import com.kapamejlbka.objectmanager.repository.ProjectCustomerRepository;
-import com.kapamejlbka.objectmanager.repository.StoredFileRepository;
+import com.kapamejlbka.objectmanager.domain.customer.repository.ManagedObjectRepository;
+import com.kapamejlbka.objectmanager.domain.customer.repository.ObjectChangeRepository;
+import com.kapamejlbka.objectmanager.domain.customer.repository.ProjectCustomerRepository;
+import com.kapamejlbka.objectmanager.domain.customer.repository.StoredFileRepository;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;

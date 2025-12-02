@@ -1,9 +1,9 @@
 package com.kapamejlbka.objectmanager.service;
 
 import com.kapamejlbka.objectmanager.config.FileStorageProperties;
-import com.kapamejlbka.objectmanager.model.ManagedObject;
-import com.kapamejlbka.objectmanager.model.StoredFile;
-import com.kapamejlbka.objectmanager.repository.StoredFileRepository;
+import com.kapamejlbka.objectmanager.domain.customer.ManagedObject;
+import com.kapamejlbka.objectmanager.domain.customer.StoredFile;
+import com.kapamejlbka.objectmanager.domain.customer.repository.StoredFileRepository;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.nio.file.Files;

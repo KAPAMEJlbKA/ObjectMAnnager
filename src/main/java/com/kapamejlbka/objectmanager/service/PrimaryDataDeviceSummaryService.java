@@ -1,10 +1,10 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.CameraInstallationOption;
-import com.kapamejlbka.objectmanager.model.DeviceTypeRules;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary;
-import com.kapamejlbka.objectmanager.model.SurfaceType;
+import com.kapamejlbka.objectmanager.domain.device.CameraInstallationOption;
+import com.kapamejlbka.objectmanager.domain.device.DeviceTypeRules;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary;
+import com.kapamejlbka.objectmanager.domain.device.SurfaceType;
 import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.EnumMap;

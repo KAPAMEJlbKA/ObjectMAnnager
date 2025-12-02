@@ -1,14 +1,14 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.CableFunction;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.AdditionalMaterialItem;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.CableFunctionSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.CableLengthSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.DeviceTypeSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.MaterialGroupSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.NodeSummary;
+import com.kapamejlbka.objectmanager.domain.device.CableFunction;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.AdditionalMaterialItem;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.CableFunctionSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.CableLengthSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.DeviceTypeSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.MaterialGroupSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.NodeSummary;
 import com.kapamejlbka.objectmanager.service.PrimaryDataDeviceSummaryService.DeviceSummaryResult;
 import com.kapamejlbka.objectmanager.service.PrimaryDataMaterialSummaryService.MaterialSummaryResult;
 import java.util.ArrayList;
