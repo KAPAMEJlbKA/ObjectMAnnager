@@ -4,6 +4,8 @@ import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation;
 import com.kapamejlbka.objectmanager.domain.calculation.dto.SystemCalculationCreateRequest;
 import com.kapamejlbka.objectmanager.domain.calculation.dto.SystemCalculationUpdateRequest;
 import com.kapamejlbka.objectmanager.domain.calculation.repository.SystemCalculationRepository;
+import com.kapamejlbka.objectmanager.domain.calcengine.CalculationEngine;
+import com.kapamejlbka.objectmanager.domain.calcengine.CalculationResult;
 import com.kapamejlbka.objectmanager.domain.customer.Site;
 import com.kapamejlbka.objectmanager.domain.customer.repository.SiteRepository;
 import jakarta.transaction.Transactional;
@@ -17,11 +19,15 @@ public class SystemCalculationService {
 
     private final SystemCalculationRepository systemCalculationRepository;
     private final SiteRepository siteRepository;
+    private final CalculationEngine calculationEngine;
 
     public SystemCalculationService(
-            SystemCalculationRepository systemCalculationRepository, SiteRepository siteRepository) {
+            SystemCalculationRepository systemCalculationRepository,
+            SiteRepository siteRepository,
+            CalculationEngine calculationEngine) {
         this.systemCalculationRepository = systemCalculationRepository;
         this.siteRepository = siteRepository;
+        this.calculationEngine = calculationEngine;
     }
 
     @Transactional
@@ -68,6 +74,10 @@ public class SystemCalculationService {
         calculation.setStatus(normalizedStatus);
         calculation.setUpdatedAt(LocalDateTime.now());
         systemCalculationRepository.save(calculation);
+    }
+
+    public CalculationResult runCalculation(Long calculationId) {
+        return calculationEngine.calculate(calculationId);
     }
 
     private void applyDto(SystemCalculation calculation, SystemCalculationCreateRequest dto) {
