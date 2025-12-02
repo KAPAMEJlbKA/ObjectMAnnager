@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-@Service
+@Service("legacySiteService")
 @Transactional
 public class SiteService {
 
