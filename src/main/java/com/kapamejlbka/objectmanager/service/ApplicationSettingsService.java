@@ -1,7 +1,7 @@
 package com.kapamejlbka.objectmanager.service;
 
 import com.kapamejlbka.objectmanager.model.ApplicationSetting;
-import com.kapamejlbka.objectmanager.model.MapProvider;
+import com.kapamejlbka.objectmanager.domain.topology.MapProvider;
 import com.kapamejlbka.objectmanager.repository.ApplicationSettingRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;

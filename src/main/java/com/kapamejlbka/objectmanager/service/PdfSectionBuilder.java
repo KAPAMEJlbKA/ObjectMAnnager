@@ -1,15 +1,15 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.ManagedObject;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot.MountingMaterial;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot.MountingRequirement;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.AdditionalMaterialItem;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.CableFunctionSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.DeviceTypeSummary;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.MaterialTotal;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary.MaterialUsageSummary;
+import com.kapamejlbka.objectmanager.domain.customer.ManagedObject;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot.MountingMaterial;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot.MountingRequirement;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.AdditionalMaterialItem;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.CableFunctionSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.DeviceTypeSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.MaterialTotal;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary.MaterialUsageSummary;
 import com.kapamejlbka.objectmanager.service.ApplicationSettingsService;
 import com.kapamejlbka.objectmanager.service.ApplicationSettingsService.CompanyLogo;
 import java.io.Closeable;

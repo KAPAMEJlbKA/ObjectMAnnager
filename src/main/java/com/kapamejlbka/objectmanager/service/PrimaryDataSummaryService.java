@@ -1,7 +1,7 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.PrimaryDataSnapshot;
-import com.kapamejlbka.objectmanager.model.PrimaryDataSummary;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot;
+import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSummary;
 import com.kapamejlbka.objectmanager.service.PrimaryDataDeviceSummaryService.DeviceSummaryResult;
 import com.kapamejlbka.objectmanager.service.PrimaryDataMaterialSummaryService.MaterialSummaryResult;
 import org.springframework.stereotype.Service;

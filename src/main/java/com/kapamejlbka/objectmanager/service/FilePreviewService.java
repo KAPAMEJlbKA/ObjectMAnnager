@@ -1,6 +1,6 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.StoredFile;
+import com.kapamejlbka.objectmanager.domain.customer.StoredFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Locale;
