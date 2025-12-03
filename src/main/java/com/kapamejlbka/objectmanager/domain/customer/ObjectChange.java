@@ -1,6 +1,6 @@
 package com.kapamejlbka.objectmanager.domain.customer;
 
-import com.kapamejlbka.objectmanager.model.UserAccount;
+import com.kapamejlbka.objectmanager.domain.user.AppUser;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -29,7 +29,7 @@ public class ObjectChange {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
-    private UserAccount user;
+    private AppUser user;
 
     private LocalDateTime changedAt;
 
@@ -71,11 +71,11 @@ public class ObjectChange {
         this.managedObject = managedObject;
     }
 
-    public UserAccount getUser() {
+    public AppUser getUser() {
         return user;
     }
 
-    public void setUser(UserAccount user) {
+    public void setUser(AppUser user) {
         this.user = user;
     }
 

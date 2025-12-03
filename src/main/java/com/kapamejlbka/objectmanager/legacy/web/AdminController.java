@@ -6,7 +6,7 @@ import com.kapamejlbka.objectmanager.domain.device.DeviceType;
 import com.kapamejlbka.objectmanager.domain.customer.ManagedObject;
 import com.kapamejlbka.objectmanager.domain.topology.MapProvider;
 import com.kapamejlbka.objectmanager.domain.device.MountingElement;
-import com.kapamejlbka.objectmanager.model.UserAccount;
+import com.kapamejlbka.objectmanager.domain.user.AppUser;
 import com.kapamejlbka.objectmanager.domain.device.InstallationMaterial;
 import com.kapamejlbka.objectmanager.domain.customer.repository.ProjectCustomerRepository;
 import com.kapamejlbka.objectmanager.domain.device.repository.CableTypeRepository;
@@ -134,14 +134,14 @@ public class AdminController {
 
     @PostMapping("/admin/objects/{id}/delete")
     public String deleteObject(@PathVariable UUID id, Principal principal) {
-        UserAccount admin = userService.findByUsername(principal.getName());
+        AppUser admin = userService.getByUsername(principal.getName());
         managedObjectService.deletePermanently(id, admin);
         return "redirect:/admin";
     }
 
     @PostMapping("/admin/objects/{id}/transfer")
     public String transferObject(@PathVariable UUID id, @ModelAttribute("transferForm") TransferForm form, Principal principal) {
-        UserAccount admin = userService.findByUsername(principal.getName());
+        AppUser admin = userService.getByUsername(principal.getName());
         ManagedObject current = managedObjectService.getById(id);
         String name = form.getName() == null || form.getName().isBlank() ? current.getName() : form.getName();
         String description = form.getDescription() == null || form.getDescription().isBlank() ? current.getDescription() : form.getDescription();

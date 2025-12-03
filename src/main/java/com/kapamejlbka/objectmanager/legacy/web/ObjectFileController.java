@@ -1,7 +1,7 @@
 package com.kapamejlbka.objectmanager.legacy.web;
 
 import com.kapamejlbka.objectmanager.domain.customer.StoredFile;
-import com.kapamejlbka.objectmanager.model.UserAccount;
+import com.kapamejlbka.objectmanager.domain.user.AppUser;
 import com.kapamejlbka.objectmanager.service.FilePreviewService;
 import com.kapamejlbka.objectmanager.service.ManagedObjectService;
 import com.kapamejlbka.objectmanager.service.UserService;
@@ -40,7 +40,7 @@ public class ObjectFileController extends ObjectController {
     public String uploadFile(@PathVariable UUID id,
                              @RequestParam("file") MultipartFile[] files,
                              Principal principal) {
-        UserAccount user = userService.findByUsername(principal.getName());
+        AppUser user = userService.getByUsername(principal.getName());
         for (MultipartFile file : files) {
             if (file != null && !file.isEmpty()) {
                 managedObjectService.addFile(id, file, user);

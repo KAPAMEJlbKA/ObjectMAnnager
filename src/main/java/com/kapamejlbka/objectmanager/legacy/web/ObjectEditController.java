@@ -2,7 +2,7 @@ package com.kapamejlbka.objectmanager.legacy.web;
 
 import com.kapamejlbka.objectmanager.domain.customer.ManagedObject;
 import com.kapamejlbka.objectmanager.domain.customer.ProjectCustomer;
-import com.kapamejlbka.objectmanager.model.UserAccount;
+import com.kapamejlbka.objectmanager.domain.user.AppUser;
 import com.kapamejlbka.objectmanager.domain.customer.repository.ProjectCustomerRepository;
 import com.kapamejlbka.objectmanager.service.ManagedObjectService;
 import com.kapamejlbka.objectmanager.service.UserService;
@@ -85,7 +85,7 @@ public class ObjectEditController extends ObjectController {
         if (bindingResult.hasErrors()) {
             return "objects/create";
         }
-        UserAccount user = userService.findByUsername(principal.getName());
+        AppUser user = userService.getByUsername(principal.getName());
         UUID customerId = form.getCustomerId();
         if (form.isCreateNewCustomer()) {
             ObjectCustomerForm newCustomerForm = form.getNewCustomer();
@@ -112,7 +112,7 @@ public class ObjectEditController extends ObjectController {
 
     @PostMapping("/{id}/request-delete")
     public String requestDelete(@PathVariable UUID id, Principal principal) {
-        UserAccount user = userService.findByUsername(principal.getName());
+        AppUser user = userService.getByUsername(principal.getName());
         managedObjectService.requestDeletion(id, user);
         return "redirect:/objects";
     }

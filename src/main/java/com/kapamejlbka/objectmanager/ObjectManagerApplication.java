@@ -7,7 +7,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @SpringBootApplication(
         scanBasePackages = {
@@ -22,7 +21,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
         "org.springframework.boot.autoconfigure.mongo.MongoReactiveRepositoriesAutoConfiguration",
         "org.springframework.boot.autoconfigure.session.MongoSessionConfiguration"
 })
-@EnableJpaRepositories({"com.kapamejlbka.objectmanager.repository", "com.kapamejlbka.objectmannage.repository"})
 @EnableConfigurationProperties(com.kapamejlbka.objectmanager.config.FileStorageProperties.class)
 public class ObjectManagerApplication {
 

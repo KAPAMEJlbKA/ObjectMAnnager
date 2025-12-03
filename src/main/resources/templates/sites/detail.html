@@ -6,66 +6,77 @@
 </head>
 <body>
 <th:block th:fragment="content">
-    <section class="card">
-        <div class="card-header">
-            <div>
-                <p class="muted">Объект заказчика</p>
-                <h2 th:text="${site.name}"></h2>
-                <a class="link-button" th:href="@{'/customers/' + ${site.customer.id}}" th:text="${site.customer.name}"></a>
-            </div>
-            <div class="card-actions">
-                <a class="button secondary" th:href="@{'/sites/' + ${site.id} + '/edit'}">Редактировать</a>
-                <a class="button" th:href="@{'/sites/' + ${site.id} + '/calculations/new'}">Создать расчёт</a>
-            </div>
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <p class="text-muted mb-1">Объект заказчика</p>
+            <h1 class="h4 mb-0" th:text="${site.name}"></h1>
+            <a class="text-decoration-none" th:href="@{'/customers/' + ${site.customer.id}}" th:text="${site.customer.name}"></a>
         </div>
-        <div class="grid two-columns">
-            <div class="stack">
-                <h3>Информация об объекте</h3>
-                <p><strong>Адрес:</strong> <span th:text="${site.fullAddress != null ? site.fullAddress : '—'}"></span></p>
-                <p><strong>Координаты:</strong>
-                    <span th:if="${site.latitude != null && site.longitude != null}" th:text="${site.latitude} + ', ' + ${site.longitude}"></span>
-                    <span th:if="${site.latitude == null || site.longitude == null}" class="muted">не указано</span>
-                </p>
-                <p><strong>Описание:</strong> <span th:text="${site.description != null ? site.description : '—'}"></span></p>
-            </div>
-            <div class="stack">
-                <h3>Контакт</h3>
-                <p class="muted" th:if="${site.useCustomerContact}">Используется контакт заказчика</p>
-                <p><strong>Имя:</strong> <span th:text="${site.useCustomerContact ? site.customer.contactName : site.contactName}"></span></p>
-                <p><strong>Должность:</strong> <span th:text="${site.useCustomerContact ? site.customer.contactPosition : site.contactPosition}"></span></p>
-                <p><strong>Телефон:</strong> <span th:text="${site.useCustomerContact ? site.customer.contactPhone : site.contactPhone}"></span></p>
-                <p><strong>Email:</strong> <span th:text="${site.useCustomerContact ? site.customer.contactEmail : site.contactEmail}"></span></p>
-            </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" th:href="@{'/sites/' + ${site.id} + '/edit'}">Редактировать</a>
+            <a class="btn btn-primary" th:href="@{'/sites/' + ${site.id} + '/calculations/new'}">Создать расчёт</a>
         </div>
-    </section>
+    </div>
 
-    <section class="card">
-        <div class="card-header">
-            <h3>Расчёты</h3>
-            <a class="button" th:href="@{'/sites/' + ${site.id} + '/calculations/new'}">Создать расчёт</a>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Информация об объекте</h2>
+                    <p class="mb-1"><strong>Адрес:</strong> <span th:text="${site.fullAddress != null ? site.fullAddress : '—'}"></span></p>
+                    <p class="mb-1"><strong>Координаты:</strong>
+                        <span th:if="${site.latitude != null && site.longitude != null}" th:text="${site.latitude} + ', ' + ${site.longitude}"></span>
+                        <span th:if="${site.latitude == null || site.longitude == null}" class="text-muted">не указано</span>
+                    </p>
+                    <p class="mb-0"><strong>Описание:</strong> <span th:text="${site.description != null ? site.description : '—'}"></span></p>
+                </div>
+            </div>
         </div>
-        <p class="muted" th:if="${#lists.isEmpty(calculations)}">Расчёты ещё не созданы.</p>
-        <table class="data-table" th:if="${!#lists.isEmpty(calculations)}">
-            <thead>
-            <tr>
-                <th>Название</th>
-                <th>Тип системы</th>
-                <th>Статус</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="calc : ${calculations}">
-                <td th:text="${calc.name}"></td>
-                <td th:text="${calc.systemType}"></td>
-                <td th:text="${calc.status}"></td>
-                <td class="actions">
-                    <a class="link-button" th:href="@{'/calculations/' + ${calc.id} + '/wizard/step1'}">Открыть расчёт</a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </section>
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Контакт</h2>
+                    <p class="text-muted" th:if="${site.useCustomerContact}">Используется контакт заказчика</p>
+                    <p class="mb-1"><strong>Имя:</strong> <span th:text="${site.useCustomerContact ? site.customer.contactName : site.contactName}"></span></p>
+                    <p class="mb-1"><strong>Должность:</strong> <span th:text="${site.useCustomerContact ? site.customer.contactPosition : site.contactPosition}"></span></p>
+                    <p class="mb-1"><strong>Телефон:</strong> <span th:text="${site.useCustomerContact ? site.customer.contactPhone : site.contactPhone}"></span></p>
+                    <p class="mb-0"><strong>Email:</strong> <span th:text="${site.useCustomerContact ? site.customer.contactEmail : site.contactEmail}"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Расчёты</h2>
+                <a class="btn btn-outline-primary" th:href="@{'/sites/' + ${site.id} + '/calculations/new'}">Создать расчёт</a>
+            </div>
+            <p class="text-muted" th:if="${#lists.isEmpty(calculations)}">Расчёты ещё не созданы.</p>
+            <div class="table-responsive" th:if="${!#lists.isEmpty(calculations)}">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Название</th>
+                        <th>Тип системы</th>
+                        <th>Статус</th>
+                        <th class="text-end"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="calc : ${calculations}">
+                        <td th:text="${calc.name}"></td>
+                        <td th:text="${calc.systemType}"></td>
+                        <td th:text="${calc.status}"></td>
+                        <td class="text-end">
+                            <a class="btn btn-outline-primary btn-sm" th:href="@{'/calculations/' + ${calc.id} + '/wizard/step1'}">Открыть расчёт</a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </th:block>
 <th:block th:fragment="extraScripts"></th:block>
 </body>
