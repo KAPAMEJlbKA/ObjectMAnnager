@@ -1,0 +1,77 @@
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, 'customers', ~{::content}, ~{::extraHead}, ~{::extraScripts})}">
+<head>
+    <title th:text="${customer.name}">Карточка заказчика</title>
+    <th:block th:fragment="extraHead"></th:block>
+</head>
+<body>
+<th:block th:fragment="content">
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <p class="muted">Заказчик</p>
+                <h2 th:text="${customer.name}"></h2>
+            </div>
+            <div class="card-actions">
+                <a class="button" th:href="@{'/customers/' + ${customer.id} + '/sites/new'}">Добавить объект</a>
+            </div>
+        </div>
+        <div class="grid two-columns">
+            <div class="stack">
+                <h3>Реквизиты</h3>
+                <p><strong>УНП:</strong> <span th:text="${customer.taxNumber != null ? customer.taxNumber : '—'}"></span></p>
+                <p><strong>Адрес:</strong>
+                    <span th:text="${customer.addressLine != null ? customer.addressLine : '—'}"></span>
+                    <span th:if="${customer.city != null}" th:text="', ' + ${customer.city}"></span>
+                    <span th:if="${customer.country != null}" th:text="' (' + ${customer.country} + ')'" class="muted"></span>
+                </p>
+                <p><strong>Email:</strong> <span th:text="${customer.contactEmail != null ? customer.contactEmail : '—'}"></span></p>
+                <p><strong>Примечание:</strong> <span th:text="${customer.notes != null ? customer.notes : '—'}"></span></p>
+            </div>
+            <div class="stack">
+                <h3>Контакт</h3>
+                <p><strong>Имя:</strong> <span th:text="${customer.contactName != null ? customer.contactName : '—'}"></span></p>
+                <p><strong>Должность:</strong> <span th:text="${customer.contactPosition != null ? customer.contactPosition : '—'}"></span></p>
+                <p><strong>Телефон:</strong> <span th:text="${customer.contactPhone != null ? customer.contactPhone : '—'}"></span></p>
+                <p><strong>Email:</strong> <span th:text="${customer.contactEmail != null ? customer.contactEmail : '—'}"></span></p>
+            </div>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="card-header">
+            <h3>Объекты</h3>
+            <a class="button" th:href="@{'/customers/' + ${customer.id} + '/sites/new'}">Добавить объект</a>
+        </div>
+        <p class="muted" th:if="${#lists.isEmpty(sites)}">Объекты ещё не добавлены.</p>
+        <table class="data-table" th:if="${!#lists.isEmpty(sites)}">
+            <thead>
+            <tr>
+                <th>Наименование</th>
+                <th>Адрес</th>
+                <th>Координаты</th>
+                <th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="site : ${sites}">
+                <td th:text="${site.name}"></td>
+                <td th:text="${site.fullAddress != null ? site.fullAddress : '—'}"></td>
+                <td>
+                    <span th:if="${site.latitude != null && site.longitude != null}" th:text="${site.latitude} + ', ' + ${site.longitude}"></span>
+                    <span th:if="${site.latitude == null || site.longitude == null}" class="muted">не указано</span>
+                </td>
+                <td class="actions">
+                    <div class="card-actions">
+                        <a class="link-button" th:href="@{'/sites/' + ${site.id}}">Открыть объект</a>
+                        <a class="button secondary" th:href="@{'/sites/' + ${site.id} + '/edit'}">Редактировать</a>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</th:block>
+<th:block th:fragment="extraScripts"></th:block>
+</body>
+</html>

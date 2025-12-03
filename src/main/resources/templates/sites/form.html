@@ -1,0 +1,94 @@
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, 'customers', ~{::content}, ~{::extraHead}, ~{::extraScripts})}">
+<head>
+    <title th:text="${isEdit} ? 'Редактирование объекта' : 'Новый объект'">Объект</title>
+    <th:block th:fragment="extraHead"></th:block>
+</head>
+<body>
+<th:block th:fragment="content">
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <p class="muted" th:text="${customer.name}">Заказчик</p>
+                <h2 th:text="${isEdit} ? 'Редактирование объекта' : 'Новый объект'">Новый объект</h2>
+            </div>
+            <a class="link-button" th:href="@{'/customers/' + ${customer.id}}">Назад к заказчику</a>
+        </div>
+        <p class="field-error" th:if="${error != null}" th:text="${error}"></p>
+        <form class="stack" th:action="${isEdit} ? '/sites/' + ${siteId} : '/customers/' + ${customer.id} + '/sites'" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <div class="grid two-columns">
+                <label class="stack">
+                    <span>Наименование *</span>
+                    <input type="text" name="name" th:value="${siteForm.name}" required>
+                </label>
+                <label class="stack">
+                    <span>Адрес</span>
+                    <input type="text" name="fullAddress" th:value="${siteForm.fullAddress}">
+                </label>
+            </div>
+            <label class="stack">
+                <span>Описание</span>
+                <textarea name="description" rows="3" th:text="${siteForm.description}"></textarea>
+            </label>
+            <div class="grid two-columns">
+                <label class="stack">
+                    <span>Широта</span>
+                    <input type="number" step="any" name="latitude" th:value="${siteForm.latitude}">
+                </label>
+                <label class="stack">
+                    <span>Долгота</span>
+                    <input type="number" step="any" name="longitude" th:value="${siteForm.longitude}">
+                </label>
+            </div>
+            <div class="stack">
+                <label class="checkbox">
+                    <input type="checkbox" id="useCustomerContact" name="useCustomerContact" value="true" th:checked="${siteForm.useCustomerContact}">
+                    <span>Использовать контакт заказчика</span>
+                </label>
+                <div id="contactFields" class="grid two-columns" th:classappend="${siteForm.useCustomerContact} ? ' is-hidden' : ''">
+                    <label class="stack">
+                        <span>Контактное лицо</span>
+                        <input type="text" name="contactName" th:value="${siteForm.contactName}">
+                    </label>
+                    <label class="stack">
+                        <span>Должность</span>
+                        <input type="text" name="contactPosition" th:value="${siteForm.contactPosition}">
+                    </label>
+                    <label class="stack">
+                        <span>Телефон</span>
+                        <input type="text" name="contactPhone" th:value="${siteForm.contactPhone}">
+                    </label>
+                    <label class="stack">
+                        <span>Email</span>
+                        <input type="email" name="contactEmail" th:value="${siteForm.contactEmail}">
+                    </label>
+                </div>
+            </div>
+            <div class="card-actions">
+                <a class="button secondary" th:href="${isEdit} ? '/sites/' + ${siteId} : '/customers/' + ${customer.id}">Отмена</a>
+                <button type="submit" class="button">Сохранить</button>
+            </div>
+        </form>
+    </section>
+</th:block>
+<th:block th:fragment="extraScripts">
+    <script>
+        const checkbox = document.getElementById('useCustomerContact');
+        const contactFields = document.getElementById('contactFields');
+        function toggleContact() {
+            if (!checkbox || !contactFields) return;
+            if (checkbox.checked) {
+                contactFields.classList.add('is-hidden');
+            } else {
+                contactFields.classList.remove('is-hidden');
+            }
+        }
+        if (checkbox) {
+            checkbox.addEventListener('change', toggleContact);
+            toggleContact();
+        }
+    </script>
+</th:block>
+</body>
+</html>
