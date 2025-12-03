@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import com.kapamejlbka.objectmanager.model.UserAccount;
+import com.kapamejlbka.objectmanager.domain.user.AppUser;
 
 @Entity
 @Table(name = "managed_objects")
@@ -61,7 +61,7 @@ public class ManagedObject {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "deletion_requested_by")
-    private UserAccount deletionRequestedBy;
+    private AppUser deletionRequestedBy;
 
     @OneToMany(mappedBy = "managedObject", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<StoredFile> files = new ArrayList<>();
@@ -178,11 +178,11 @@ public class ManagedObject {
         this.deletionRequestedAt = deletionRequestedAt;
     }
 
-    public UserAccount getDeletionRequestedBy() {
+    public AppUser getDeletionRequestedBy() {
         return deletionRequestedBy;
     }
 
-    public void setDeletionRequestedBy(UserAccount deletionRequestedBy) {
+    public void setDeletionRequestedBy(AppUser deletionRequestedBy) {
         this.deletionRequestedBy = deletionRequestedBy;
     }
 

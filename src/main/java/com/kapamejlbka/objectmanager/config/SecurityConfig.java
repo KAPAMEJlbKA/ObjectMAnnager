@@ -1,30 +1,35 @@
 package com.kapamejlbka.objectmanager.config;
 
-import com.kapamejlbka.objectmanager.model.UserAccount;
-import com.kapamejlbka.objectmanager.repository.UserAccountRepository;
+import com.kapamejlbka.objectmanager.service.AppUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
+@EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+
+    private final AppUserDetailsService userDetailsService;
+
+    public SecurityConfig(AppUserDetailsService userDetailsService) {
+        this.userDetailsService = userDetailsService;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/css/**", "/login").permitAll()
+                        .requestMatchers("/login", "/css/**", "/js/**", "/images/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/objects/**").authenticated()
-                        .anyRequest().authenticated())
+                        .anyRequest().hasAnyRole("ADMIN", "ENGINEER", "VIEWER"))
                 .formLogin(form -> form
                         .loginPage("/login")
                         .defaultSuccessUrl("/customers", true)
@@ -33,7 +38,8 @@ public class SecurityConfig {
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")
                         .permitAll())
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"));
+                .httpBasic(AbstractHttpConfigurer::disable)
+                .userDetailsService(userDetailsService);
         http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
         return http.build();
     }
@@ -41,21 +47,5 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public UserDetailsService userDetailsService(UserAccountRepository repository) {
-        return username -> {
-            UserAccount account = repository.findByUsernameIgnoreCase(username)
-                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
-            String[] roles = account.getRoles().stream()
-                    .map(role -> role.replace("ROLE_", ""))
-                    .toArray(String[]::new);
-            return User.withUsername(account.getUsername())
-                    .password(account.getPassword())
-                    .roles(roles)
-                    .accountLocked(!account.isEnabled())
-                    .build();
-        };
     }
 }

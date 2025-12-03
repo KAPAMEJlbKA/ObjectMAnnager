@@ -5,7 +5,7 @@ import com.kapamejlbka.objectmanager.domain.customer.ObjectChange;
 import com.kapamejlbka.objectmanager.domain.customer.ObjectChangeType;
 import com.kapamejlbka.objectmanager.domain.customer.ProjectCustomer;
 import com.kapamejlbka.objectmanager.domain.customer.StoredFile;
-import com.kapamejlbka.objectmanager.model.UserAccount;
+import com.kapamejlbka.objectmanager.domain.user.AppUser;
 import com.kapamejlbka.objectmanager.domain.customer.repository.ManagedObjectRepository;
 import com.kapamejlbka.objectmanager.domain.customer.repository.ObjectChangeRepository;
 import com.kapamejlbka.objectmanager.domain.customer.repository.ProjectCustomerRepository;
@@ -58,7 +58,7 @@ public class ManagedObjectService {
     @Transactional
     public ManagedObject create(String name, String description,
                                UUID customerId, Double latitude, Double longitude,
-                               UserAccount creator) {
+                               AppUser creator) {
         ProjectCustomer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
         ManagedObject managedObject = new ManagedObject(name, description, null, customer, latitude, longitude);
@@ -76,7 +76,7 @@ public class ManagedObjectService {
     @Transactional
     public ManagedObject update(UUID id, String name, String description, String primaryData,
                                UUID customerId, Double latitude, Double longitude,
-                               UserAccount editor) {
+                               AppUser editor) {
         ManagedObject managedObject = getById(id);
         ProjectCustomer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
@@ -116,7 +116,7 @@ public class ManagedObjectService {
     }
 
     @Transactional
-    public ManagedObject updatePrimaryData(UUID id, String primaryData, UserAccount editor) {
+    public ManagedObject updatePrimaryData(UUID id, String primaryData, AppUser editor) {
         ManagedObject managedObject = getById(id);
         if (!Objects.equals(managedObject.getPrimaryData(), primaryData)) {
             recordChange(managedObject, editor, ObjectChangeType.UPDATED,
@@ -130,7 +130,7 @@ public class ManagedObjectService {
     }
 
     @Transactional
-    public StoredFile addFile(UUID objectId, MultipartFile file, UserAccount uploader) {
+    public StoredFile addFile(UUID objectId, MultipartFile file, AppUser uploader) {
         ManagedObject managedObject = getById(objectId);
         StoredFile storedFile = storageService.store(managedObject, file);
         managedObject.addFile(storedFile);
@@ -152,7 +152,7 @@ public class ManagedObjectService {
     }
 
     @Transactional
-    public void requestDeletion(UUID objectId, UserAccount requester) {
+    public void requestDeletion(UUID objectId, AppUser requester) {
         ManagedObject managedObject = getById(objectId);
         managedObject.setDeletionRequested(true);
         managedObject.setDeletionRequestedAt(LocalDateTime.now());
@@ -163,7 +163,7 @@ public class ManagedObjectService {
     }
 
     @Transactional
-    public void revokeDeletion(UUID objectId, UserAccount requester) {
+    public void revokeDeletion(UUID objectId, AppUser requester) {
         ManagedObject managedObject = getById(objectId);
         managedObject.setDeletionRequested(false);
         managedObject.setDeletionRequestedAt(null);
@@ -173,7 +173,7 @@ public class ManagedObjectService {
     }
 
     @Transactional
-    public void deletePermanently(UUID objectId, UserAccount admin) {
+    public void deletePermanently(UUID objectId, AppUser admin) {
         ManagedObject managedObject = getById(objectId);
         managedObject.getFiles().forEach(storageService::deleteFile);
         recordChange(managedObject, admin, ObjectChangeType.DELETED, null, null,
@@ -181,7 +181,7 @@ public class ManagedObjectService {
         managedObjectRepository.delete(managedObject);
     }
 
-    private void recordChange(ManagedObject managedObject, UserAccount user, ObjectChangeType type,
+    private void recordChange(ManagedObject managedObject, AppUser user, ObjectChangeType type,
                               String field, String oldValue, String newValue) {
         String summary;
         if (type == ObjectChangeType.FILE_ATTACHED) {
@@ -218,7 +218,7 @@ public class ManagedObjectService {
         objectChangeRepository.save(change);
     }
 
-    private String buildChangeSummary(UserAccount user, String field) {
+    private String buildChangeSummary(AppUser user, String field) {
         String username = user != null ? user.getUsername() : "Система";
         String section = describeSection(field);
         return username + " изменил " + section;

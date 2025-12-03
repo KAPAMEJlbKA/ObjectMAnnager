@@ -12,7 +12,7 @@ import com.kapamejlbka.objectmanager.domain.customer.ManagedObject;
 import com.kapamejlbka.objectmanager.domain.device.MountingElement;
 import com.kapamejlbka.objectmanager.domain.calculation.PrimaryDataSnapshot;
 import com.kapamejlbka.objectmanager.domain.device.SurfaceType;
-import com.kapamejlbka.objectmanager.model.UserAccount;
+import com.kapamejlbka.objectmanager.domain.user.AppUser;
 import com.kapamejlbka.objectmanager.domain.device.repository.CableTypeRepository;
 import com.kapamejlbka.objectmanager.domain.device.repository.DeviceTypeRepository;
 import com.kapamejlbka.objectmanager.domain.device.repository.InstallationMaterialRepository;
@@ -127,7 +127,7 @@ public class ObjectPrimaryDataController extends ObjectController {
             prepareWizardModel(model, managedObject, form, determineWizardErrorStep(bindingResult));
             return "objects/primary-wizard";
         }
-        UserAccount editor = userService.findByUsername(principal.getName());
+        AppUser editor = userService.getByUsername(principal.getName());
         managedObjectService.updatePrimaryData(id, json, editor);
         return "redirect:/objects/" + id;
     }

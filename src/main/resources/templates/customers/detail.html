@@ -6,71 +6,80 @@
 </head>
 <body>
 <th:block th:fragment="content">
-    <section class="card">
-        <div class="card-header">
-            <div>
-                <p class="muted">Заказчик</p>
-                <h2 th:text="${customer.name}"></h2>
-            </div>
-            <div class="card-actions">
-                <a class="button" th:href="@{'/customers/' + ${customer.id} + '/sites/new'}">Добавить объект</a>
-            </div>
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <p class="text-muted mb-1">Заказчик</p>
+            <h1 class="h3" th:text="${customer.name}"></h1>
         </div>
-        <div class="grid two-columns">
-            <div class="stack">
-                <h3>Реквизиты</h3>
-                <p><strong>УНП:</strong> <span th:text="${customer.taxNumber != null ? customer.taxNumber : '—'}"></span></p>
-                <p><strong>Адрес:</strong>
-                    <span th:text="${customer.addressLine != null ? customer.addressLine : '—'}"></span>
-                    <span th:if="${customer.city != null}" th:text="', ' + ${customer.city}"></span>
-                    <span th:if="${customer.country != null}" th:text="' (' + ${customer.country} + ')'" class="muted"></span>
-                </p>
-                <p><strong>Email:</strong> <span th:text="${customer.contactEmail != null ? customer.contactEmail : '—'}"></span></p>
-                <p><strong>Примечание:</strong> <span th:text="${customer.notes != null ? customer.notes : '—'}"></span></p>
-            </div>
-            <div class="stack">
-                <h3>Контакт</h3>
-                <p><strong>Имя:</strong> <span th:text="${customer.contactName != null ? customer.contactName : '—'}"></span></p>
-                <p><strong>Должность:</strong> <span th:text="${customer.contactPosition != null ? customer.contactPosition : '—'}"></span></p>
-                <p><strong>Телефон:</strong> <span th:text="${customer.contactPhone != null ? customer.contactPhone : '—'}"></span></p>
-                <p><strong>Email:</strong> <span th:text="${customer.contactEmail != null ? customer.contactEmail : '—'}"></span></p>
-            </div>
-        </div>
-    </section>
+        <a class="btn btn-primary" th:href="@{'/customers/' + ${customer.id} + '/sites/new'}">Добавить объект</a>
+    </div>
 
-    <section class="card">
-        <div class="card-header">
-            <h3>Объекты</h3>
-            <a class="button" th:href="@{'/customers/' + ${customer.id} + '/sites/new'}">Добавить объект</a>
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Реквизиты</h2>
+                    <p class="mb-1"><strong>УНП:</strong> <span th:text="${customer.taxNumber != null ? customer.taxNumber : '—'}"></span></p>
+                    <p class="mb-1"><strong>Адрес:</strong>
+                        <span th:text="${customer.addressLine != null ? customer.addressLine : '—'}"></span>
+                        <span th:if="${customer.city != null}" th:text="', ' + ${customer.city}"></span>
+                        <span th:if="${customer.country != null}" th:text="' (' + ${customer.country} + ')'" class="text-muted"></span>
+                    </p>
+                    <p class="mb-1"><strong>Email:</strong> <span th:text="${customer.contactEmail != null ? customer.contactEmail : '—'}"></span></p>
+                    <p class="mb-0"><strong>Примечание:</strong> <span th:text="${customer.notes != null ? customer.notes : '—'}"></span></p>
+                </div>
+            </div>
         </div>
-        <p class="muted" th:if="${#lists.isEmpty(sites)}">Объекты ещё не добавлены.</p>
-        <table class="data-table" th:if="${!#lists.isEmpty(sites)}">
-            <thead>
-            <tr>
-                <th>Наименование</th>
-                <th>Адрес</th>
-                <th>Координаты</th>
-                <th></th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="site : ${sites}">
-                <td th:text="${site.name}"></td>
-                <td th:text="${site.fullAddress != null ? site.fullAddress : '—'}"></td>
-                <td>
-                    <span th:if="${site.latitude != null && site.longitude != null}" th:text="${site.latitude} + ', ' + ${site.longitude}"></span>
-                    <span th:if="${site.latitude == null || site.longitude == null}" class="muted">не указано</span>
-                </td>
-                <td class="actions">
-                    <div class="card-actions">
-                        <a class="link-button" th:href="@{'/sites/' + ${site.id}}">Открыть объект</a>
-                        <a class="button secondary" th:href="@{'/sites/' + ${site.id} + '/edit'}">Редактировать</a>
-                    </div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-    </section>
+        <div class="col-md-6">
+            <div class="card shadow-sm h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Контакт</h2>
+                    <p class="mb-1"><strong>Имя:</strong> <span th:text="${customer.contactName != null ? customer.contactName : '—'}"></span></p>
+                    <p class="mb-1"><strong>Должность:</strong> <span th:text="${customer.contactPosition != null ? customer.contactPosition : '—'}"></span></p>
+                    <p class="mb-1"><strong>Телефон:</strong> <span th:text="${customer.contactPhone != null ? customer.contactPhone : '—'}"></span></p>
+                    <p class="mb-0"><strong>Email:</strong> <span th:text="${customer.contactEmail != null ? customer.contactEmail : '—'}"></span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Объекты</h2>
+                <a class="btn btn-outline-primary" th:href="@{'/customers/' + ${customer.id} + '/sites/new'}">Добавить объект</a>
+            </div>
+            <p class="text-muted" th:if="${#lists.isEmpty(sites)}">Объекты ещё не добавлены.</p>
+            <div class="table-responsive" th:if="${!#lists.isEmpty(sites)}">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Наименование</th>
+                        <th>Адрес</th>
+                        <th>Координаты</th>
+                        <th class="text-end">Действия</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="site : ${sites}">
+                        <td th:text="${site.name}"></td>
+                        <td th:text="${site.fullAddress != null ? site.fullAddress : '—'}"></td>
+                        <td>
+                            <span th:if="${site.latitude != null && site.longitude != null}" th:text="${site.latitude} + ', ' + ${site.longitude}"></span>
+                            <span th:if="${site.latitude == null || site.longitude == null}" class="text-muted">не указано</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-outline-primary btn-sm" th:href="@{'/sites/' + ${site.id}}">Открыть объект</a>
+                                <a class="btn btn-outline-secondary btn-sm" th:href="@{'/sites/' + ${site.id} + '/edit'}">Редактировать</a>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </th:block>
 <th:block th:fragment="extraScripts"></th:block>
 </body>
