@@ -1,143 +1,41 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:replace="~{layout :: layout(~{::title}, 'customers', ~{::content}, ~{::extraHead}, ~{::extraScripts})}">
 <head>
-    <title>Заказчики</title>
+    <title>Список заказчиков</title>
     <th:block th:fragment="extraHead"></th:block>
 </head>
 <body>
 <th:block th:fragment="content">
     <section class="card">
-        <h2>Создать заказчика</h2>
-        <form method="post" action="/customers" class="grid-form" th:object="${form}">
-            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <div>
-                <label for="name">Название</label>
-                <input type="text" id="name" th:field="*{name}" required>
-            </div>
-            <div>
-                <label for="enterpriseName">Наименование предприятия</label>
-                <input type="text" id="enterpriseName" th:field="*{enterpriseName}" placeholder="ООО \"Рога и копыта\"">
-            </div>
-            <div>
-                <label for="taxNumber">УНП</label>
-                <input type="text" id="taxNumber" th:field="*{taxNumber}" placeholder="123456789">
-            </div>
-            <div>
-                <label for="email">Email</label>
-                <input type="email" id="email" th:field="*{contactEmail}" placeholder="client@example.com">
-            </div>
-            <div class="repeatable-field">
-                <label>Контактные телефоны</label>
-                <div id="customer-phones" class="stack">
-                    <div class="phone-row" th:each="phone, iter : *{contactPhones}" th:data-index="${iter.index}">
-                        <input type="text"
-                               th:field="*{contactPhones[__${iter.index}__]}"
-                               placeholder="+375 (29) 000-00-00">
-                        <button type="button" class="link-button danger remove-phone"
-                                th:if="${iter.index > 0}">Удалить</button>
-                    </div>
-                </div>
-                <template id="phone-template">
-                    <div class="phone-row">
-                        <input type="text" name="contactPhones[__index__]" placeholder="+375 (29) 000-00-00">
-                        <button type="button" class="link-button danger remove-phone">Удалить</button>
-                    </div>
-                </template>
-                <button type="button" id="add-phone" class="button secondary">Добавить телефон</button>
-            </div>
-            <div class="form-row">
-                <button type="submit">Сохранить</button>
-            </div>
-        </form>
-    </section>
-
-    <section class="card">
-        <h3>Существующие заказчики</h3>
+        <div class="card-header">
+            <h2>Список заказчиков</h2>
+            <a class="button" href="/customers/create">Добавить заказчика</a>
+        </div>
         <p th:if="${#lists.isEmpty(customers)}">Заказчики ещё не созданы.</p>
         <table class="data-table" th:if="${!#lists.isEmpty(customers)}">
             <thead>
             <tr>
-                <th>Название</th>
-                <th>Предприятие</th>
-                <th>УНП</th>
-                <th>Email</th>
-                <th>Контакты</th>
-                <th>Дата создания</th>
-                <th>Количество объектов</th>
+                <th>Наименование</th>
+                <th>Город</th>
+                <th>Контактное лицо</th>
+                <th>Телефон</th>
+                <th></th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="customer : ${customers}">
                 <td th:text="${customer.name}"></td>
-                <td th:text="${customer.enterpriseName}"></td>
-                <td th:text="${customer.taxNumber}"></td>
-                <td th:text="${customer.contactEmail}"></td>
-                <td>
-                    <span th:if="${#lists.isEmpty(customer.contactPhones)}" class="muted">Не указаны</span>
-                    <ul class="compact-list" th:if="${!#lists.isEmpty(customer.contactPhones)}">
-                        <li th:each="phone : ${customer.contactPhones}" th:text="${phone}"></li>
-                    </ul>
+                <td th:text="${customer.city != null ? customer.city : '—'}"></td>
+                <td th:text="${customer.contactName != null ? customer.contactName : '—'}"></td>
+                <td th:text="${customer.contactPhone != null ? customer.contactPhone : '—'}"></td>
+                <td class="actions">
+                    <a class="link-button" th:href="@{'/customers/' + ${customer.id}}">Открыть</a>
                 </td>
-                <td th:text="${customer.createdAt != null ? #temporals.format(customer.createdAt, 'HH:mm dd:MM:yyyy') : '—'}"></td>
-                <td th:text="${#lists.size(customer.objects)}"></td>
             </tr>
             </tbody>
         </table>
     </section>
 </th:block>
-<th:block th:fragment="extraScripts">
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const container = document.getElementById('customer-phones');
-            const addButton = document.getElementById('add-phone');
-            const template = document.getElementById('phone-template');
-
-            function reindexRows() {
-                const rows = container.querySelectorAll('.phone-row');
-                rows.forEach((row, index) => {
-                    row.dataset.index = index.toString();
-                    const input = row.querySelector('input');
-                    if (input) {
-                        input.name = `contactPhones[${index}]`;
-                    }
-                    const removeButton = row.querySelector('.remove-phone');
-                    if (removeButton) {
-                        removeButton.style.display = index === 0 ? 'none' : '';
-                    }
-                });
-            }
-
-            if (addButton) {
-                addButton.addEventListener('click', () => {
-                    if (!(template instanceof HTMLTemplateElement)) {
-                        return;
-                    }
-                    const fragment = template.content.firstElementChild?.cloneNode(true);
-                    if (!(fragment instanceof HTMLElement)) {
-                        return;
-                    }
-                    container.appendChild(fragment);
-                    reindexRows();
-                });
-            }
-
-            container?.addEventListener('click', (event) => {
-                const target = event.target;
-                if (!(target instanceof HTMLElement)) {
-                    return;
-                }
-                if (target.classList.contains('remove-phone')) {
-                    const row = target.closest('.phone-row');
-                    if (row && container.children.length > 1) {
-                        row.remove();
-                        reindexRows();
-                    }
-                }
-            });
-
-            reindexRows();
-        });
-    </script>
-</th:block>
+<th:block th:fragment="extraScripts"></th:block>
 </body>
 </html>
