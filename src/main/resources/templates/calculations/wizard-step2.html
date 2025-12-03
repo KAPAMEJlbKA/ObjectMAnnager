@@ -1,0 +1,108 @@
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, 'customers', ~{::content}, ~{::extraHead}, ~{::extraScripts})}">
+<head>
+    <title th:text="${calculation.name} + ' — узлы'">Мастер расчёта</title>
+    <th:block th:fragment="extraHead"></th:block>
+</head>
+<body>
+<th:block th:fragment="content">
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <p class="muted">Мастер расчёта — шаг 2</p>
+                <h2 th:text="${calculation.name}"></h2>
+                <a class="link-button" th:href="@{'/sites/' + ${calculation.site.id}}" th:text="${calculation.site.name}"></a>
+            </div>
+            <div class="card-actions">
+                <a class="button secondary" th:href="@{'/calculations/' + ${calculation.id} + '/wizard/step1'}">Назад</a>
+                <a class="button" th:href="@{'/calculations/' + ${calculation.id} + '/wizard/step3'}">Далее</a>
+            </div>
+        </div>
+        <p class="field-error" th:if="${flashError != null}" th:text="${flashError}"></p>
+        <p class="success" th:if="${flashSuccess != null}" th:text="${flashSuccess}"></p>
+        <div class="stack">
+            <h3>Узлы</h3>
+            <p class="muted" th:if="${#lists.isEmpty(nodes)}">Узлы ещё не добавлены.</p>
+            <table class="data-table" th:if="${!#lists.isEmpty(nodes)}">
+                <thead>
+                <tr>
+                    <th>Код</th>
+                    <th>Название</th>
+                    <th>Поверхность</th>
+                    <th>Авторазмер шкафа</th>
+                    <th>Базовые автоматы</th>
+                    <th>Розетки</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="node : ${nodes}">
+                    <td th:text="${node.code}"></td>
+                    <td th:text="${node.name}"></td>
+                    <td th:text="${node.mountSurface != null ? node.mountSurface : '—'}"></td>
+                    <td th:text="${node.cabinetSizeAuto ? 'Да' : 'Нет'}"></td>
+                    <td th:text="${node.baseCircuitBreakers}"></td>
+                    <td th:text="${node.baseSockets + node.extraSockets}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card">
+        <h3>Добавить узел</h3>
+        <form class="grid two-columns" th:action="@{'/calculations/' + ${calculation.id} + '/wizard/step2/nodes'}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <label class="stack">
+                <span>Код *</span>
+                <input type="text" name="code" th:value="${nodeForm.code}" required>
+            </label>
+            <label class="stack">
+                <span>Название *</span>
+                <input type="text" name="name" th:value="${nodeForm.name}" required>
+            </label>
+            <label class="stack">
+                <span>Тип поверхности</span>
+                <select name="mountSurface">
+                    <option value="" th:selected="${nodeForm.mountSurface == null}">Не указано</option>
+                    <option th:each="surface : ${mountSurfaces}" th:value="${surface}" th:text="${surface}" th:selected="${surface == nodeForm.mountSurface}"></option>
+                </select>
+            </label>
+            <label class="stack">
+                <span>Размер шкафа</span>
+                <input type="number" name="cabinetSize" th:value="${nodeForm.cabinetSize}">
+            </label>
+            <label class="stack">
+                <span>Авто размер шкафа</span>
+                <input type="checkbox" name="cabinetSizeAuto" value="true" th:checked="${nodeForm.cabinetSizeAuto}">
+            </label>
+            <label class="stack">
+                <span>Базовые автоматы *</span>
+                <input type="number" min="1" name="baseCircuitBreakers" th:value="${nodeForm.baseCircuitBreakers}" required>
+            </label>
+            <label class="stack">
+                <span>Доп. автоматы</span>
+                <input type="number" min="0" name="extraCircuitBreakers" th:value="${nodeForm.extraCircuitBreakers}">
+            </label>
+            <label class="stack">
+                <span>Базовые розетки *</span>
+                <input type="number" min="1" name="baseSockets" th:value="${nodeForm.baseSockets}" required>
+            </label>
+            <label class="stack">
+                <span>Доп. розетки</span>
+                <input type="number" min="0" name="extraSockets" th:value="${nodeForm.extraSockets}">
+            </label>
+            <label class="stack">
+                <span>Количество вводов</span>
+                <input type="number" min="0" name="incomingLinesCount" th:value="${nodeForm.incomingLinesCount}">
+            </label>
+            <div class="card-actions" style="grid-column: 1 / span 2; justify-content: flex-end;">
+                <a class="button secondary" th:href="@{'/calculations/' + ${calculation.id} + '/wizard/step1'}">Назад</a>
+                <a class="button secondary" th:href="@{'/calculations/' + ${calculation.id} + '/wizard/step3'}">Далее</a>
+                <button type="submit" class="button">Добавить</button>
+            </div>
+        </form>
+    </section>
+</th:block>
+<th:block th:fragment="extraScripts"></th:block>
+</body>
+</html>

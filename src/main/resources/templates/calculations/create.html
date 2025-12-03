@@ -1,0 +1,43 @@
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, 'customers', ~{::content}, ~{::extraHead}, ~{::extraScripts})}">
+<head>
+    <title>Новый расчёт</title>
+    <th:block th:fragment="extraHead"></th:block>
+</head>
+<body>
+<th:block th:fragment="content">
+    <section class="card">
+        <div class="card-header">
+            <div>
+                <p class="muted">Объект</p>
+                <h2 th:text="${site.name}"></h2>
+                <a class="link-button" th:href="@{'/sites/' + ${site.id}}">Назад к объекту</a>
+            </div>
+        </div>
+        <p class="field-error" th:if="${error != null}" th:text="${error}"></p>
+        <form class="stack" th:action="@{'/sites/' + ${site.id} + '/calculations'}" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <label class="stack">
+                <span>Наименование *</span>
+                <input type="text" name="name" th:value="${calculationForm.name}" required>
+            </label>
+            <label class="stack">
+                <span>Тип системы *</span>
+                <select name="systemType">
+                    <option th:each="type : ${systemTypes}" th:value="${type}" th:text="${type}" th:selected="${type == calculationForm.systemType}"></option>
+                </select>
+            </label>
+            <label class="stack">
+                <span>Описание</span>
+                <textarea name="description" rows="3" th:text="${calculationForm.description}"></textarea>
+            </label>
+            <div class="card-actions">
+                <a class="button secondary" th:href="@{'/sites/' + ${site.id}}">Отмена</a>
+                <button type="submit" class="button">Создать</button>
+            </div>
+        </form>
+    </section>
+</th:block>
+<th:block th:fragment="extraScripts"></th:block>
+</body>
+</html>
