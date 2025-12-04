@@ -120,8 +120,8 @@
                     <form method="post" action="/admin/settings/map-provider" class="inline-form" th:object="${mapSettingsForm}">
                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                         <select th:field="*{mapProvider}">
-                            <option th:value="${T(com.kapamejlbka.objectmanager.model.MapProvider).YANDEX}">Яндекс.Карты</option>
-                            <option th:value="${T(com.kapamejlbka.objectmanager.model.MapProvider).GOOGLE}">Google Maps</option>
+                            <option th:value="${T(com.kapamejlbka.objectmanager.domain.topology.MapProvider).YANDEX}">Яндекс.Карты</option>
+                            <option th:value="${T(com.kapamejlbka.objectmanager.domain.topology.MapProvider).GOOGLE}">Google Maps</option>
                         </select>
                         <button type="submit">Сохранить</button>
                     </form>
