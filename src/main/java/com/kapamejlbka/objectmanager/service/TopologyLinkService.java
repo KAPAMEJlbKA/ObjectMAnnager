@@ -8,6 +8,7 @@ import com.kapamejlbka.objectmanager.domain.device.repository.EndpointDeviceRepo
 import com.kapamejlbka.objectmanager.domain.device.repository.NetworkNodeRepository;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
 import com.kapamejlbka.objectmanager.domain.topology.dto.TopologyLinkCreateRequest;
+import com.kapamejlbka.objectmanager.domain.topology.dto.TopologyLinkLengthUpdate;
 import com.kapamejlbka.objectmanager.domain.topology.dto.TopologyLinkUpdateRequest;
 import com.kapamejlbka.objectmanager.domain.topology.repository.TopologyLinkRepository;
 import jakarta.transaction.Transactional;
@@ -71,6 +72,32 @@ public class TopologyLinkService {
     public void delete(Long id) {
         TopologyLink topologyLink = getById(id);
         topologyLinkRepository.delete(topologyLink);
+    }
+
+    @Transactional
+    public void updateCableLengths(Long calculationId, List<TopologyLinkLengthUpdate> updates) {
+        if (updates == null || updates.isEmpty()) {
+            return;
+        }
+        for (TopologyLinkLengthUpdate update : updates) {
+            if (update.getId() == null) {
+                continue;
+            }
+            TopologyLink link = getById(update.getId());
+            if (!link.getCalculation().getId().equals(calculationId)) {
+                throw new IllegalArgumentException("Link does not belong to calculation");
+            }
+            if (!SUPPORTED_LINK_TYPES.contains(link.getLinkType())) {
+                throw new IllegalArgumentException("Unsupported link type: " + link.getLinkType());
+            }
+            Double length = update.getLength();
+            if (length != null && length < 0) {
+                throw new IllegalArgumentException("Cable length cannot be negative");
+            }
+            link.setCableLength(length);
+            link.setUpdatedAt(LocalDateTime.now());
+            topologyLinkRepository.save(link);
+        }
     }
 
     private void applyDto(TopologyLink topologyLink, TopologyLinkCreateRequest dto) {
