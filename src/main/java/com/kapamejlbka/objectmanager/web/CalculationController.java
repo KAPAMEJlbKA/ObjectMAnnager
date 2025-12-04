@@ -102,6 +102,17 @@ public class CalculationController {
         return "redirect:/calculations/" + id + "/wizard/step2";
     }
 
+    @GetMapping("/calculations/{id}/wizard/step3")
+    public String wizardStep3(@PathVariable("id") Long id, Model model) {
+        SystemCalculation calculation = getCalculation(id);
+        List<EndpointDevice> devices = endpointDeviceService.listByCalculation(id);
+        List<NetworkNode> nodes = networkNodeService.listByCalculation(id);
+        model.addAttribute("calculation", calculation);
+        model.addAttribute("devices", devices);
+        model.addAttribute("nodes", nodes);
+        return "calculations/wizard-step3";
+    }
+
     private void normalizeNodeDefaults(NetworkNodeCreateRequest form) {
         if (form.getBaseCircuitBreakers() == null || form.getBaseCircuitBreakers() < 1) {
             form.setBaseCircuitBreakers(1);
