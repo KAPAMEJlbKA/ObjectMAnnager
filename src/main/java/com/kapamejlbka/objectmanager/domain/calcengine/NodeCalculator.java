@@ -9,11 +9,15 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
 public class NodeCalculator {
+
+    private static final Logger LOG = LoggerFactory.getLogger(NodeCalculator.class);
 
     private static final String ENDPOINT_MOUNT_PREFIX = "ENDPOINT_MOUNT";
     private static final String INCOMING_COUPLING = "NODE_INCOMING_COUPLING";
@@ -83,7 +87,15 @@ public class NodeCalculator {
     private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {
         MaterialNorm norm = materialNormRepository
                 .findByContextType(contextType)
-                .orElseThrow(() -> new IllegalArgumentException("Material norm not found for context: " + contextType));
+                .orElseGet(() -> {
+                    LOG.warn("Material norm not found for context: {}", contextType);
+                    return null;
+                });
+
+        if (norm == null) {
+            return;
+        }
+
         double quantity = expressionEvaluator.evaluate(norm.getFormula(), context);
         if (quantity > 0) {
             result.merge(norm.getMaterial(), quantity, Double::sum);
