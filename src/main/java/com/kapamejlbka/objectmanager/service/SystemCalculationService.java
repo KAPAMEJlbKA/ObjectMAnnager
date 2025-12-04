@@ -35,6 +35,12 @@ public class SystemCalculationService {
         if (dto == null) {
             throw new IllegalArgumentException("System calculation data is required");
         }
+        systemCalculationRepository
+                .findFirstBySiteId(siteId)
+                .ifPresent(existing -> {
+                    throw new IllegalStateException(
+                            "System calculation already exists for site: " + existing.getSite().getId());
+                });
         SystemCalculation calculation = new SystemCalculation();
         calculation.setSite(getSiteById(siteId));
         applyDto(calculation, dto);
