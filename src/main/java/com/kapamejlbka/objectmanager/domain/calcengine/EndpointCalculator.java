@@ -10,11 +10,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 @Component
 public class EndpointCalculator {
+
+    private static final Logger LOG = LoggerFactory.getLogger(EndpointCalculator.class);
 
     private static final String ENDPOINT_MOUNT_PREFIX = "ENDPOINT_MOUNT";
     private static final String RJ45_CONNECTOR = "RJ45_CONNECTOR";
@@ -87,7 +91,15 @@ public class EndpointCalculator {
     private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {
         MaterialNorm norm = materialNormRepository
                 .findByContextType(contextType)
-                .orElseThrow(() -> new IllegalArgumentException("Material norm not found for context: " + contextType));
+                .orElseGet(() -> {
+                    LOG.warn("Material norm not found for context: {}", contextType);
+                    return null;
+                });
+
+        if (norm == null) {
+            return;
+        }
+
         double quantity = expressionEvaluator.evaluate(norm.getFormula(), context);
         if (quantity > 0) {
             result.merge(norm.getMaterial(), quantity, Double::sum);
