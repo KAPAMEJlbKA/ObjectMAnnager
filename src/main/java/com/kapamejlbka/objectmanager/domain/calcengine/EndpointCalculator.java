@@ -27,7 +27,7 @@ public class EndpointCalculator {
     private static final int NETWORK_DEVICE_RJ45_COUNT = 2;
     private static final int TURNSTILE_ANCHORS = 4;
 
-    private static final List<String> CAMERA_ALIASES = List.of("ВИДЕОКАМЕРА", "КАМЕРА", "IP КАМЕРА");
+    private static final List<String> CAMERA_ALIASES = List.of("ВИДЕОКАМЕРА", "КАМЕРА", "IP КАМЕРА", "CAMERA", "IP CAMERA");
     private static final List<String> ACCESS_POINT_ALIASES = List.of("ТОЧКА ДОСТУПА", "ACCESS POINT", "WI-FI", "WIFI");
     private static final List<String> NETWORK_DEVICE_ALIASES = List.of("СЕТЕВОЕ УСТРОЙСТВО", "СЕТЕВАЯ ТОЧКА", "РОЗЕТКА", "СЧИТЫВАТЕЛЬ");
     private static final List<String> TURNSTILE_ALIASES = List.of("ТУРНИКЕТ");
