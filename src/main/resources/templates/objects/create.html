@@ -6,85 +6,90 @@
 </head>
 <body>
 <th:block th:fragment="content">
-    <section class="card">
-        <h2>Создать новый объект</h2>
-        <form method="post" action="/objects" class="grid-form" th:object="${form}">
+    <div class="om-page-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h4 mb-0">Создать новый объект</h2>
+            <a class="btn btn-outline-secondary" href="/objects">Назад</a>
+        </div>
+        <form method="post" action="/objects" th:object="${form}">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-            <div class="alert" th:if="${#fields.hasErrors('*')}">
-                <p th:each="err : ${#fields.errors('*')}" th:text="${err}"></p>
+            <div class="alert alert-danger" th:if="${#fields.hasErrors('*')}">
+                <p class="mb-0" th:each="err : ${#fields.errors('*')}" th:text="${err}"></p>
             </div>
-            <div>
-                <label for="name">Название</label>
-                <input type="text" id="name" th:field="*{name}" required>
-            </div>
-            <div>
-                <label for="description">Описание</label>
-                <textarea id="description" th:field="*{description}" rows="3"></textarea>
-            </div>
-            <div class="grid">
-                <div>
-                    <label for="latitude">Широта</label>
-                    <input type="number" id="latitude" th:field="*{latitude}" step="0.000001" placeholder="53.902496">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="name" class="form-label">Название</label>
+                    <input type="text" id="name" th:field="*{name}" class="form-control" required>
                 </div>
-                <div>
-                    <label for="longitude">Долгота</label>
-                    <input type="number" id="longitude" th:field="*{longitude}" step="0.000001" placeholder="27.561481">
+                <div class="col-md-6">
+                    <label for="description" class="form-label">Описание</label>
+                    <textarea id="description" th:field="*{description}" class="form-control" rows="3"></textarea>
+                </div>
+                <div class="col-md-6">
+                    <label for="latitude" class="form-label">Широта</label>
+                    <input type="number" id="latitude" th:field="*{latitude}" class="form-control" step="0.000001" placeholder="53.902496">
+                </div>
+                <div class="col-md-6">
+                    <label for="longitude" class="form-label">Долгота</label>
+                    <input type="number" id="longitude" th:field="*{longitude}" class="form-control" step="0.000001" placeholder="27.561481">
+                </div>
+                <div class="col-md-6">
+                    <label for="customer" class="form-label">Заказчик</label>
+                    <select id="customer" th:field="*{customerId}" class="form-select" th:disabled="${form.createNewCustomer}">
+                        <option value="" disabled th:selected="${form.customerId} == null">Выберите заказчика</option>
+                        <option th:each="customer : ${customers}" th:value="${customer.id}" th:text="${customer.name}" th:selected="${customer.id == form.customerId}"></option>
+                    </select>
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="createNewCustomer" th:field="*{createNewCustomer}">
+                        <label class="form-check-label" for="createNewCustomer">Создать нового заказчика</label>
+                    </div>
                 </div>
             </div>
-            <div>
-                <label for="customer">Заказчик</label>
-                <select id="customer" th:field="*{customerId}" th:disabled="${form.createNewCustomer}">
-                    <option value="" disabled th:selected="${form.customerId} == null">Выберите заказчика</option>
-                    <option th:each="customer : ${customers}" th:value="${customer.id}" th:text="${customer.name}" th:selected="${customer.id == form.customerId}"></option>
-                </select>
-                <label class="checkbox">
-                    <input type="checkbox" id="createNewCustomer" th:field="*{createNewCustomer}">
-                    Создать нового заказчика
-                </label>
-            </div>
-            <div id="newCustomerSection" th:classappend="${form.createNewCustomer} ? '' : ' is-hidden'" class="card nested-card">
-                <h3>Новый заказчик</h3>
-                <div class="grid-form">
-                    <div>
-                        <label for="newCustomerName">Название</label>
-                        <input type="text" id="newCustomerName" th:field="*{newCustomer.name}">
-                    </div>
-                    <div>
-                        <label for="newCustomerEnterprise">Наименование предприятия</label>
-                        <input type="text" id="newCustomerEnterprise" th:field="*{newCustomer.enterpriseName}" placeholder="ООО \"Ромашка\"">
-                    </div>
-                    <div>
-                        <label for="newCustomerTax">УНП</label>
-                        <input type="text" id="newCustomerTax" th:field="*{newCustomer.taxNumber}" placeholder="123456789">
-                    </div>
-                    <div>
-                        <label for="newCustomerEmail">Email</label>
-                        <input type="email" id="newCustomerEmail" th:field="*{newCustomer.contactEmail}" placeholder="client@example.com">
-                    </div>
-                    <div class="repeatable-field">
-                        <label>Контактные телефоны</label>
-                        <div id="object-customer-phones" class="stack">
-                            <div class="phone-row" th:each="phone, iter : *{newCustomer.contactPhones}" th:data-index="${iter.index}">
-                                <input type="text" th:field="*{newCustomer.contactPhones[__${iter.index}__]}" placeholder="+375 (29) 000-00-00">
-                                <button type="button" class="link-button danger remove-object-phone" th:if="${iter.index > 0}">Удалить</button>
-                            </div>
+            <div id="newCustomerSection" th:classappend="${form.createNewCustomer} ? '' : ' is-hidden'" class="mt-3">
+                <div class="om-page-card mb-0">
+                    <h3 class="h6 mb-3">Новый заказчик</h3>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="newCustomerName" class="form-label">Название</label>
+                            <input type="text" id="newCustomerName" th:field="*{newCustomer.name}" class="form-control">
                         </div>
-                        <template id="object-phone-template">
-                            <div class="phone-row">
-                                <input type="text" name="newCustomer.contactPhones[__index__]" placeholder="+375 (29) 000-00-00">
-                                <button type="button" class="link-button danger remove-object-phone">Удалить</button>
+                        <div class="col-md-6">
+                            <label for="newCustomerEnterprise" class="form-label">Наименование предприятия</label>
+                            <input type="text" id="newCustomerEnterprise" th:field="*{newCustomer.enterpriseName}" class="form-control" placeholder="ООО &quot;Ромашка&quot;">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="newCustomerTax" class="form-label">УНП</label>
+                            <input type="text" id="newCustomerTax" th:field="*{newCustomer.taxNumber}" class="form-control" placeholder="123456789">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="newCustomerEmail" class="form-label">Email</label>
+                            <input type="email" id="newCustomerEmail" th:field="*{newCustomer.contactEmail}" class="form-control" placeholder="client@example.com">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Контактные телефоны</label>
+                            <div id="object-customer-phones" class="d-flex flex-column gap-2">
+                                <div class="d-flex align-items-center gap-2 phone-row" th:each="phone, iter : *{newCustomer.contactPhones}" th:data-index="${iter.index}">
+                                    <input type="text" th:field="*{newCustomer.contactPhones[__${iter.index}__]}" class="form-control" placeholder="+375(29) 000-00-00">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm remove-object-phone" th:if="${iter.index > 0}">Удалить</button>
+                                </div>
                             </div>
-                        </template>
-                        <button type="button" id="addObjectPhone" class="button secondary">Добавить телефон</button>
+                            <template id="object-phone-template">
+                                <div class="d-flex align-items-center gap-2 phone-row">
+                                    <input type="text" name="newCustomer.contactPhones[__index__]" class="form-control" placeholder="+375 (29) 000-00-00">
+                                    <button type="button" class="btn btn-outline-secondary btn-sm remove-object-phone">Удалить</button>
+                                </div>
+                            </template>
+                            <button type="button" id="addObjectPhone" class="btn btn-outline-secondary btn-sm mt-2">Добавить телефон</button>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="form-row">
-                <button type="submit">Создать</button>
-                <a class="button secondary" href="/objects">Отмена</a>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <a class="btn btn-outline-secondary" href="/objects">Отмена</a>
+                <button type="submit" class="btn btn-primary">Создать</button>
             </div>
         </form>
-    </section>
+    </div>
 </th:block>
 <th:block th:fragment="extraScripts">
     <script>

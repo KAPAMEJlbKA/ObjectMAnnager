@@ -6,67 +6,64 @@
 </head>
 <body>
 <th:block th:fragment="content">
-    <div class="d-flex justify-content-between align-items-start mb-3">
-        <div>
-            <p class="text-muted mb-1">Заказчики</p>
-            <h1 class="h4">Новый заказчик</h1>
+    <div class="om-page-card">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <p class="text-muted mb-1">Заказчики</p>
+                <h2 class="h4 mb-0">Новый заказчик</h2>
+            </div>
+            <a class="btn btn-outline-secondary" href="/customers">Назад к списку</a>
         </div>
-        <a class="btn btn-outline-secondary" href="/customers">Назад к списку</a>
-    </div>
-
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <div th:if="${error != null}" class="alert alert-danger" th:text="${error}"></div>
-            <form action="/customers" method="post">
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <label class="form-label">Наименование *</label>
-                        <input type="text" class="form-control" name="name" th:value="${customerForm.name}" required>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">УНП</label>
-                        <input type="text" class="form-control" name="taxNumber" th:value="${customerForm.taxNumber}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Страна</label>
-                        <input type="text" class="form-control" name="country" th:value="${customerForm.country}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Город</label>
-                        <input type="text" class="form-control" name="city" th:value="${customerForm.city}">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Адрес</label>
-                        <input type="text" class="form-control" name="addressLine" th:value="${customerForm.addressLine}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Контактное лицо</label>
-                        <input type="text" class="form-control" name="contactName" th:value="${customerForm.contactName}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Должность</label>
-                        <input type="text" class="form-control" name="contactPosition" th:value="${customerForm.contactPosition}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Телефон</label>
-                        <input type="text" class="form-control" name="contactPhone" th:value="${customerForm.contactPhone}">
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Email</label>
-                        <input type="email" class="form-control" name="contactEmail" th:value="${customerForm.contactEmail}">
-                    </div>
-                    <div class="col-12">
-                        <label class="form-label">Примечание</label>
-                        <textarea class="form-control" name="notes" rows="3" th:text="${customerForm.notes}"></textarea>
-                    </div>
+        <div th:if="${error != null}" class="alert alert-danger" th:text="${error}"></div>
+        <form action="/customers" method="post">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Наименование *</label>
+                    <input type="text" class="form-control" name="name" th:value="${customerForm.name}" required>
                 </div>
-                <div class="d-flex justify-content-between mt-4">
-                    <a class="btn btn-outline-secondary" href="/customers">Отмена</a>
-                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                <div class="col-md-6">
+                    <label class="form-label">УНП</label>
+                    <input type="text" class="form-control" name="taxNumber" th:value="${customerForm.taxNumber}">
                 </div>
-            </form>
-        </div>
+                <div class="col-md-6">
+                    <label class="form-label">Страна</label>
+                    <input type="text" class="form-control" name="country" th:value="${customerForm.country}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Город</label>
+                    <input type="text" class="form-control" name="city" th:value="${customerForm.city}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Адрес</label>
+                    <input type="text" class="form-control" name="addressLine" th:value="${customerForm.addressLine}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Контактное лицо</label>
+                    <input type="text" class="form-control" name="contactName" th:value="${customerForm.contactName}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Должность</label>
+                    <input type="text" class="form-control" name="contactPosition" th:value="${customerForm.contactPosition}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Телефон</label>
+                    <input type="text" class="form-control" name="contactPhone" th:value="${customerForm.contactPhone}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" name="contactEmail" th:value="${customerForm.contactEmail}">
+                </div>
+                <div class="col-12">
+                    <label class="form-label">Примечание</label>
+                    <textarea class="form-control" name="notes" rows="3" th:text="${customerForm.notes}"></textarea>
+                </div>
+            </div>
+            <div class="d-flex justify-content-end gap-2 mt-3">
+                <a class="btn btn-outline-secondary" href="/customers">Отмена</a>
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+            </div>
+        </form>
     </div>
 </th:block>
 <th:block th:fragment="extraScripts"></th:block>
