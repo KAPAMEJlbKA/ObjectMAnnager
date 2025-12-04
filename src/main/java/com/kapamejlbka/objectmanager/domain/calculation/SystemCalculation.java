@@ -10,10 +10,14 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "system_calculations")
+@Table(
+        name = "system_calculations",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"site_id"})
+)
 public class SystemCalculation {
 
     @Id
