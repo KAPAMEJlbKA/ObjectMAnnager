@@ -79,7 +79,11 @@ public class NodeCalculator {
     }
 
     private void addCabinetMaterial(Integer cabinetSize, Map<Material, Double> result) {
-        int size = Objects.requireNonNull(cabinetSize, "Cabinet size is required");
+        if (cabinetSize == null) {
+            LOG.warn("Cabinet size is not specified, skipping cabinet materials");
+            return;
+        }
+        int size = cabinetSize;
         String contextType = CABINET_PREFIX + "_" + size;
         addFromNorm(result, contextType, Map.of("cabinetSize", size));
     }
