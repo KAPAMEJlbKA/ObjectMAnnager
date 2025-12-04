@@ -1,0 +1,154 @@
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, 'customers', ~{::content}, ~{::extraHead}, ~{::extraScripts})}">
+<head>
+    <title th:text="${calculation.name} + ' — трассы'">Мастер расчёта</title>
+    <th:block th:fragment="extraHead"></th:block>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="mb-3">
+        <p class="text-muted mb-1">Мастер расчёта — шаг 5 из 7</p>
+        <div class="progress" role="progressbar" aria-valuenow="71" aria-valuemin="0" aria-valuemax="100">
+            <div class="progress-bar" style="width: 71%"></div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+        <div>
+            <h1 class="h4 mb-1" th:text="${calculation.name}"></h1>
+            <a class="text-decoration-none" th:href="@{'/sites/' + ${calculation.site.id}}">Объект: <span th:text="${calculation.site.name}"></span></a>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" th:href="@{'/calculations/' + ${calculation.id} + '/wizard/step4'}">Назад</a>
+            <a class="btn btn-primary" th:href="@{'/calculations/' + ${calculation.id} + '/wizard/step6'}">Далее</a>
+        </div>
+    </div>
+
+    <div th:if="${flashError != null}" class="alert alert-danger" th:text="${flashError}"></div>
+    <div th:if="${flashSuccess != null}" class="alert alert-success" th:text="${flashSuccess}"></div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h5 mb-0">Трассы</h2>
+                <span class="text-muted" th:text="${#lists.size(routes)} + ' шт.'"></span>
+            </div>
+            <p class="text-muted" th:if="${#lists.isEmpty(routes)}">Трассы ещё не добавлены.</p>
+            <div class="table-responsive" th:if="${!#lists.isEmpty(routes)}">
+                <table class="table table-striped table-hover align-middle">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Название</th>
+                        <th>Тип</th>
+                        <th>Поверхность</th>
+                        <th>Длина, м</th>
+                        <th>Крепление</th>
+                        <th>Ориентация</th>
+                        <th class="text-end"></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="route : ${routes}">
+                        <td th:text="${route.name}"></td>
+                        <td th:text="${route.routeType}"></td>
+                        <td th:text="${route.mountSurface}"></td>
+                        <td th:text="${route.lengthMeters}"></td>
+                        <td th:text="${route.fixingMethod}"></td>
+                        <td th:text="${route.orientation}"></td>
+                        <td class="text-end">
+                            <form method="post" th:action="@{'/calculations/' + ${calculation.id} + '/wizard/step5/routes/' + ${route.id} + '/delete'}" class="d-inline">
+                                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Удалить</button>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Добавить трассу</h2>
+            <form method="post" th:action="@{'/calculations/' + ${calculation.id} + '/wizard/step5/routes'}" th:object="${routeForm}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label">Название</label>
+                        <input type="text" class="form-control" th:field="*{name}" placeholder="Коридор 1" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Тип</label>
+                        <select class="form-select" th:field="*{routeType}" required>
+                            <option value="" disabled>Выберите тип</option>
+                            <option th:each="type : ${routeTypes}" th:value="${type}" th:text="${type}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Поверхность</label>
+                        <select class="form-select" th:field="*{mountSurface}" required>
+                            <option value="" disabled selected>Выберите поверхность</option>
+                            <option th:each="surface : ${mountSurfaces}" th:value="${surface}" th:text="${surface}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Длина, м</label>
+                        <input type="number" min="0" step="0.1" class="form-control" th:field="*{lengthMeters}" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Ориентация</label>
+                        <select class="form-select" th:field="*{orientation}" required>
+                            <option value="" disabled selected>Выберите ориентацию</option>
+                            <option th:each="orientation : ${orientations}" th:value="${orientation}" th:text="${orientation}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Крепление</label>
+                        <select class="form-select" th:field="*{fixingMethod}" required>
+                            <option value="" disabled selected>Выберите крепление</option>
+                            <option th:each="method : ${fixingMethods}" th:value="${method}" th:text="${method}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-grid align-items-end">
+                        <button type="submit" class="btn btn-primary">Добавить</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <h2 class="h5 mb-3">Привязка линий к трассам</h2>
+            <p class="text-muted" th:if="${#lists.isEmpty(routes) || #lists.isEmpty(topologyLinks)}">Добавьте хотя бы одну трассу и линию, чтобы привязать их.</p>
+            <form th:if="${!#lists.isEmpty(routes) && !#lists.isEmpty(topologyLinks)}" method="post" th:action="@{'/calculations/' + ${calculation.id} + '/wizard/step5/route-links'}">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Трасса</label>
+                        <select class="form-select" name="routeId" required>
+                            <option value="" disabled selected>Выберите трассу</option>
+                            <option th:each="route : ${routes}" th:value="${route.id}" th:text="${route.name}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Линии</label>
+                        <div class="border rounded p-2" style="max-height: 220px; overflow-y: auto;">
+                            <div class="form-check" th:each="link : ${topologyLinks}">
+                                <input class="form-check-input" type="checkbox" name="topologyLinkIds" th:value="${link.id}" th:id="${'link-' + link.id}">
+                                <label class="form-check-label" th:for="${'link-' + link.id}" th:text="${(link.fromNode != null ? 'Узел: ' + link.fromNode.name : 'Устройство: ' + link.fromDevice.name) + ' → ' + (link.toNode != null ? link.toNode.name : link.toDevice.name)}"></label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-primary">Привязать</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</th:block>
+<th:block th:fragment="extraScripts"></th:block>
+</body>
+</html>
