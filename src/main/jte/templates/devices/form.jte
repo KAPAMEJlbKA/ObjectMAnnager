@@ -32,13 +32,22 @@
         flashSuccess = flashSuccess,
         flashError = flashError
 ) {
-    <section class="card">
-        <h2>@(isEdit ? "Редактировать оборудование" : "Новое оборудование")</h2>
-        <form method="post" action="@(isEdit && deviceId != null ? "/devices/" + deviceId : "/devices")" class="grid-form">
+    <section class="page-card">
+        <div class="page-header">
+            <div>
+                <p class="eyebrow">@(isEdit ? "Карточка устройства" : "Создание записи")</p>
+                <h1 class="page-title">@(isEdit ? "Редактировать оборудование" : "Новое оборудование")</h1>
+                <p class="page-subtitle">Все обязательные поля помечены звёздочкой. Введите данные площадки, тип, модель и вспомогательную информацию.</p>
+            </div>
+            <a class="button ghost" href="/devices">Назад к списку</a>
+        </div>
+
+        <form method="post" action="@(isEdit && deviceId != null ? "/devices/" + deviceId : "/devices")" class="form-grid">
             <input type="hidden" name="@_csrf.getParameterName()" value="@_csrf.getToken()">
-            <div class="form-row">
+
+            <div class="form-field @((hasSiteError) ? "has-error" : "")">
                 <label for="siteId">Площадка *</label>
-                <select id="siteId" name="siteId" class="@(hasSiteError ? "input-error" : "")" required>
+                <select id="siteId" name="siteId" required>
                     <option value="">Выберите площадку</option>
                     @for(Site site : sites) {
                         <option value="@site.getId()" @((form.getSiteId() != null && form.getSiteId().equals(site.getId())) ? "selected" : "")>@site.getName()</option>
@@ -50,9 +59,10 @@
                     }
                 }
             </div>
-            <div class="form-row">
+
+            <div class="form-field @((hasTypeError) ? "has-error" : "")">
                 <label for="type">Тип *</label>
-                <select id="type" name="type" class="@(hasTypeError ? "input-error" : "")" required>
+                <select id="type" name="type" required>
                     <option value="">Выберите тип</option>
                     @for(DeviceType type : deviceTypes) {
                         <option value="@type.name()" @(form.getType() == type ? "selected" : "")>@type.getDisplayName()</option>
@@ -64,54 +74,60 @@
                     }
                 }
             </div>
-            <div class="form-row">
+
+            <div class="form-field @((hasModelError) ? "has-error" : "")">
                 <label for="model">Модель</label>
-                <input type="text" id="model" name="model" maxlength="100" value="@(form.getModel() == null ? "" : form.getModel())" class="@(hasModelError ? "input-error" : "")">
+                <input type="text" id="model" name="model" maxlength="100" value="@(form.getModel() == null ? "" : form.getModel())" placeholder="Например, Cisco WS-C2960">
                 @if(hasModelError) {
                     @for(FieldError error : binding.getFieldErrors("model")) {
                         <p class="field-error">@error.getDefaultMessage()</p>
                     }
                 }
             </div>
-            <div class="form-row">
+
+            <div class="form-field @((hasSerialError) ? "has-error" : "")">
                 <label for="serial">Серийный номер</label>
-                <input type="text" id="serial" name="serial" maxlength="100" value="@(form.getSerial() == null ? "" : form.getSerial())" class="@(hasSerialError ? "input-error" : "")">
+                <input type="text" id="serial" name="serial" maxlength="100" value="@(form.getSerial() == null ? "" : form.getSerial())" placeholder="SN / Asset tag">
                 @if(hasSerialError) {
                     @for(FieldError error : binding.getFieldErrors("serial")) {
                         <p class="field-error">@error.getDefaultMessage()</p>
                     }
                 }
             </div>
-            <div class="form-row">
+
+            <div class="form-field @((hasIpError) ? "has-error" : "")">
                 <label for="ip">IP</label>
-                <input type="text" id="ip" name="ip" maxlength="45" value="@(form.getIp() == null ? "" : form.getIp())" class="@(hasIpError ? "input-error" : "")">
+                <input type="text" id="ip" name="ip" maxlength="45" value="@(form.getIp() == null ? "" : form.getIp())" placeholder="10.0.0.1">
                 @if(hasIpError) {
                     @for(FieldError error : binding.getFieldErrors("ip")) {
                         <p class="field-error">@error.getDefaultMessage()</p>
                     }
                 }
             </div>
-            <div class="form-row">
-                <label for="locationNote">Местоположение</label>
-                <textarea id="locationNote" name="locationNote" maxlength="255" class="@(hasLocationError ? "input-error" : "")">@(form.getLocationNote() == null ? "" : form.getLocationNote())</textarea>
-                @if(hasLocationError) {
-                    @for(FieldError error : binding.getFieldErrors("locationNote")) {
-                        <p class="field-error">@error.getDefaultMessage()</p>
-                    }
-                }
-            </div>
-            <div class="form-row">
+
+            <div class="form-field @((hasInstalledAtError) ? "has-error" : "")">
                 <label for="installedAt">Дата установки</label>
-                <input type="date" id="installedAt" name="installedAt" value="@(form.getInstalledAt() == null ? "" : form.getInstalledAt().toString())" class="@(hasInstalledAtError ? "input-error" : "")">
+                <input type="date" id="installedAt" name="installedAt" value="@(form.getInstalledAt() == null ? "" : form.getInstalledAt().toString())">
                 @if(hasInstalledAtError) {
                     @for(FieldError error : binding.getFieldErrors("installedAt")) {
                         <p class="field-error">@error.getDefaultMessage()</p>
                     }
                 }
             </div>
-            <div class="form-row">
-                <button type="submit">@(isEdit ? "Сохранить" : "Создать")</button>
-                <a class="button secondary" href="/devices">Отмена</a>
+
+            <div class="form-field full-width @((hasLocationError) ? "has-error" : "")">
+                <label for="locationNote">Местоположение</label>
+                <textarea id="locationNote" name="locationNote" maxlength="255" rows="3" placeholder="Комната, стойка, полка">@(form.getLocationNote() == null ? "" : form.getLocationNote())</textarea>
+                @if(hasLocationError) {
+                    @for(FieldError error : binding.getFieldErrors("locationNote")) {
+                        <p class="field-error">@error.getDefaultMessage()</p>
+                    }
+                }
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="button primary">@(isEdit ? "Сохранить" : "Создать")</button>
+                <a class="button ghost" href="/devices">Отмена</a>
             </div>
         </form>
     </section>
