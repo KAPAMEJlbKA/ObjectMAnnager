@@ -10,10 +10,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RouteCalculator {
+
+    private static final Logger LOG = LoggerFactory.getLogger(RouteCalculator.class);
 
     private static final String CORRUGATED_PIPE_HORIZONTAL = "CORRUGATED_PIPE_HORIZONTAL";
     private static final String CORRUGATED_PIPE_VERTICAL = "CORRUGATED_PIPE_VERTICAL";
@@ -107,7 +111,15 @@ public class RouteCalculator {
     private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {
         MaterialNorm norm = materialNormRepository
                 .findByContextType(contextType)
-                .orElseThrow(() -> new IllegalArgumentException("Material norm not found for context: " + contextType));
+                .orElseGet(() -> {
+                    LOG.warn("Material norm not found for context: {}", contextType);
+                    return null;
+                });
+
+        if (norm == null) {
+            return;
+        }
+
         double quantity = expressionEvaluator.evaluate(norm.getFormula(), context);
         if (quantity > 0) {
             result.merge(norm.getMaterial(), quantity, Double::sum);
