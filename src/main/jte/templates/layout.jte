@@ -13,20 +13,27 @@
     <title>@title</title>
     <link rel="stylesheet" href="/css/main.css">
 </head>
-<body>
-<header class="topbar">
-    <div>
-        <strong>Object Manager</strong>
-    </div>
-    <nav>
-        <a href="/" class="@("".equals(activePage) ? "active" : "")">Главная</a>
-        <a href="/sites" class="@(activePage.equals("sites") ? "active" : "")">Площадки</a>
-        <a href="/devices" class="@(activePage.equals("devices") ? "active" : "")">Оборудование</a>
-    </nav>
-</header>
-<main class="content">
-    @templates.fragments.flash(flashSuccess = flashSuccess, flashError = flashError)
-    @body()
-</main>
+<body class="app-body">
+<div class="app-shell">
+    <header class="app-topbar">
+        <div class="brand">
+            <div class="brand-mark">OM</div>
+            <div class="brand-meta">
+                <div class="brand-title">Object Manager</div>
+                <div class="brand-subtitle">Учёт площадок и оборудования</div>
+            </div>
+        </div>
+        <nav class="topnav">
+            <a href="/" class="nav-link @("".equals(activePage) ? "active" : "")">Главная</a>
+            <a href="/sites" class="nav-link @("sites".equals(activePage) ? "active" : "")">Площадки</a>
+            <a href="/devices" class="nav-link @("devices".equals(activePage) ? "active" : "")">Оборудование</a>
+        </nav>
+    </header>
+
+    <main class="app-main">
+        @templates.fragments.flash(flashSuccess = flashSuccess, flashError = flashError)
+        @body()
+    </main>
+</div>
 </body>
 </html>

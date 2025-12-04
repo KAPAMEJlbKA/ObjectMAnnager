@@ -41,76 +41,102 @@
         flashSuccess = flashSuccess,
         flashError = flashError
 ) {
-    <section class="card">
-        <div class="card-header">
-            <h2>Оборудование</h2>
-            <div class="card-actions">
-                <form method="get" action="/devices" class="inline-form">
+    <section class="page-card">
+        <div class="page-header">
+            <div>
+                <p class="eyebrow">Каталог оборудования</p>
+                <h1 class="page-title">Оборудование</h1>
+                <p class="page-subtitle">Фильтр по площадке, типу и поиску по модели, серийному номеру или IP.</p>
+            </div>
+            <a class="button primary" href="/devices/new">Добавить устройство</a>
+        </div>
+
+        <div class="filter-panel">
+            <form method="get" action="/devices" class="filter-grid">
+                <label class="filter-field">
+                    <span>Площадка</span>
                     <select name="siteId">
                         <option value="">Все площадки</option>
                         @for(Site site : sites) {
                             <option value="@site.getId()" @(selectedSiteId != null && selectedSiteId.equals(site.getId()) ? "selected" : "")>@site.getName()</option>
                         }
                     </select>
+                </label>
+                <label class="filter-field">
+                    <span>Тип</span>
                     <select name="type">
                         <option value="">Все типы</option>
                         @for(DeviceType type : deviceTypes) {
                             <option value="@type.name()" @(selectedType == type ? "selected" : "")>@type.getDisplayName()</option>
                         }
                     </select>
-                    <input type="text" name="q" value="@(q == null ? "" : q)" placeholder="Поиск по модели, серийному номеру или IP">
-                    <button type="submit">Поиск</button>
+                </label>
+                <label class="filter-field">
+                    <span>Поиск</span>
+                    <input type="text" name="q" value="@(q == null ? "" : q)" placeholder="Модель, серийный номер или IP">
+                </label>
+                <div class="filter-actions">
+                    <button type="submit" class="button">Применить</button>
                     @if((selectedSiteId != null) || (selectedType != null) || (q != null && !q.isBlank())) {
-                        <a class="button secondary" href="/devices">Сбросить</a>
+                        <a class="button ghost" href="/devices">Сбросить</a>
                     }
-                </form>
-                <a class="button" href="/devices/new">Добавить</a>
-            </div>
+                </div>
+            </form>
         </div>
+
         @if(devicesPage.isEmpty()) {
-            <p>Оборудование не найдено.</p>
+            <div class="empty-state">
+                <div class="empty-icon">📦</div>
+                <div>
+                    <h3>Ничего не найдено</h3>
+                    <p class="muted">Измените параметры поиска или добавьте устройство.</p>
+                </div>
+            </div>
         } else {
-            <div class="table-container">
-                <table class="data-table">
-                    <thead>
-                    <tr>
-                        <th>Площадка</th>
-                        <th>Тип</th>
-                        <th>Модель</th>
-                        <th>Серийный номер</th>
-                        <th>IP</th>
-                        <th>Дата установки</th>
-                        <th>Местоположение</th>
-                        <th>Создано</th>
-                        <th></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    @for(Device device : devicesPage.getContent()) {
+            <div class="table-card">
+                <div class="table-scroll">
+                    <table class="data-table">
+                        <thead>
                         <tr>
-                            <td>@(device.getSite() != null ? device.getSite().getName() : "—")</td>
-                            <td>@device.getType().getDisplayName()</td>
-                            <td>@(device.getModel() == null ? "—" : device.getModel())</td>
-                            <td>@(device.getSerial() == null ? "—" : device.getSerial())</td>
-                            <td>@(device.getIp() == null ? "—" : device.getIp())</td>
-                            <td>@(device.getInstalledAt() == null ? "—" : dateFormatter.format(device.getInstalledAt()))</td>
-                            <td>@(device.getLocationNote() == null ? "—" : device.getLocationNote())</td>
-                            <td>@createdFormatter.format(device.getCreatedAt())</td>
-                            <td class="actions">
-                                <div class="card-actions">
-                                    <a class="button secondary" href="/devices/@device.getId()/edit">Изменить</a>
+                            <th>Площадка</th>
+                            <th>Тип</th>
+                            <th>Модель</th>
+                            <th>Серийный номер</th>
+                            <th>IP</th>
+                            <th>Дата установки</th>
+                            <th>Местоположение</th>
+                            <th>Создано</th>
+                            <th class="actions-col"></th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        @for(Device device : devicesPage.getContent()) {
+                            <tr>
+                                <td>
+                                    <div class="cell-main">@(device.getSite() != null ? device.getSite().getName() : "—")</div>
+                                    <div class="cell-sub">@device.getId()</div>
+                                </td>
+                                <td><span class="pill">@device.getType().getDisplayName()</span></td>
+                                <td>@(device.getModel() == null ? "—" : device.getModel())</td>
+                                <td>@(device.getSerial() == null ? "—" : device.getSerial())</td>
+                                <td>@(device.getIp() == null ? "—" : device.getIp())</td>
+                                <td>@(device.getInstalledAt() == null ? "—" : dateFormatter.format(device.getInstalledAt()))</td>
+                                <td>@(device.getLocationNote() == null ? "—" : device.getLocationNote())</td>
+                                <td>@createdFormatter.format(device.getCreatedAt())</td>
+                                <td class="row-actions">
+                                    <a class="button ghost" href="/devices/@device.getId()/edit">Изменить</a>
                                     <form method="post" action="/devices/@device.getId()/delete">
                                         <input type="hidden" name="@_csrf.getParameterName()" value="@_csrf.getToken()">
                                         <button type="submit" class="button danger">Удалить</button>
                                     </form>
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+                @templates.fragments.pagination(page = devicesPage, basePath = "/devices", params = paginationParams)
             </div>
-            @templates.fragments.pagination(page = devicesPage, basePath = "/devices", params = paginationParams)
         }
     </section>
 }

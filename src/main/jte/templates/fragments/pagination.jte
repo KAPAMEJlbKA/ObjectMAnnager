@@ -27,14 +27,16 @@
                .collect(Collectors.joining("&"));
        String sizeParam = "&size=" + page.getSize();
        String queryParam = encodedQuery.isEmpty() ? "" : "&" + encodedQuery;
+       int current = page.getNumber();
     %>
-    <nav class="pagination">
-        <% int current = page.getNumber(); %>
-        <a class="page-link @(page.hasPrevious() ? "" : "disabled")" href="@(page.hasPrevious() ? basePath + "?page=" + (current - 1) + sizeParam + queryParam : "#")">Назад</a>
-        @for(int index = 0; index < page.getTotalPages(); index++) {
-            boolean active = index == current;
-            <a class="page-link @(active ? "active" : "")" href="@(basePath + "?page=" + index + sizeParam + queryParam)">@{index + 1}</a>
-        }
-        <a class="page-link @(page.hasNext() ? "" : "disabled")" href="@(page.hasNext() ? basePath + "?page=" + (current + 1) + sizeParam + queryParam : "#")">Вперёд</a>
+    <nav class="pagination-bar">
+        <a class="page-link ghost @(page.hasPrevious() ? "" : "disabled")" href="@(page.hasPrevious() ? basePath + "?page=" + (current - 1) + sizeParam + queryParam : "#")">Назад</a>
+        <div class="page-dots">
+            @for(int index = 0; index < page.getTotalPages(); index++) {
+                boolean active = index == current;
+                <a class="page-link @(active ? "active" : "")" href="@(basePath + "?page=" + index + sizeParam + queryParam)">@{index + 1}</a>
+            }
+        </div>
+        <a class="page-link ghost @(page.hasNext() ? "" : "disabled")" href="@(page.hasNext() ? basePath + "?page=" + (current + 1) + sizeParam + queryParam : "#")">Вперёд</a>
     </nav>
 }
