@@ -23,6 +23,7 @@ import com.kapamejlbka.objectmanager.service.NetworkNodeService;
 import com.kapamejlbka.objectmanager.service.RouteSegmentLinkService;
 import com.kapamejlbka.objectmanager.service.SystemCalculationService;
 import com.kapamejlbka.objectmanager.service.TopologyLinkService;
+import com.kapamejlbka.objectmanager.web.view.DeviceTypeDisplayUtil;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -75,7 +76,7 @@ public class CalculationController {
         model.addAttribute("calculation", calculation);
         model.addAttribute("devices", devices);
         model.addAttribute("deviceForm", new EndpointDeviceCreateRequest());
-        model.addAttribute("deviceTypes", List.of("CAMERA", "SENSOR", "ACCESS_POINT"));
+        model.addAttribute("deviceTypes", DeviceTypeDisplayUtil.availableOptions());
         model.addAttribute("mountSurfaces", List.of("WALL", "CEILING", "POLE", "UNKNOWN"));
         return "calculations/wizard-step1";
     }
@@ -347,9 +348,9 @@ public class CalculationController {
 
     @GetMapping("/calculations/{id}/wizard/step7")
     public String wizardStep7(@PathVariable("id") Long id, Model model) {
-        SystemCalculation calculation = getCalculation(id);
         CalculationResult result = systemCalculationService.runCalculation(id);
         systemCalculationService.changeStatus(id, "CALCULATED");
+        SystemCalculation calculation = getCalculation(id);
         model.addAttribute("calculation", calculation);
         model.addAttribute("result", result);
         return "calculations/wizard-step7";

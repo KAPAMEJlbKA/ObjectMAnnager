@@ -7,6 +7,8 @@ import com.kapamejlbka.objectmanager.domain.customer.Site;
 import com.kapamejlbka.objectmanager.domain.customer.dto.SiteCreateRequest;
 import com.kapamejlbka.objectmanager.domain.customer.dto.SiteUpdateRequest;
 import com.kapamejlbka.objectmanager.service.CustomerService;
+import com.kapamejlbka.objectmanager.service.EndpointDeviceService;
+import com.kapamejlbka.objectmanager.service.NetworkNodeService;
 import com.kapamejlbka.objectmanager.service.SiteService;
 import com.kapamejlbka.objectmanager.service.SystemCalculationService;
 import java.util.List;
@@ -26,14 +28,20 @@ public class SiteController {
     private final CustomerService customerService;
     private final SiteService siteService;
     private final SystemCalculationService systemCalculationService;
+    private final EndpointDeviceService endpointDeviceService;
+    private final NetworkNodeService networkNodeService;
 
     public SiteController(
             CustomerService customerService,
             SiteService siteService,
-            SystemCalculationService systemCalculationService) {
+            SystemCalculationService systemCalculationService,
+            EndpointDeviceService endpointDeviceService,
+            NetworkNodeService networkNodeService) {
         this.customerService = customerService;
         this.siteService = siteService;
         this.systemCalculationService = systemCalculationService;
+        this.endpointDeviceService = endpointDeviceService;
+        this.networkNodeService = networkNodeService;
     }
 
     @GetMapping("/customers/{customerId}/sites/new")
@@ -66,8 +74,18 @@ public class SiteController {
     public String detail(@PathVariable("id") Long id, Model model) {
         Site site = getSite(id);
         List<SystemCalculation> calculations = systemCalculationService.findBySite(id);
+        SystemCalculation calculation = calculations.isEmpty() ? null : calculations.get(0);
+        Integer deviceCount = null;
+        Integer nodeCount = null;
+        if (calculation != null) {
+            deviceCount = endpointDeviceService.listByCalculation(calculation.getId()).size();
+            nodeCount = networkNodeService.listByCalculation(calculation.getId()).size();
+        }
         model.addAttribute("site", site);
         model.addAttribute("calculations", calculations);
+        model.addAttribute("calculation", calculation);
+        model.addAttribute("deviceCount", deviceCount);
+        model.addAttribute("nodeCount", nodeCount);
         return "sites/detail";
     }
 
@@ -108,11 +126,7 @@ public class SiteController {
 
     @GetMapping("/sites/{id}/calculations/new")
     public String newCalculationForm(@PathVariable("id") Long siteId, Model model) {
-        Site site = getSite(siteId);
-        SystemCalculationCreateRequest form = new SystemCalculationCreateRequest();
-        form.setSystemType("CCTV");
-        populateCalculationForm(model, site, form, null);
-        return "calculations/create";
+        return "redirect:/sites/" + siteId + "/calculations/start";
     }
 
     @PostMapping("/sites/{id}/calculations")
@@ -122,7 +136,7 @@ public class SiteController {
             Model model,
             RedirectAttributes redirectAttributes) {
         Site site = getSite(siteId);
-        form.setStatus(form.getStatus() == null ? "NEW" : form.getStatus());
+        form.setStatus(form.getStatus() == null ? "DRAFT" : form.getStatus());
         SystemCalculation calculation;
         try {
             calculation = systemCalculationService.create(siteId, form);
@@ -130,8 +144,19 @@ public class SiteController {
             populateCalculationForm(model, site, form, ex.getMessage());
             return "calculations/create";
         }
-        redirectAttributes.addFlashAttribute("flashSuccess", "Расчёт создан");
+        redirectAttributes.addFlashAttribute("flashSuccess", "Данные по объекту готовы к заполнению");
         return "redirect:/calculations/" + calculation.getId() + "/wizard/step1";
+    }
+
+    @GetMapping("/sites/{id}/calculations/start")
+    public String startCalculation(@PathVariable("id") Long siteId, RedirectAttributes redirectAttributes) {
+        try {
+            SystemCalculation calculation = systemCalculationService.ensureForSite(siteId);
+            return "redirect:/calculations/" + calculation.getId() + "/wizard/step1";
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("flashError", ex.getMessage());
+            return "redirect:/sites/" + siteId;
+        }
     }
 
     private void populateSiteFormModel(
@@ -151,7 +176,6 @@ public class SiteController {
     private void populateCalculationForm(Model model, Site site, SystemCalculationCreateRequest form, String error) {
         model.addAttribute("site", site);
         model.addAttribute("calculationForm", form);
-        model.addAttribute("systemTypes", List.of("CCTV", "ACCESS_CONTROL", "WIFI"));
         model.addAttribute("error", error);
     }
 

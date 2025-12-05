@@ -1,13 +1,13 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{layout :: layout(~{::title}, 'customers', ~{::content}, ~{::extraHead}, ~{::extraScripts})}">
 <head>
-    <title th:text="${calculation.name} + ' — устройства'">Мастер расчёта</title>
+    <title th:text="${calculation.name} + ' — устройства'">Мастер заполнения данных</title>
     <th:block th:fragment="extraHead"></th:block>
 </head>
 <body>
 <th:block th:fragment="content">
     <div class="mb-3">
-        <p class="text-muted mb-1">Мастер расчёта — шаг 1 из 7</p>
+        <p class="text-muted mb-1">Мастер заполнения данных — шаг 1 из 7</p>
         <div class="progress" role="progressbar" aria-label="Прогресс расчёта" aria-valuenow="14" aria-valuemin="0" aria-valuemax="100">
             <div class="progress-bar" style="width: 14%"></div>
         </div>
@@ -45,7 +45,7 @@
                     </thead>
                     <tbody>
                     <tr th:each="device : ${devices}">
-                        <td th:text="${device.type}"></td>
+                        <td th:text="${T(com.kapamejlbka.objectmanager.web.view.DeviceTypeDisplayUtil).displayName(device.type)}"></td>
                         <td th:text="${device.code}"></td>
                         <td th:text="${device.name}"></td>
                         <td th:text="${device.locationDescription != null ? device.locationDescription : '—'}"></td>
@@ -69,7 +69,7 @@
                 <div class="col-md-4">
                     <label class="form-label">Тип *</label>
                     <select class="form-select" name="type">
-                        <option th:each="type : ${deviceTypes}" th:value="${type}" th:text="${type}"></option>
+                        <option th:each="type : ${deviceTypes}" th:value="${type.code}" th:text="${type.displayName}"></option>
                     </select>
                 </div>
                 <div class="col-md-4">

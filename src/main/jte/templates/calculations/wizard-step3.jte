@@ -3,6 +3,7 @@
 @import com.kapamejlbka.objectmanager.domain.device.NetworkNode
 @import com.kapamejlbka.objectmanager.domain.topology.TopologyLink
 @import com.kapamejlbka.objectmanager.domain.topology.dto.TopologyLinkCreateRequest
+@import com.kapamejlbka.objectmanager.web.view.DeviceTypeDisplayUtil
 @import org.springframework.security.web.csrf.CsrfToken
 
 @param SystemCalculation calculation
@@ -17,7 +18,7 @@
 
 <% String formatEndpoint(NetworkNode n, EndpointDevice d) {
        if (n != null) return "[NODE] " + n.getName();
-       if (d != null) return "[DEVICE] " + d.getName();
+       if (d != null) return "[DEVICE] " + DeviceTypeDisplayUtil.displayName(d.getType()) + " — " + d.getName();
        return "—";
    }
 %>
@@ -71,14 +72,14 @@
                     <label class="form-label">От</label>
                     <select name="fromEndpoint" class="form-select" required>
                         @for(NetworkNode node : nodes) { <option value="NODE:@node.getId()">[NODE] @node.getName()</option> }
-                        @for(EndpointDevice d : devices) { <option value="DEVICE:@d.getId()">[DEVICE] @d.getName()</option> }
+                        @for(EndpointDevice d : devices) { <option value="DEVICE:@d.getId()">[DEVICE] @DeviceTypeDisplayUtil.displayName(d.getType()) — @d.getName()</option> }
                     </select>
                 </div>
                 <div class="col-auto">
                     <label class="form-label">К</label>
                     <select name="toEndpoint" class="form-select" required>
                         @for(NetworkNode node : nodes) { <option value="NODE:@node.getId()">[NODE] @node.getName()</option> }
-                        @for(EndpointDevice d : devices) { <option value="DEVICE:@d.getId()">[DEVICE] @d.getName()</option> }
+                        @for(EndpointDevice d : devices) { <option value="DEVICE:@d.getId()">[DEVICE] @DeviceTypeDisplayUtil.displayName(d.getType()) — @d.getName()</option> }
                     </select>
                 </div>
                 <div class="col-auto">

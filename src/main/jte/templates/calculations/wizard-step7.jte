@@ -7,17 +7,23 @@
 @param String flashSuccess = null
 @param String flashError = null
 
+<% String statusLabel(String status) {
+       if (status != null && "CALCULATED".equalsIgnoreCase(status)) return "Рассчитан";
+       return "Черновик";
+   }
+%>
+
 @templates.layout(title = "Шаг 7 — результаты", activePage = "sites", flashSuccess = flashSuccess, flashError = flashError) {
     <section class="page-card">
         @templates.fragments.`wizard-header`(calculation = calculation, step = 7)
         <h2 class="h4">Результаты расчёта</h2>
-        <p class="page-subtitle">Итоговые материалы. Расчёт выполнен @(java.time.LocalDateTime.now()).</p>
+        <p class="page-subtitle">Итоговые материалы. Расчёт выполнен @(result == null || result.executedAt() == null ? "—" : result.executedAt()).</p>
 
         <div class="om-page-card">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
                     <div class="text-muted">Статус</div>
-                    <div class="fw-bold">@calculation.getStatus()</div>
+                    <div class="fw-bold">@statusLabel(calculation.getStatus())</div>
                 </div>
                 <div class="d-flex gap-2">
                     <a class="btn btn-outline-secondary btn-sm disabled">Скачать в Excel</a>
