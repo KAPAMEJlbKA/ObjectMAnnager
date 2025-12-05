@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20240601-0004-add-topology-coordinates
+      author: chatgpt
+      changes:
+        - addColumn:
+            tableName: network_nodes
+            columns:
+              - column:
+                  name: pos_x
+                  type: int
+              - column:
+                  name: pos_y
+                  type: int
+        - addColumn:
+            tableName: endpoint_devices
+            columns:
+              - column:
+                  name: pos_x
+                  type: int
+              - column:
+                  name: pos_y
+                  type: int
