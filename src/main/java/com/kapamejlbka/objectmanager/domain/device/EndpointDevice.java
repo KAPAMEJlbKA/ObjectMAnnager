@@ -48,6 +48,12 @@ public class EndpointDevice {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "pos_x")
+    private Integer posX;
+
+    @Column(name = "pos_y")
+    private Integer posY;
+
     @PrePersist
     public void prePersist() {
         LocalDateTime now = LocalDateTime.now();
@@ -122,6 +128,22 @@ public class EndpointDevice {
 
     public void setMountSurface(String mountSurface) {
         this.mountSurface = mountSurface;
+    }
+
+    public Integer getPosX() {
+        return posX;
+    }
+
+    public void setPosX(Integer posX) {
+        this.posX = posX;
+    }
+
+    public Integer getPosY() {
+        return posY;
+    }
+
+    public void setPosY(Integer posY) {
+        this.posY = posY;
     }
 
     public LocalDateTime getCreatedAt() {

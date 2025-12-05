@@ -36,6 +36,12 @@ public class NetworkNode {
     @Column(name = "cabinet_size")
     private Integer cabinetSize;
 
+    @Column(name = "pos_x")
+    private Integer posX;
+
+    @Column(name = "pos_y")
+    private Integer posY;
+
     @Column(name = "cabinet_size_auto", nullable = false)
     private Boolean cabinetSizeAuto;
 
@@ -118,6 +124,22 @@ public class NetworkNode {
 
     public void setCabinetSize(Integer cabinetSize) {
         this.cabinetSize = cabinetSize;
+    }
+
+    public Integer getPosX() {
+        return posX;
+    }
+
+    public void setPosX(Integer posX) {
+        this.posX = posX;
+    }
+
+    public Integer getPosY() {
+        return posY;
+    }
+
+    public void setPosY(Integer posY) {
+        this.posY = posY;
     }
 
     public Boolean getCabinetSizeAuto() {

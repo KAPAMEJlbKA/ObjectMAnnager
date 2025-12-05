@@ -5,3 +5,5 @@ databaseChangeLog:
       file: db/changelog/20240501-0002-create-device-table.yaml
   - include:
       file: db/changelog/20240515-0003-create-app-user-tables.yaml
+  - include:
+      file: db/changelog/20240601-0004-add-topology-coordinates.yaml
