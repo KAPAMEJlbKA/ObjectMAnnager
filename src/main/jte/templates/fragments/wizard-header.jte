@@ -5,9 +5,9 @@
 
 <div class="om-wizard-header">
     <div>
-        <p class="eyebrow mb-1">Мастер расчёта</p>
+        <p class="eyebrow mb-1">Мастер заполнения данных</p>
         <h1 class="page-title">@calculation.getSite().getName() &mdash; @calculation.getName()</h1>
-        <p class="page-subtitle">Настройте параметры системы по шагам. Текущий статус: @calculation.getStatus()</p>
+        <p class="page-subtitle">Заполните данные по объекту шаг за шагом. Текущий статус: @calculation.getStatus()</p>
     </div>
 </div>
 

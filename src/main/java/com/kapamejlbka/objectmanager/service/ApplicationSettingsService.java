@@ -18,6 +18,7 @@ public class ApplicationSettingsService {
     private static final String MATERIAL_TIES_PER_METER_KEY = "materials.coefficient.cable.ties";
     private static final String BRANDING_LOGO_DATA_KEY = "branding.logo.data";
     private static final String BRANDING_LOGO_CONTENT_TYPE_KEY = "branding.logo.contentType";
+    private static final String STANDARD_CABINET_DROP_KEY = "calculation.standardCabinetDropLengthMeters";
 
     private final ApplicationSettingRepository settingRepository;
 
@@ -52,6 +53,19 @@ public class ApplicationSettingsService {
     public void updateMaterialCoefficients(double clipsPerMeter, double tiesPerMeter) {
         saveSettingValue(MATERIAL_CLIPS_PER_METER_KEY, formatDouble(clipsPerMeter));
         saveSettingValue(MATERIAL_TIES_PER_METER_KEY, formatDouble(tiesPerMeter));
+    }
+
+    public double getStandardCabinetDropLengthMeters() {
+        return parseDoubleSetting(getSettingValue(STANDARD_CABINET_DROP_KEY).orElse(null));
+    }
+
+    @Transactional
+    public void updateStandardCabinetDropLengthMeters(Double lengthMeters) {
+        if (lengthMeters == null || lengthMeters < 0) {
+            deleteSetting(STANDARD_CABINET_DROP_KEY);
+            return;
+        }
+        saveSettingValue(STANDARD_CABINET_DROP_KEY, formatDouble(lengthMeters));
     }
 
     public Optional<CompanyLogo> getCompanyLogo() {

@@ -86,6 +86,8 @@ public class AdminController {
         model.addAttribute("mapSettingsForm", MapSettingsForm.from(applicationSettingsService.getMapProvider()));
         model.addAttribute("materialCoefficientsForm", MaterialCoefficientsForm.from(
                 applicationSettingsService.getMaterialCoefficients()));
+        model.addAttribute("calculationSettingsForm", CalculationSettingsForm.from(
+                applicationSettingsService.getStandardCabinetDropLengthMeters()));
         model.addAttribute("currentLogo", applicationSettingsService.getCompanyLogo()
                 .map(this::toDataUri)
                 .orElse(null));
@@ -230,6 +232,12 @@ public class AdminController {
                 Math.max(0.0, form.getClipsPerMeter()),
                 Math.max(0.0, form.getTiesPerMeter())
         );
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/settings/calculation")
+    public String updateCalculationSettings(@ModelAttribute("calculationSettingsForm") CalculationSettingsForm form) {
+        applicationSettingsService.updateStandardCabinetDropLengthMeters(form.getStandardCabinetDropLengthMeters());
         return "redirect:/admin";
     }
 
@@ -474,6 +482,25 @@ public class AdminController {
 
         public void setTiesPerMeter(double tiesPerMeter) {
             this.tiesPerMeter = tiesPerMeter;
+        }
+    }
+
+    public static class CalculationSettingsForm {
+        @PositiveOrZero
+        private Double standardCabinetDropLengthMeters;
+
+        public static CalculationSettingsForm from(double value) {
+            CalculationSettingsForm form = new CalculationSettingsForm();
+            form.setStandardCabinetDropLengthMeters(value > 0 ? value : null);
+            return form;
+        }
+
+        public Double getStandardCabinetDropLengthMeters() {
+            return standardCabinetDropLengthMeters;
+        }
+
+        public void setStandardCabinetDropLengthMeters(Double standardCabinetDropLengthMeters) {
+            this.standardCabinetDropLengthMeters = standardCabinetDropLengthMeters;
         }
     }
 

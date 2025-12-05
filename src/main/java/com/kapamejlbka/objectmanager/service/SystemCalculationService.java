@@ -35,12 +35,10 @@ public class SystemCalculationService {
         if (dto == null) {
             throw new IllegalArgumentException("System calculation data is required");
         }
-        systemCalculationRepository
-                .findFirstBySiteId(siteId)
-                .ifPresent(existing -> {
-                    throw new IllegalStateException(
-                            "System calculation already exists for site: " + existing.getSite().getId());
-                });
+        SystemCalculation existing = systemCalculationRepository.findFirstBySiteId(siteId).orElse(null);
+        if (existing != null) {
+            return existing;
+        }
         SystemCalculation calculation = new SystemCalculation();
         calculation.setSite(getSiteById(siteId));
         applyDto(calculation, dto);
@@ -71,6 +69,16 @@ public class SystemCalculationService {
     }
 
     @Transactional
+    public SystemCalculation ensureForSite(Long siteId) {
+        return systemCalculationRepository.findFirstBySiteId(siteId)
+                .orElseGet(() -> {
+                    SystemCalculationCreateRequest dto = new SystemCalculationCreateRequest();
+                    dto.setStatus("DRAFT");
+                    return create(siteId, dto);
+                });
+    }
+
+    @Transactional
     public void changeStatus(Long id, String status) {
         SystemCalculation calculation = getById(id);
         String normalizedStatus = normalize(status);
@@ -88,21 +96,18 @@ public class SystemCalculationService {
 
     private void applyDto(SystemCalculation calculation, SystemCalculationCreateRequest dto) {
         String name = normalize(dto.getName());
-        if (!StringUtils.hasText(name)) {
-            throw new IllegalArgumentException("System calculation name is required");
+        if (!StringUtils.hasText(name) && calculation.getSite() != null) {
+            name = calculation.getSite().getName() + " — данные по объекту";
         }
+        calculation.setName(StringUtils.hasText(name) ? name : "Заполнение объекта");
+        calculation.setDescription(normalize(dto.getDescription()));
         String systemType = normalize(dto.getSystemType());
-        if (!StringUtils.hasText(systemType)) {
-            throw new IllegalArgumentException("System calculation type is required");
-        }
+        calculation.setSystemType(StringUtils.hasText(systemType) ? systemType : "GENERAL");
         String status = normalize(dto.getStatus());
         if (!StringUtils.hasText(status)) {
-            throw new IllegalArgumentException("System calculation status is required");
+            status = calculation.getStatus();
         }
-        calculation.setName(name);
-        calculation.setDescription(normalize(dto.getDescription()));
-        calculation.setSystemType(systemType);
-        calculation.setStatus(status);
+        calculation.setStatus(StringUtils.hasText(status) ? status : "DRAFT");
     }
 
     private Site getSiteById(Long siteId) {

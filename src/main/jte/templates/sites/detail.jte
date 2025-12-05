@@ -5,6 +5,9 @@
 
 @param Site site
 @param java.util.List<SystemCalculation> calculations
+@param SystemCalculation calculation = null
+@param Integer deviceCount = null
+@param Integer nodeCount = null
 @param String flashSuccess = null
 @param String flashError = null
 
@@ -18,54 +21,47 @@
                 <h1 class="page-title">@site.getName()</h1>
                 <p class="page-subtitle">@(site.getFullAddress() == null ? "Адрес не указан" : site.getFullAddress())</p>
             </div>
-            <a class="button primary" href="/sites/@site.getId()/calculations/new">Создать расчёт</a>
+            <a class="button primary" href="/sites/@site.getId()/calculations/start">Заполнить данные по объекту</a>
         </div>
 
         <div class="om-page-card mt-4">
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h5 mb-0">Расчёты</h2>
-                <a href="/sites/@site.getId()/calculations/new" class="btn btn-primary btn-sm">Создать расчёт</a>
+                <h2 class="h5 mb-0">Данные по объекту</h2>
+                <div class="d-flex gap-2">
+                    @if(calculation != null) {
+                        <a href="/calculations/@calculation.getId()/wizard/step7" class="btn btn-outline-secondary btn-sm">Показать ведомость</a>
+                    }
+                    <a href="/sites/@site.getId()/calculations/start" class="btn btn-primary btn-sm">Открыть заполнение данных</a>
+                </div>
             </div>
 
-            @if(calculations.isEmpty()) {
+            @if(calculation == null) {
                 <div class="empty-state">
-                    <div class="empty-icon">🧮</div>
+                    <div class="empty-icon">📄</div>
                     <div>
-                        <h3>Пока нет расчётов</h3>
-                        <p class="muted">Добавьте первый расчёт, чтобы начать планирование системы.</p>
+                        <h3>Данные по объекту ещё не заполнены</h3>
+                        <p class="muted">Начните с добавления устройств и узлов, чтобы построить расчёт.</p>
                     </div>
                 </div>
             } else {
-                <table class="table table-hover align-middle mb-0 om-table">
-                    <thead>
-                        <tr>
-                            <th>Имя</th>
-                            <th>Тип</th>
-                            <th>Статус</th>
-                            <th>Обновлено</th>
-                            <th class="text-end">Действия</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @for(SystemCalculation calc : calculations) {
-                            <tr>
-                                <td>@calc.getName()</td>
-                                <td>@calc.getSystemType()</td>
-                                <td>
-                                    @if("CALCULATED".equalsIgnoreCase(calc.getStatus())) {
-                                        <span class="badge bg-success">Рассчитан</span>
-                                    } else {
-                                        <span class="badge bg-secondary">Черновик</span>
-                                    }
-                                </td>
-                                <td>@(calc.getUpdatedAt() == null ? "—" : updatedFormatter.format(calc.getUpdatedAt()))</td>
-                                <td class="text-end">
-                                    <a class="btn btn-outline-primary btn-sm" href="@(\"CALCULATED\".equalsIgnoreCase(calc.getStatus()) ? "/calculations/" + calc.getId() : "/calculations/" + calc.getId() + "/wizard/step1")">Открыть</a>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+                <div class="row g-3">
+                    <div class="col-md-3 col-6">
+                        <div class="metric-label">Статус</div>
+                        <div class="metric-value">@("CALCULATED".equalsIgnoreCase(calculation.getStatus()) ? "Рассчитан" : "Черновик")</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="metric-label">Конечных устройств</div>
+                        <div class="metric-value">@(deviceCount == null ? "—" : deviceCount)</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="metric-label">Узлов/шкафов</div>
+                        <div class="metric-value">@(nodeCount == null ? "—" : nodeCount)</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="metric-label">Обновлено</div>
+                        <div class="metric-value">@(calculation.getUpdatedAt() == null ? "—" : updatedFormatter.format(calculation.getUpdatedAt()))</div>
+                    </div>
+                </div>
             }
         </div>
     </section>

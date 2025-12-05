@@ -14,6 +14,7 @@ import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
 import com.kapamejlbka.objectmanager.domain.topology.repository.InstallationRouteRepository;
 import com.kapamejlbka.objectmanager.domain.topology.repository.RouteSegmentLinkRepository;
 import com.kapamejlbka.objectmanager.domain.topology.repository.TopologyLinkRepository;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,7 +95,7 @@ public class CalculationEngineImpl implements CalculationEngine {
                         entry.getValue()))
                 .toList();
 
-        return new CalculationResult(calculation.getId(), items);
+        return new CalculationResult(calculation.getId(), items, LocalDateTime.now());
     }
 
     private void merge(Map<Material, Double> target, Map<Material, Double> addition) {

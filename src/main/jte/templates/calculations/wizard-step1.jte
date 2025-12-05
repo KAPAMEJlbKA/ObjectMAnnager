@@ -1,12 +1,13 @@
 @import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation
 @import com.kapamejlbka.objectmanager.domain.device.EndpointDevice
 @import com.kapamejlbka.objectmanager.domain.device.dto.EndpointDeviceCreateRequest
+@import com.kapamejlbka.objectmanager.web.view.DeviceTypeDisplayUtil
 @import org.springframework.security.web.csrf.CsrfToken
 
 @param SystemCalculation calculation
 @param java.util.List<EndpointDevice> devices
 @param EndpointDeviceCreateRequest deviceForm
-@param java.util.List<String> deviceTypes
+@param java.util.List<DeviceTypeDisplayUtil.DeviceTypeOption> deviceTypes
 @param java.util.List<String> mountSurfaces
 @param CsrfToken _csrf
 @param String flashSuccess = null
@@ -37,7 +38,7 @@
                         } else {
                             @for(EndpointDevice device : devices) {
                                 <tr>
-                                    <td>@device.getType()</td>
+                                    <td>@DeviceTypeDisplayUtil.displayName(device.getType())</td>
                                     <td>@(device.getCode() == null ? "—" : device.getCode())</td>
                                     <td>@device.getName()</td>
                                     <td>@(device.getLocationDescription() == null ? "—" : device.getLocationDescription())</td>
@@ -60,8 +61,8 @@
                 <div class="col-auto">
                     <label class="form-label">Тип</label>
                     <select name="type" class="form-select" required>
-                        @for(String type : deviceTypes) {
-                            <option value="@type">@type</option>
+                        @for(DeviceTypeDisplayUtil.DeviceTypeOption type : deviceTypes) {
+                            <option value="@type.code()">@type.displayName()</option>
                         }
                     </select>
                 </div>

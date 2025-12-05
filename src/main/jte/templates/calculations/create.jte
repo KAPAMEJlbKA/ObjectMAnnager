@@ -4,19 +4,18 @@
 
 @param Site site
 @param SystemCalculationCreateRequest calculationForm
-@param java.util.List<String> systemTypes
 @param String error = null
 @param CsrfToken _csrf
 @param String flashSuccess = null
 @param String flashError = null
 
-@templates.layout(title = "Новый расчёт", activePage = "sites", flashSuccess = flashSuccess, flashError = flashError) {
+@templates.layout(title = "Заполнение данных", activePage = "sites", flashSuccess = flashSuccess, flashError = flashError) {
     <section class="page-card">
         <div class="page-header">
             <div>
                 <p class="eyebrow">Объект: @site.getName()</p>
-                <h1 class="page-title">Создание расчёта</h1>
-                <p class="page-subtitle">Задайте имя, тип системы и короткое описание. Вы сможете добавить детали позже.</p>
+                <h1 class="page-title">Начало заполнения данных</h1>
+                <p class="page-subtitle">Укажите название и описание, чтобы перейти к мастеру заполнения по шагам.</p>
             </div>
             <a class="button ghost" href="/sites/@site.getId()">Назад к объекту</a>
         </div>
@@ -37,15 +36,6 @@
             <div class="form-field full-width">
                 <label for="name">Наименование *</label>
                 <input id="name" name="name" type="text" required value="@(calculationForm.getName() == null ? "" : calculationForm.getName())" placeholder="Например, СКУД офисного этажа">
-            </div>
-
-            <div class="form-field">
-                <label for="systemType">Тип системы *</label>
-                <select id="systemType" name="systemType" required>
-                    @for(String type : systemTypes) {
-                        <option value="@type" @(type.equalsIgnoreCase(calculationForm.getSystemType()) ? "selected" : "")>@type</option>
-                    }
-                </select>
             </div>
 
             <div class="form-field full-width">

@@ -8,9 +8,9 @@
     <section class="page-card">
         <div class="page-header">
             <div>
-                <p class="eyebrow">Расчёт</p>
+                <p class="eyebrow">Данные по объекту</p>
                 <h1 class="page-title">@calculation.getName()</h1>
-                <p class="page-subtitle">Тип: @calculation.getSystemType() · Статус: @calculation.getStatus()</p>
+                <p class="page-subtitle">Статус: @calculation.getStatus()</p>
             </div>
             <a class="button primary" href="/calculations/@calculation.getId()/wizard/step1">Открыть мастер</a>
         </div>
