@@ -84,7 +84,7 @@
                                         <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
                                         <input type="hidden" name="enabled" th:value="${!user.enabled}">
                                         <button type="submit" class="btn" th:classappend="${user.enabled} ? 'btn-outline-warning' : 'btn-outline-success'"
-                                                th:text="${user.enabled} ? 'Заблокировать' : 'Разблокировать'}"></button>
+                                                th:text="${user.enabled} ? 'Заблокировать' : 'Разблокировать'"></button>
                                     </form>
                                 </div>
                             </td>
