@@ -1,7 +1,8 @@
 package com.kapamejlbka.objectmanager.service;
 
-import com.kapamejlbka.objectmanager.model.ApplicationSetting;
 import com.kapamejlbka.objectmanager.domain.topology.MapProvider;
+import com.kapamejlbka.objectmanager.domain.settings.dto.CalculationSettingsDto;
+import com.kapamejlbka.objectmanager.model.ApplicationSetting;
 import com.kapamejlbka.objectmanager.repository.ApplicationSettingRepository;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -18,12 +19,13 @@ public class ApplicationSettingsService {
     private static final String MATERIAL_TIES_PER_METER_KEY = "materials.coefficient.cable.ties";
     private static final String BRANDING_LOGO_DATA_KEY = "branding.logo.data";
     private static final String BRANDING_LOGO_CONTENT_TYPE_KEY = "branding.logo.contentType";
-    private static final String STANDARD_CABINET_DROP_KEY = "calculation.standardCabinetDropLengthMeters";
 
     private final ApplicationSettingRepository settingRepository;
+    private final SettingsService settingsService;
 
-    public ApplicationSettingsService(ApplicationSettingRepository settingRepository) {
+    public ApplicationSettingsService(ApplicationSettingRepository settingRepository, SettingsService settingsService) {
         this.settingRepository = settingRepository;
+        this.settingsService = settingsService;
     }
 
     public MapProvider getMapProvider() {
@@ -56,16 +58,16 @@ public class ApplicationSettingsService {
     }
 
     public double getStandardCabinetDropLengthMeters() {
-        return parseDoubleSetting(getSettingValue(STANDARD_CABINET_DROP_KEY).orElse(null));
+        CalculationSettingsDto settings = settingsService.getSettings();
+        Double value = settings.getStandardCabinetDropLengthMeters();
+        return value == null ? 0.0 : value;
     }
 
     @Transactional
     public void updateStandardCabinetDropLengthMeters(Double lengthMeters) {
-        if (lengthMeters == null || lengthMeters < 0) {
-            deleteSetting(STANDARD_CABINET_DROP_KEY);
-            return;
-        }
-        saveSettingValue(STANDARD_CABINET_DROP_KEY, formatDouble(lengthMeters));
+        CalculationSettingsDto dto = settingsService.getSettings();
+        dto.setStandardCabinetDropLengthMeters(lengthMeters);
+        settingsService.updateSettings(dto);
     }
 
     public Optional<CompanyLogo> getCompanyLogo() {

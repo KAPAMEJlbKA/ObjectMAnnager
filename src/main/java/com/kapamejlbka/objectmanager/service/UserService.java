@@ -3,6 +3,7 @@ package com.kapamejlbka.objectmanager.service;
 import com.kapamejlbka.objectmanager.domain.user.AppRole;
 import com.kapamejlbka.objectmanager.domain.user.AppUser;
 import com.kapamejlbka.objectmanager.domain.user.dto.UserCreateRequest;
+import com.kapamejlbka.objectmanager.domain.user.dto.UserUpdateRequest;
 import com.kapamejlbka.objectmanager.domain.user.repository.AppRoleRepository;
 import com.kapamejlbka.objectmanager.domain.user.repository.AppUserRepository;
 import jakarta.transaction.Transactional;
@@ -34,6 +35,10 @@ public class UserService {
         return userRepository.findAll();
     }
 
+    public List<AppRole> findAllRoles() {
+        return roleRepository.findAll();
+    }
+
     public Optional<AppUser> findByUsername(String username) {
         return userRepository.findByUsernameIgnoreCase(username);
     }
@@ -43,8 +48,15 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + username));
     }
 
+    public AppUser getById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+    }
+
     @Transactional
     public AppUser createUser(UserCreateRequest dto) {
+        validateUsername(dto.getUsername(), null);
+        validateEmail(dto.getEmail(), null);
         AppUser user = new AppUser();
         user.setUsername(dto.getUsername());
         user.setPasswordHash(passwordEncoder.encode(dto.getPassword()));
@@ -73,6 +85,37 @@ public class UserService {
         request.setEnabled(true);
         request.setRoles(admin ? Set.of("ADMIN") : Set.of("VIEWER"));
         return createUser(request);
+    }
+
+    @Transactional
+    public AppUser updateUser(Long id, UserUpdateRequest dto) {
+        AppUser user = getById(id);
+        validateEmail(dto.getEmail(), id);
+
+        user.setFullName(dto.getFullName());
+        user.setEmail(dto.getEmail());
+        user.setEnabled(dto.isEnabled());
+
+        if (dto.getNewPassword() != null && !dto.getNewPassword().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
+        }
+
+        Set<String> roleNames = dto.getRoles().isEmpty()
+                ? Set.of("VIEWER")
+                : dto.getRoles();
+        Set<AppRole> roles = new HashSet<>();
+        for (String roleName : roleNames) {
+            roles.add(ensureRole(roleName));
+        }
+        user.setRoles(roles);
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public AppUser updateStatus(Long id, boolean enabled) {
+        AppUser user = getById(id);
+        user.setEnabled(enabled);
+        return userRepository.save(user);
     }
 
     @Transactional
@@ -105,6 +148,24 @@ public class UserService {
             viewer.setRoles(Set.of("VIEWER"));
             createUser(viewer);
         }
+    }
+
+    private void validateUsername(String username, Long excludeId) {
+        if (username == null || username.isBlank()) {
+            throw new IllegalArgumentException("Логин не может быть пустым");
+        }
+        userRepository.findByUsernameIgnoreCase(username)
+                .filter(user -> excludeId == null || !excludeId.equals(user.getId()))
+                .ifPresent(user -> { throw new IllegalArgumentException("Пользователь с таким логином уже существует"); });
+    }
+
+    private void validateEmail(String email, Long excludeId) {
+        if (email == null || email.isBlank()) {
+            throw new IllegalArgumentException("Email не может быть пустым");
+        }
+        userRepository.findByEmailIgnoreCase(email)
+                .filter(user -> excludeId == null || !excludeId.equals(user.getId()))
+                .ifPresent(user -> { throw new IllegalArgumentException("Пользователь с таким email уже существует"); });
     }
 
     private AppRole ensureRole(String name) {
