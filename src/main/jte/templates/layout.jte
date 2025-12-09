@@ -1,4 +1,5 @@
 @import gg.jte.Content
+@import com.kapamejlbka.objectmanager.web.view.SecurityViewUtil
 @param String title
 @param String activePage = ""
 @param Content body
@@ -23,10 +24,14 @@
                 <div class="brand-subtitle">Учёт площадок и оборудования</div>
             </div>
         </div>
+        <% boolean isAdmin = SecurityViewUtil.hasRole("ADMIN"); %>
         <nav class="topnav">
             <a href="/" class="nav-link @("".equals(activePage) ? "active" : "")">Главная</a>
             <a href="/sites" class="nav-link @("sites".equals(activePage) ? "active" : "")">Площадки</a>
             <a href="/devices" class="nav-link @("devices".equals(activePage) ? "active" : "")">Оборудование</a>
+            @if(isAdmin) {
+                <a href="/admin" class="nav-link @("admin".equals(activePage) ? "active" : "")">Администрирование</a>
+            }
         </nav>
     </header>
 
