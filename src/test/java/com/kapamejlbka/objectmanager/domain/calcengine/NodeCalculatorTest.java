@@ -11,8 +11,8 @@ import com.kapamejlbka.objectmanager.domain.device.NetworkNode;
 import com.kapamejlbka.objectmanager.domain.material.Material;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
 import com.kapamejlbka.objectmanager.repository.MaterialNormRepository;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,7 +36,7 @@ class NodeCalculatorTest {
 
     @Test
     void calculateSkipsCabinetWhenSizeMissing() {
-        when(materialNormRepository.findByContextType(anyString())).thenReturn(Optional.empty());
+        when(materialNormRepository.findAllByContextType(anyString())).thenReturn(List.of());
 
         NetworkNode node = new NetworkNode();
         node.setBaseCircuitBreakers(1);
@@ -63,7 +63,7 @@ class NodeCalculatorTest {
         norm.setMaterial(cabinet);
         norm.setFormula("1");
 
-        when(materialNormRepository.findByContextType("NODE_CABINET_350")).thenReturn(Optional.of(norm));
+        when(materialNormRepository.findAllByContextType("NODE_CABINET_350")).thenReturn(List.of(norm));
         when(expressionEvaluator.evaluate(anyString(), anyMap())).thenReturn(1.0);
 
         NetworkNode node = new NetworkNode();

@@ -3,6 +3,7 @@ package com.kapamejlbka.objectmanager.domain.calcengine;
 import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation;
 import com.kapamejlbka.objectmanager.domain.calculation.repository.SystemCalculationRepository;
 import com.kapamejlbka.objectmanager.domain.calcengine.routes.RouteCalculator;
+import com.kapamejlbka.objectmanager.domain.calcengine.LinkCalculator;
 import com.kapamejlbka.objectmanager.domain.device.EndpointDevice;
 import com.kapamejlbka.objectmanager.domain.device.NetworkNode;
 import com.kapamejlbka.objectmanager.domain.device.repository.EndpointDeviceRepository;
@@ -40,6 +41,7 @@ public class CalculationEngineImpl implements CalculationEngine {
     private final InstallationRouteRepository installationRouteRepository;
     private final RouteSegmentLinkRepository routeSegmentLinkRepository;
     private final RouteCalculator routeCalculator;
+    private final LinkCalculator linkCalculator;
     private final EndpointCalculator endpointCalculator;
     private final NodeCalculator nodeCalculator;
     private final FiberCalculator fiberCalculator;
@@ -53,6 +55,7 @@ public class CalculationEngineImpl implements CalculationEngine {
             InstallationRouteRepository installationRouteRepository,
             RouteSegmentLinkRepository routeSegmentLinkRepository,
             RouteCalculator routeCalculator,
+            LinkCalculator linkCalculator,
             EndpointCalculator endpointCalculator,
             NodeCalculator nodeCalculator,
             FiberCalculator fiberCalculator,
@@ -64,6 +67,7 @@ public class CalculationEngineImpl implements CalculationEngine {
         this.installationRouteRepository = installationRouteRepository;
         this.routeSegmentLinkRepository = routeSegmentLinkRepository;
         this.routeCalculator = routeCalculator;
+        this.linkCalculator = linkCalculator;
         this.endpointCalculator = endpointCalculator;
         this.nodeCalculator = nodeCalculator;
         this.fiberCalculator = fiberCalculator;
@@ -107,6 +111,14 @@ public class CalculationEngineImpl implements CalculationEngine {
                 merge(materialTotals, routeCalculator.calculateForRoute(route, linksInRoute, settings));
             } catch (Exception ex) {
                 LOG.warn("Failed to calculate materials for route {}: {}", route.getName(), ex.getMessage());
+            }
+        });
+
+        topologyLinks.forEach(link -> {
+            try {
+                merge(materialTotals, linkCalculator.calculateForLink(link));
+            } catch (Exception ex) {
+                LOG.warn("Failed to calculate materials for link {}: {}", link.getId(), ex.getMessage());
             }
         });
 

@@ -19,6 +19,9 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultMaterialsInitializer.class);
 
     private static final String DEFAULT_CATEGORY = "BASIC";
+    private static final String CATEGORY_CABLE_UTP = "CABLE_UTP";
+    private static final String CATEGORY_CABLE_POWER = "CABLE_POWER";
+    private static final String CATEGORY_CABLE_FIBER = "CABLE_FIBER";
 
     private final MaterialRepository materialRepository;
     private final MaterialNormRepository materialNormRepository;
@@ -49,35 +52,54 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
                 getOrCreateMaterial(
                         "MAT_CAMERA_ANCHOR",
                         "Крепёж для видеокамеры (дюбель/саморез)",
-                        "шт"));
+                        "шт",
+                        DEFAULT_CATEGORY));
         materials.put(
                 "MAT_RJ45_PLUG",
-                getOrCreateMaterial("MAT_RJ45_PLUG", "Коннектор RJ-45", "шт"));
+                getOrCreateMaterial("MAT_RJ45_PLUG", "Коннектор RJ-45", "шт", DEFAULT_CATEGORY));
         materials.put(
                 "MAT_READER_ANCHOR",
-                getOrCreateMaterial("MAT_READER_ANCHOR", "Крепёж для считывателя", "шт"));
+                getOrCreateMaterial("MAT_READER_ANCHOR", "Крепёж для считывателя", "шт", DEFAULT_CATEGORY));
         materials.put(
                 "MAT_CABINET_ANCHOR",
-                getOrCreateMaterial("MAT_CABINET_ANCHOR", "Крепёж шкафа (анкера)", "шт"));
+                getOrCreateMaterial("MAT_CABINET_ANCHOR", "Крепёж шкафа (анкера)", "шт", DEFAULT_CATEGORY));
         materials.put(
                 "MAT_INPUT_GLAND",
-                getOrCreateMaterial("MAT_INPUT_GLAND", "Вводная муфта в шкаф", "шт"));
+                getOrCreateMaterial("MAT_INPUT_GLAND", "Вводная муфта в шкаф", "шт", DEFAULT_CATEGORY));
         materials.put(
                 "MAT_POWER_LUG",
-                getOrCreateMaterial("MAT_POWER_LUG", "Наконечник силовой", "шт"));
+                getOrCreateMaterial("MAT_POWER_LUG", "Наконечник силовой", "шт", DEFAULT_CATEGORY));
         materials.put(
                 "MAT_SOCKET_DOUBLE",
-                getOrCreateMaterial("MAT_SOCKET_DOUBLE", "Розетка 220В двойная", "шт"));
+                getOrCreateMaterial("MAT_SOCKET_DOUBLE", "Розетка 220В двойная", "шт", DEFAULT_CATEGORY));
         materials.put(
                 "MAT_BREAKER",
-                getOrCreateMaterial("MAT_BREAKER", "Автоматический выключатель", "шт"));
+                getOrCreateMaterial("MAT_BREAKER", "Автоматический выключатель", "шт", DEFAULT_CATEGORY));
         materials.put(
                 "MAT_CABINET_400",
-                getOrCreateMaterial("MAT_CABINET_400", "Шкаф навесной 400мм", "шт"));
+                getOrCreateMaterial("MAT_CABINET_400", "Шкаф навесной 400мм", "шт", DEFAULT_CATEGORY));
+        materials.put(
+                "CABLE_UTP_CAT5E",
+                getOrCreateMaterial("CABLE_UTP_CAT5E", "Кабель UTP Cat5e", "м", CATEGORY_CABLE_UTP));
+        materials.put(
+                "CABLE_UTP_CAT6",
+                getOrCreateMaterial("CABLE_UTP_CAT6", "Кабель UTP Cat6", "м", CATEGORY_CABLE_UTP));
+        materials.put(
+                "CABLE_POWER_3X1_5",
+                getOrCreateMaterial("CABLE_POWER_3X1_5", "Кабель питания 3×1.5", "м", CATEGORY_CABLE_POWER));
+        materials.put(
+                "CABLE_POWER_3X2_5",
+                getOrCreateMaterial("CABLE_POWER_3X2_5", "Кабель питания 3×2.5", "м", CATEGORY_CABLE_POWER));
+        materials.put(
+                "CABLE_FIBER_4",
+                getOrCreateMaterial("CABLE_FIBER_4", "Оптический кабель 4 волокна", "м", CATEGORY_CABLE_FIBER));
+        materials.put(
+                "CABLE_FIBER_8",
+                getOrCreateMaterial("CABLE_FIBER_8", "Оптический кабель 8 волокон", "м", CATEGORY_CABLE_FIBER));
         return materials;
     }
 
-    private Material getOrCreateMaterial(String code, String name, String unit) {
+    private Material getOrCreateMaterial(String code, String name, String unit, String category) {
         String normalizedCode = code.trim().toUpperCase(Locale.ROOT);
         return materialRepository
                 .findByCode(normalizedCode)
@@ -87,7 +109,7 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
                             material.setCode(normalizedCode);
                             material.setName(name);
                             material.setUnit(unit);
-                            material.setCategory(DEFAULT_CATEGORY);
+                            material.setCategory(category);
                             return materialRepository.save(material);
                         });
     }
@@ -113,6 +135,14 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
                 "Количество автоматов: базовые + доп.");
         createNormIfMissing("NODE_CABINET_400", materials.get("MAT_CABINET_400"), "1",
                 "Один шкаф 400 мм на узел");
+        createNormIfMissing("LINK_UTP_LENGTH", materials.get("CABLE_UTP_CAT5E"), "length",
+                "Длина UTP-линии в метрах");
+        createNormIfMissing("LINK_POWER_LENGTH", materials.get("CABLE_POWER_3X1_5"), "length",
+                "Длина силовой линии в метрах");
+        createNormIfMissing("FIBER_4", materials.get("CABLE_FIBER_4"), "length",
+                "Оптический кабель 4 волокна по длине");
+        createNormIfMissing("FIBER_8", materials.get("CABLE_FIBER_8"), "length",
+                "Оптический кабель 8 волокон по длине");
     }
 
     private void createNormIfMissing(String contextType, Material material, String formula, String description) {
@@ -120,16 +150,14 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
             LOG.warn("Material is missing for default norm {}", contextType);
             return;
         }
-        materialNormRepository
-                .findByContextType(contextType)
-                .orElseGet(
-                        () -> {
-                            MaterialNorm norm = new MaterialNorm();
-                            norm.setContextType(contextType);
-                            norm.setMaterial(material);
-                            norm.setFormula(formula);
-                            norm.setDescription(description);
-                            return materialNormRepository.save(norm);
-                        });
+        boolean normMissing = materialNormRepository.findAllByContextType(contextType).isEmpty();
+        if (normMissing) {
+            MaterialNorm norm = new MaterialNorm();
+            norm.setContextType(contextType);
+            norm.setMaterial(material);
+            norm.setFormula(formula);
+            norm.setDescription(description);
+            materialNormRepository.save(norm);
+        }
     }
 }

@@ -6,6 +6,7 @@ import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
 import com.kapamejlbka.objectmanager.repository.MaterialNormRepository;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,20 +64,17 @@ public class FiberCalculator {
     }
 
     private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {
-        MaterialNorm norm = materialNormRepository
-                .findByContextType(contextType)
-                .orElseGet(() -> {
-                    LOG.warn("Material norm not found for context: {}", contextType);
-                    return null;
-                });
-
-        if (norm == null) {
+        List<MaterialNorm> norms = materialNormRepository.findAllByContextType(contextType);
+        if (norms.isEmpty()) {
+            LOG.warn("Material norm not found for context: {}", contextType);
             return;
         }
 
-        double quantity = expressionEvaluator.evaluate(norm.getFormula(), context);
-        if (quantity > 0) {
-            result.merge(norm.getMaterial(), quantity, Double::sum);
+        for (MaterialNorm norm : norms) {
+            double quantity = expressionEvaluator.evaluate(norm.getFormula(), context);
+            if (quantity > 0) {
+                result.merge(norm.getMaterial(), quantity, Double::sum);
+            }
         }
     }
 }

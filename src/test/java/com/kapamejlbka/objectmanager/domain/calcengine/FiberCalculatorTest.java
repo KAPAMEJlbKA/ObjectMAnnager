@@ -10,8 +10,8 @@ import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
 import com.kapamejlbka.objectmanager.repository.MaterialNormRepository;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,8 +31,11 @@ class FiberCalculatorTest {
     @BeforeEach
     void setUp() {
         materialNormRepository = Mockito.mock(MaterialNormRepository.class);
-        when(materialNormRepository.findByContextType(anyString()))
-                .thenAnswer(invocation -> Optional.ofNullable(norms.get(invocation.getArgument(0))));
+        when(materialNormRepository.findAllByContextType(anyString()))
+                .thenAnswer(invocation -> {
+                    MaterialNorm norm = norms.get(invocation.getArgument(0));
+                    return norm == null ? List.of() : List.of(norm);
+                });
         fiberCalculator = new FiberCalculator(materialNormRepository, expressionEvaluator);
     }
 
@@ -66,7 +69,7 @@ class FiberCalculatorTest {
 
     @Test
     void returnsEmptyWhenNormMissing() {
-        when(materialNormRepository.findByContextType(anyString())).thenReturn(Optional.empty());
+        when(materialNormRepository.findAllByContextType(anyString())).thenReturn(List.of());
 
         TopologyLink fiberLink = new TopologyLink();
         fiberLink.setCableLength(10.0);
