@@ -51,6 +51,9 @@
     let selectedLinkId = null;
     let colorMap = {};
 
+    window.selectedRouteId = selectedRouteId;
+    window.selectedLinkId = selectedLinkId;
+
     Promise.all([apiFetch(topologyApi), apiFetch(apiBase)])
         .then(([topologyResponse, routesResponse]) => Promise.all([topologyResponse.json(), routesResponse.json()]))
         .then(([topologyData, routesData]) => {
@@ -66,8 +69,8 @@
         });
 
     canvasWrapper?.addEventListener('click', () => {
-        selectedRouteId = null;
-        selectedLinkId = null;
+        setSelectedRoute(null);
+        setSelectedLink(null);
         renderRoutesList();
         renderLinks();
         renderInspector();
@@ -105,10 +108,10 @@
                 materials = normalizedRoutes.materials;
                 colorMap = {};
                 if (selectedRouteId && !routes.some((r) => r.id === selectedRouteId)) {
-                    selectedRouteId = null;
+                    setSelectedRoute(null);
                 }
                 if (selectedLinkId && !topology.links.some((l) => l.id === selectedLinkId)) {
-                    selectedLinkId = null;
+                    setSelectedLink(null);
                 }
                 renderAll();
             });
@@ -190,7 +193,7 @@
             hitbox.setAttribute('y1', fromPos.y);
             hitbox.setAttribute('x2', toPos.x);
             hitbox.setAttribute('y2', toPos.y);
-            hitbox.classList.add('om-link-line-hitbox');
+            hitbox.classList.add('om-link-line-hitbox', 'route-link-hitbox');
 
             const visibleLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             visibleLine.setAttribute('x1', fromPos.x);
@@ -198,7 +201,7 @@
             visibleLine.setAttribute('x2', toPos.x);
             visibleLine.setAttribute('y2', toPos.y);
             visibleLine.dataset.id = link.id;
-            visibleLine.classList.add('om-route-line');
+            visibleLine.classList.add('om-route-line', 'route-link-visible');
             if (!link.routeId) {
                 visibleLine.classList.add('unassigned');
             }
@@ -210,9 +213,9 @@
                 visibleLine.classList.add('active-line');
             }
 
-            group.addEventListener('click', (e) => {
+            hitbox.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (selectedRouteId) {
+                if (selectedRouteId !== null) {
                     link.routeId = selectedRouteId;
                     renderLinks();
                     assignLink(link.id, selectedRouteId);
@@ -228,16 +231,16 @@
     }
 
     function selectRoute(id) {
-        selectedRouteId = id;
-        selectedLinkId = null;
+        setSelectedRoute(Number(id));
+        setSelectedLink(null);
         renderRoutesList();
         renderLinks();
         renderInspector();
     }
 
     function selectLink(id) {
-        selectedLinkId = id;
-        selectedRouteId = null;
+        setSelectedLink(Number(id));
+        setSelectedRoute(null);
         renderRoutesList();
         renderLinks();
         renderInspector();
@@ -246,7 +249,7 @@
     function renderInspector() {
         inspector.innerHTML = '';
         inspector.className = 'om-routes-inspector';
-        if (selectedRouteId) {
+        if (selectedRouteId !== null) {
             renderRouteInspector();
         } else if (selectedLinkId) {
             renderLinkInspector();
@@ -456,6 +459,16 @@
                 alert('Не удалось привязать линию');
                 refreshRoutes();
             });
+    }
+
+    function setSelectedRoute(id) {
+        selectedRouteId = id;
+        window.selectedRouteId = id;
+    }
+
+    function setSelectedLink(id) {
+        selectedLinkId = id;
+        window.selectedLinkId = id;
     }
 
     function labelWithControl(label, control) {
