@@ -2,10 +2,12 @@ package com.kapamejlbka.objectmanager.service;
 
 import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation;
 import com.kapamejlbka.objectmanager.domain.calculation.repository.SystemCalculationRepository;
+import com.kapamejlbka.objectmanager.domain.material.Material;
 import com.kapamejlbka.objectmanager.domain.topology.InstallationRoute;
 import com.kapamejlbka.objectmanager.domain.topology.dto.InstallationRouteCreateRequest;
 import com.kapamejlbka.objectmanager.domain.topology.dto.InstallationRouteUpdateRequest;
 import com.kapamejlbka.objectmanager.domain.topology.repository.InstallationRouteRepository;
+import com.kapamejlbka.objectmanager.repository.MaterialRepository;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,12 +25,15 @@ public class InstallationRouteService {
 
     private final InstallationRouteRepository installationRouteRepository;
     private final SystemCalculationRepository systemCalculationRepository;
+    private final MaterialRepository materialRepository;
 
     public InstallationRouteService(
             InstallationRouteRepository installationRouteRepository,
-            SystemCalculationRepository systemCalculationRepository) {
+            SystemCalculationRepository systemCalculationRepository,
+            MaterialRepository materialRepository) {
         this.installationRouteRepository = installationRouteRepository;
         this.systemCalculationRepository = systemCalculationRepository;
+        this.materialRepository = materialRepository;
     }
 
     @Transactional
@@ -86,7 +91,8 @@ public class InstallationRouteService {
                 dto.getMountSurface(),
                 dto.getLengthMeters(),
                 dto.getOrientation(),
-                dto.getFixingMethod());
+                dto.getFixingMethod(),
+                dto.getMainMaterialId());
     }
 
     private void applyDto(InstallationRoute installationRoute, InstallationRouteUpdateRequest dto) {
@@ -97,7 +103,8 @@ public class InstallationRouteService {
                 dto.getMountSurface(),
                 dto.getLengthMeters(),
                 dto.getOrientation(),
-                dto.getFixingMethod());
+                dto.getFixingMethod(),
+                dto.getMainMaterialId());
     }
 
     private void applyDto(
@@ -107,7 +114,8 @@ public class InstallationRouteService {
             String mountSurface,
             Double lengthMeters,
             String orientation,
-            String fixingMethod) {
+            String fixingMethod,
+            Long mainMaterialId) {
         String normalizedName = normalize(name);
         String effectiveName = StringUtils.hasText(normalizedName) ? normalizedName : installationRoute.getName();
         if (!StringUtils.hasText(effectiveName)) {
@@ -172,6 +180,17 @@ public class InstallationRouteService {
         }
 
         installationRoute.setRouteType(effectiveRouteType);
+
+        if (mainMaterialId != null) {
+            if (mainMaterialId <= 0) {
+                installationRoute.setMainMaterial(null);
+            } else {
+                Material mainMaterial = materialRepository
+                        .findById(mainMaterialId)
+                        .orElseThrow(() -> new IllegalArgumentException("Указанный материал трассы не найден"));
+                installationRoute.setMainMaterial(mainMaterial);
+            }
+        }
     }
 
     private String normalize(String value) {

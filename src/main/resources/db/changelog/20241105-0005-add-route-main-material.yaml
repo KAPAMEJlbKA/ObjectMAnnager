@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20241105-0005-add-route-main-material
+      author: chatgpt
+      changes:
+        - addColumn:
+            tableName: installation_routes
+            columns:
+              - column:
+                  name: main_material_id
+                  type: BIGINT
+        - addForeignKeyConstraint:
+            baseTableName: installation_routes
+            baseColumnNames: main_material_id
+            constraintName: fk_installation_routes_main_material
+            referencedTableName: materials
+            referencedColumnNames: id
+            onDelete: SET NULL

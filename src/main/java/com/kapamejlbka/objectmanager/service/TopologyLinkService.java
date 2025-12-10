@@ -11,6 +11,7 @@ import com.kapamejlbka.objectmanager.domain.topology.dto.TopologyLinkCreateReque
 import com.kapamejlbka.objectmanager.domain.topology.dto.TopologyLinkLengthUpdate;
 import com.kapamejlbka.objectmanager.domain.topology.dto.TopologyLinkUpdateRequest;
 import com.kapamejlbka.objectmanager.domain.topology.repository.TopologyLinkRepository;
+import com.kapamejlbka.objectmanager.service.InstallationRouteLengthService;
 import jakarta.transaction.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,16 +28,19 @@ public class TopologyLinkService {
     private final SystemCalculationRepository systemCalculationRepository;
     private final NetworkNodeRepository networkNodeRepository;
     private final EndpointDeviceRepository endpointDeviceRepository;
+    private final InstallationRouteLengthService installationRouteLengthService;
 
     public TopologyLinkService(
             TopologyLinkRepository topologyLinkRepository,
             SystemCalculationRepository systemCalculationRepository,
             NetworkNodeRepository networkNodeRepository,
-            EndpointDeviceRepository endpointDeviceRepository) {
+            EndpointDeviceRepository endpointDeviceRepository,
+            InstallationRouteLengthService installationRouteLengthService) {
         this.topologyLinkRepository = topologyLinkRepository;
         this.systemCalculationRepository = systemCalculationRepository;
         this.networkNodeRepository = networkNodeRepository;
         this.endpointDeviceRepository = endpointDeviceRepository;
+        this.installationRouteLengthService = installationRouteLengthService;
     }
 
     @Transactional
@@ -61,7 +65,9 @@ public class TopologyLinkService {
         TopologyLink topologyLink = getById(id);
         applyDto(topologyLink, dto);
         topologyLink.setUpdatedAt(LocalDateTime.now());
-        return topologyLinkRepository.save(topologyLink);
+        TopologyLink updated = topologyLinkRepository.save(topologyLink);
+        installationRouteLengthService.recalculateForLink(updated.getId());
+        return updated;
     }
 
     public List<TopologyLink> listByCalculation(Long calculationId) {
@@ -97,6 +103,7 @@ public class TopologyLinkService {
             link.setCableLength(length);
             link.setUpdatedAt(LocalDateTime.now());
             topologyLinkRepository.save(link);
+            installationRouteLengthService.recalculateForLink(link.getId());
         }
     }
 

@@ -96,14 +96,6 @@ public class CalculationEngineImpl implements CalculationEngine {
                 if (linksInRoute.isEmpty()) {
                     return;
                 }
-                double totalLength = linksInRoute.stream()
-                        .map(TopologyLink::getCableLength)
-                        .filter(Objects::nonNull)
-                        .mapToDouble(Double::doubleValue)
-                        .sum();
-                if (totalLength > 0) {
-                    route.setLengthMeters(totalLength);
-                }
                 merge(materialTotals, routeCalculator.calculateForRoute(route, linksInRoute, settings));
             } catch (Exception ex) {
                 LOG.warn("Failed to calculate materials for route {}: {}", route.getName(), ex.getMessage());

@@ -1,6 +1,7 @@
 package com.kapamejlbka.objectmanager.domain.topology;
 
 import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation;
+import com.kapamejlbka.objectmanager.domain.material.Material;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -32,6 +33,10 @@ public class InstallationRoute {
 
     @Column(name = "mount_surface")
     private String mountSurface;
+
+    @ManyToOne
+    @JoinColumn(name = "main_material_id")
+    private Material mainMaterial;
 
     @Column(name = "length_meters", nullable = false)
     private Double lengthMeters;
@@ -98,6 +103,14 @@ public class InstallationRoute {
 
     public void setMountSurface(String mountSurface) {
         this.mountSurface = mountSurface;
+    }
+
+    public Material getMainMaterial() {
+        return mainMaterial;
+    }
+
+    public void setMainMaterial(Material mainMaterial) {
+        this.mainMaterial = mainMaterial;
     }
 
     public Double getLengthMeters() {
