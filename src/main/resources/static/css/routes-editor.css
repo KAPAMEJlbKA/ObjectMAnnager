@@ -67,6 +67,10 @@
     height: 100%;
 }
 
+#routes-nodes-layer {
+    pointer-events: none;
+}
+
 .om-route-node, .om-route-device {
     position: absolute;
     min-width: 80px;
