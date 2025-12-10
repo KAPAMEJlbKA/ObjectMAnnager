@@ -81,7 +81,11 @@ public class NodeCalculator {
         int extra = extraSockets != null ? extraSockets : 0;
         int total = base + extra;
         if (total > 0) {
-            addFromNorm(result, NODE_SOCKET_DOUBLE, Map.of("socketCount", total));
+            Map<String, Object> context = new HashMap<>();
+            context.put("socketCount", total);
+            context.put("baseSockets", base);
+            context.put("extraSockets", extra);
+            addFromNorm(result, NODE_SOCKET_DOUBLE, context);
         }
     }
 
@@ -89,7 +93,11 @@ public class NodeCalculator {
         int base = baseCircuitBreakers != null ? baseCircuitBreakers : 0;
         int extra = extraCircuitBreakers != null ? extraCircuitBreakers : 0;
         if (base + extra > 0) {
-            addFromNorm(result, NODE_CIRCUIT_BREAKER, Map.of("count", base + extra));
+            Map<String, Object> context = new HashMap<>();
+            context.put("count", base + extra);
+            context.put("baseBreakers", base);
+            context.put("extraBreakers", extra);
+            addFromNorm(result, NODE_CIRCUIT_BREAKER, context);
         }
     }
 
