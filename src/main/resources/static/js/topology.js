@@ -6,6 +6,8 @@
 
     const calcId = editor.dataset.calcId;
     const apiBase = `/api/calculations/${calcId}/topology`;
+    const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content') || 'X-CSRF-TOKEN';
     const deviceList = document.getElementById('device-list');
     const nodesLayer = document.getElementById('topology-nodes-layer');
     const linksLayer = document.getElementById('topology-links-layer');
@@ -20,7 +22,7 @@
     let connectStart = null;
 
     function fetchTopology() {
-        fetch(apiBase)
+        apiFetch(apiBase)
             .then((r) => r.json())
             .then((data) => {
                 topology = data;
@@ -193,7 +195,7 @@
                 ? topology.nodes.find((n) => n.id === id)
                 : topology.devices.find((d) => d.id === id);
         if (!target) return;
-        fetch(`${apiBase}/${type === 'node' ? 'nodes' : 'devices'}/${id}/position`, {
+        apiFetch(`${apiBase}/${type === 'node' ? 'nodes' : 'devices'}/${id}/position`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({x: Math.round(target.x ?? 0), y: Math.round(target.y ?? 0)}),
@@ -303,7 +305,7 @@
                 fiberSpliceCount: parseIntValue(wrapper.querySelector('#fiber-splice').value),
                 fiberConnectorCount: parseIntValue(wrapper.querySelector('#fiber-connector').value)
             };
-            fetch(`${apiBase}/links/${link.id}`, {
+            apiFetch(`${apiBase}/links/${link.id}`, {
                 method: 'PATCH',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify(payload)
@@ -326,7 +328,7 @@
             if (!confirm('Удалить линию?')) {
                 return;
             }
-            fetch(`${apiBase}/links/${link.id}`, {method: 'DELETE'})
+            apiFetch(`${apiBase}/links/${link.id}`, {method: 'DELETE'})
                 .then((r) => {
                     if (!r.ok) {
                         throw new Error('failed');
@@ -389,7 +391,7 @@
             linkType: 'UTP',
             length: suggestedLength,
         };
-        fetch(`${apiBase}/links`, {
+        apiFetch(`${apiBase}/links`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(payload),
@@ -450,5 +452,13 @@
 
     window.addEventListener('resize', () => renderLinks());
 
-    fetchTopology();
+        fetchTopology();
+
+    function apiFetch(url, options = {}) {
+        const headers = options.headers ? {...options.headers} : {};
+        if (csrfToken) {
+            headers[csrfHeader] = csrfToken;
+        }
+        return fetch(url, {...options, headers});
+    }
 })();
