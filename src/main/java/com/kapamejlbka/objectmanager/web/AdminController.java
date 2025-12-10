@@ -270,6 +270,7 @@ public class AdminController {
                 .sorted(Comparator.comparing(Material::getCode, String.CASE_INSENSITIVE_ORDER))
                 .toList());
         model.addAttribute("normContexts", MaterialNormContext.orderedValues());
+        model.addAttribute("normContextNames", MaterialNormContext.availableContexts());
         if (editNormId != null) {
             MaterialNorm norm = materialNormService.getById(editNormId);
             MaterialNormForm editForm = new MaterialNormForm();
