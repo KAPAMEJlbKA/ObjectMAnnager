@@ -109,28 +109,37 @@ public class InstallationRouteService {
             String orientation,
             String fixingMethod) {
         String normalizedName = normalize(name);
-        if (!StringUtils.hasText(normalizedName)) {
+        String effectiveName = StringUtils.hasText(normalizedName) ? normalizedName : installationRoute.getName();
+        if (!StringUtils.hasText(effectiveName)) {
             throw new IllegalArgumentException("Installation route name is required");
         }
-        installationRoute.setName(normalizedName);
+        installationRoute.setName(effectiveName);
 
         String normalizedRouteType = normalize(routeType);
-        if (!StringUtils.hasText(normalizedRouteType)) {
+        String effectiveRouteType =
+                StringUtils.hasText(normalizedRouteType) ? normalizedRouteType.toUpperCase() : installationRoute.getRouteType();
+        if (!StringUtils.hasText(effectiveRouteType)) {
             throw new IllegalArgumentException("Installation route type is required");
         }
-        String upperRouteType = normalizedRouteType.toUpperCase();
-        if (!SUPPORTED_ROUTE_TYPES.contains(upperRouteType)) {
-            throw new IllegalArgumentException("Unsupported installation route type: " + upperRouteType);
+        if (!SUPPORTED_ROUTE_TYPES.contains(effectiveRouteType)) {
+            throw new IllegalArgumentException("Unsupported installation route type: " + effectiveRouteType);
         }
 
-        if (lengthMeters == null || lengthMeters <= 0) {
-            throw new IllegalArgumentException("Installation route length must be greater than 0");
+        Double effectiveLength = lengthMeters != null ? lengthMeters : installationRoute.getLengthMeters();
+        if (effectiveLength == null) {
+            effectiveLength = 0d;
         }
-        installationRoute.setLengthMeters(lengthMeters);
+        if (effectiveLength < 0) {
+            throw new IllegalArgumentException("Installation route length cannot be negative");
+        }
+        installationRoute.setLengthMeters(effectiveLength);
 
-        installationRoute.setMountSurface(normalize(mountSurface));
+        String normalizedMountSurface = normalize(mountSurface);
+        if (normalizedMountSurface != null) {
+            installationRoute.setMountSurface(normalizedMountSurface);
+        }
 
-        if ("CORRUGATED_PIPE".equals(upperRouteType)) {
+        if ("CORRUGATED_PIPE".equals(effectiveRouteType)) {
             String normalizedOrientation = normalize(orientation);
             if (normalizedOrientation != null) {
                 String upperOrientation = normalizedOrientation.toUpperCase();
@@ -145,8 +154,11 @@ public class InstallationRouteService {
             installationRoute.setOrientation(null);
         }
 
-        if ("BARE_CABLE".equals(upperRouteType)) {
+        if ("BARE_CABLE".equals(effectiveRouteType)) {
             String normalizedFixingMethod = normalize(fixingMethod);
+            if (!StringUtils.hasText(normalizedFixingMethod) && StringUtils.hasText(installationRoute.getFixingMethod())) {
+                normalizedFixingMethod = installationRoute.getFixingMethod();
+            }
             if (!StringUtils.hasText(normalizedFixingMethod)) {
                 throw new IllegalArgumentException("Fixing method is required for bare cable routes");
             }
@@ -159,7 +171,7 @@ public class InstallationRouteService {
             installationRoute.setFixingMethod(null);
         }
 
-        installationRoute.setRouteType(upperRouteType);
+        installationRoute.setRouteType(effectiveRouteType);
     }
 
     private String normalize(String value) {
