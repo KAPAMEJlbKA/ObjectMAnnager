@@ -40,6 +40,10 @@ public class SiteAttachmentService {
         return siteAttachmentRepository.findBySiteId(siteId);
     }
 
+    public List<SiteAttachment> listBySite(Long siteId) {
+        return listAttachments(siteId);
+    }
+
     @Transactional
     public void deleteAttachment(Long attachmentId) {
         SiteAttachment attachment = siteAttachmentRepository
