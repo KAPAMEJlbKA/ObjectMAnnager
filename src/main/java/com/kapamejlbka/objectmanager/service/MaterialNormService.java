@@ -81,8 +81,5 @@ public class MaterialNormService {
         if (!StringUtils.hasText(form.getFormula())) {
             throw new IllegalArgumentException("Формула обязательна");
         }
-        if (!MaterialNormContext.availableContexts().containsKey(form.getContextType())) {
-            throw new IllegalArgumentException("Неизвестный контекст нормы");
-        }
     }
 }
