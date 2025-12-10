@@ -9,13 +9,14 @@ databaseChangeLog:
       changes:
         - sql:
             sql: |
+              UPDATE materials SET category = 'BOX' WHERE UPPER(category) = 'BOX_JUNCTION';
               UPDATE materials
               SET category = 'OTHER'
               WHERE category IS NULL
                 OR UPPER(category) NOT IN (
                   'CABLE_UTP','CABLE_POWER','CABLE_FIBER','PIPE_CORRUGATED','CABLE_CHANNEL','WIRE_ROPE',
                   'FASTENER_CLIP','FASTENER_DOWEL','FASTENER_SCREW','FASTENER_TIE','FASTENER_WIRE_ROPE',
-                  'BOX_JUNCTION','CABINET','CONNECTOR_RJ45','ELECTRIC_BREAKER','ELECTRIC_SOCKET','ELECTRIC_LUG','OTHER'
+                  'BOX','CABINET','CONNECTOR_RJ45','ELECTRIC_BREAKER','ELECTRIC_SOCKET','ELECTRIC_LUG','OTHER'
                 );
               UPDATE materials SET category = UPPER(category);
   - changeSet:
@@ -36,7 +37,7 @@ databaseChangeLog:
                   'CORRUGATED_PIPE_BRANCH','CORRUGATED_PIPE_HORIZONTAL_CLIP_BETON_OR_BRICK','CORRUGATED_PIPE_HORIZONTAL_CLIP_METAL',
                   'CORRUGATED_PIPE_HORIZONTAL_CLIP_WOOD','CORRUGATED_PIPE_HORIZONTAL_CLIP_GYPSUM','CABLE_CHANNEL','CABLE_CHANNEL_CLIP',
                   'CABLE_CHANNEL_FASTENER','CABLE_CHANNEL_FASTENER_BETON_OR_BRICK','CABLE_CHANNEL_FASTENER_METAL','CABLE_CHANNEL_FASTENER_WOOD',
-                  'CABLE_CHANNEL_FASTENER_GYPSUM','TRAY_OR_STRUCTURE','TRAY_OR_STRUCTURE_TIES','WIRE_ROPE','WIRE_ROPE_ANCHOR','WIRE_ROPE_TURNBUCKLE',
+                  'CABLE_CHANNEL_FASTENER_GYPSUM','TRAY_STRUCTURE','TRAY_OR_STRUCTURE_TIES','WIRE_ROPE','WIRE_ROPE_ANCHOR','WIRE_ROPE_TURNBUCKLE',
                   'WIRE_ROPE_CLAMP','BARE_CABLE','BARE_CABLE_ONE_CLIP','BARE_CABLE_PE_TIES','ENDPOINT_CAMERA_FIXING','ENDPOINT_CAMERA_RJ45',
                   'ENDPOINT_ACCESS_POINT_FIXING','ENDPOINT_ACCESS_POINT_RJ45','ENDPOINT_NETWORK_OUTLET_FIXING','ENDPOINT_NETWORK_OUTLET_RJ45',
                   'ENDPOINT_READER_FIXING','ENDPOINT_READER_RJ45','ENDPOINT_TURNSTILE_FIXING','ENDPOINT_OTHER_NETWORK_DEVICE_FIXING',
@@ -47,3 +48,16 @@ databaseChangeLog:
                   'ROUTE_WIRE_ROPE_ANCHOR','ROUTE_WIRE_ROPE_TURNBUCKLE','ROUTE_WIRE_ROPE_CLAMP','LINK_FIBER_4_LENGTH','LINK_FIBER_8_LENGTH'
                 );
               UPDATE material_norms SET context_type = UPPER(context_type);
+  - changeSet:
+      id: 20241126-0006-installation-route-type
+      author: chatgpt
+      preConditions:
+        - onFail: MARK_RAN
+          tableExists:
+            tableName: installation_routes
+      changes:
+        - sql:
+            sql: |
+              UPDATE installation_routes
+              SET route_type = 'TRAY_STRUCTURE'
+              WHERE UPPER(route_type) = 'TRAY_OR_STRUCTURE';

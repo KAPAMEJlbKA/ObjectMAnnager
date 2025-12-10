@@ -32,14 +32,23 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        if (materialRepository.count() > 0 || materialNormRepository.count() > 0) {
-            LOG.info("Default materials and norms already present, skipping seeding");
-            return;
+        Map<String, Material> materials = new LinkedHashMap<>();
+        boolean seededMaterials = false;
+
+        if (materialRepository.count() == 0) {
+            LOG.info("Seeding default materials");
+            materials.putAll(createDefaultMaterials());
+            seededMaterials = true;
+        } else {
+            materialRepository.findAll().forEach(material -> materials.put(material.getCode(), material));
         }
 
-        LOG.info("Seeding default materials and norms");
-        Map<String, Material> materials = createDefaultMaterials();
-        createDefaultNorms(materials);
+        if (materialNormRepository.count() == 0) {
+            LOG.info("Seeding default material norms");
+            createDefaultNorms(materials);
+        } else if (seededMaterials) {
+            LOG.info("Material norms already present, skipping norms seeding");
+        }
     }
 
     private Map<String, Material> createDefaultMaterials() {
@@ -89,7 +98,7 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
         addMaterial(materials, "SCREW_4_2X50", "Саморез 4,2×50", "шт", MaterialCategory.FASTENER_SCREW);
         addMaterial(materials, "TIE_3_6X200", "Стяжка 3,6×200", "шт", MaterialCategory.FASTENER_TIE);
 
-        addMaterial(materials, "BOX_JUNCTION_SMALL", "Распределительная коробка малая", "шт", MaterialCategory.BOX_JUNCTION);
+        addMaterial(materials, "BOX_JUNCTION_SMALL", "Распределительная коробка малая", "шт", MaterialCategory.BOX);
 
         addMaterial(materials, "CABINET_350", "Шкаф навесной 350 мм", "шт", MaterialCategory.CABINET);
         addMaterial(materials, "CABINET_400", "Шкаф навесной 400 мм", "шт", MaterialCategory.CABINET);
@@ -119,19 +128,22 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
     }
 
     private void createDefaultNorms(Map<String, Material> materials) {
-        addNorm(materials, MaterialNormContext.ENDPOINT_CAMERA_FIXING, "CLIP_PIPE_20", "4", "4 точки крепления на камеру");
+        addNorm(materials, MaterialNormContext.ENDPOINT_CAMERA_FIXING, "DOWEL_6X40", "4", "4 точки крепления на камеру");
+        addNorm(materials, MaterialNormContext.ENDPOINT_CAMERA_FIXING, "SCREW_4_2X50", "4", "4 точки крепления на камеру");
         addNorm(materials, MaterialNormContext.ENDPOINT_CAMERA_RJ45, "RJ45_PLUG", "2", "2 разъёма RJ-45 на камеру");
 
-        addNorm(materials, MaterialNormContext.ENDPOINT_READER_FIXING, "CLIP_PIPE_20", "4", "Крепёж считывателя");
+        addNorm(materials, MaterialNormContext.ENDPOINT_READER_FIXING, "DOWEL_6X40", "4", "Крепёж считывателя");
+        addNorm(materials, MaterialNormContext.ENDPOINT_READER_FIXING, "SCREW_4_2X50", "4", "Крепёж считывателя");
         addNorm(materials, MaterialNormContext.ENDPOINT_READER_RJ45, "RJ45_PLUG", "2", "Разъёмы RJ-45 на считыватель");
 
         addNorm(
                 materials,
                 MaterialNormContext.ENDPOINT_ACCESS_POINT_FIXING,
-                "CLIP_PIPE_20",
+                "DOWEL_6X40",
                 "4",
                 "4 точки крепления точки доступа");
-        addNorm(materials, MaterialNormContext.ENDPOINT_ACCESS_POINT_RJ45, "RJ45_PLUG", "2", "Разъёмы точки доступа");
+        addNorm(materials, MaterialNormContext.ENDPOINT_ACCESS_POINT_FIXING, "SCREW_4_2X50", "4", "4 точки крепления точки доступа");
+        addNorm(materials, MaterialNormContext.ENDPOINT_ACCESS_POINT_RJ45, "RJ45_PLUG", "4", "Разъёмы точки доступа");
 
         addNorm(materials, MaterialNormContext.ENDPOINT_NETWORK_OUTLET_FIXING, "CLIP_PIPE_16", "4", "Крепёж розетки");
         addNorm(materials, MaterialNormContext.ENDPOINT_NETWORK_OUTLET_RJ45, "RJ45_PLUG", "2", "Разъёмы на розетку");
@@ -140,25 +152,22 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
         addNorm(
                 materials,
                 MaterialNormContext.ENDPOINT_OTHER_NETWORK_DEVICE_FIXING,
-                "CLIP_PIPE_20",
+                "DOWEL_6X40",
                 "4",
                 "Крепёж сетевого устройства");
+        addNorm(materials, MaterialNormContext.ENDPOINT_OTHER_NETWORK_DEVICE_FIXING, "SCREW_4_2X50", "4", "Крепёж сетевого устройства");
 
-        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_WALL, "DOWEL_6X40", "4", "Анкера под шкаф");
-        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_WALL, "SCREW_4_2X50", "4", "Саморезы под шкаф");
-        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_CEILING, "DOWEL_6X40", "4", "Крепёж шкафа к потолку");
-        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_CEILING, "SCREW_4_2X50", "4", "Крепёж шкафа к потолку");
-        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_POLE, "DOWEL_6X40", "4", "Крепёж шкафа к опоре");
-        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_POLE, "SCREW_4_2X50", "4", "Крепёж шкафа к опоре");
-        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_RACK, "DOWEL_6X40", "4", "Крепёж шкафа к стойке");
-        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_RACK, "SCREW_4_2X50", "4", "Крепёж шкафа к стойке");
+        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_WALL, "WIRE_ROPE_ANCHOR_M8", "4", "Анкера под шкаф");
+        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_CEILING, "WIRE_ROPE_ANCHOR_M8", "4", "Крепёж шкафа к потолку");
+        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_POLE, "WIRE_ROPE_ANCHOR_M8", "4", "Крепёж шкафа к опоре");
+        addNorm(materials, MaterialNormContext.NODE_CABINET_FIXING_RACK, "WIRE_ROPE_ANCHOR_M8", "4", "Крепёж шкафа к стойке");
         addNorm(
                 materials,
                 MaterialNormContext.NODE_INPUT_GLAND,
                 "INPUT_GLAND",
                 "incomingLinesCount",
                 "Вводные муфты по количеству линий");
-        addNorm(materials, MaterialNormContext.NODE_LUGS, "LUG_POWER_SMALL", "10", "Набор силовых наконечников");
+        addNorm(materials, MaterialNormContext.NODE_LUGS, "LUG_POWER_SMALL", "10 + 4 * extraSockets", "Набор силовых наконечников");
         addNorm(materials, MaterialNormContext.NODE_SOCKET_DOUBLE, "SOCKET_DOUBLE", "1", "Базовая розетка 220 В");
         addNorm(materials, MaterialNormContext.NODE_CIRCUIT_BREAKER, "BREAKER_B16", "1", "Базовый автомат");
         addNorm(materials, MaterialNormContext.NODE_CABINET_350, "CABINET_350", "1", "Шкаф 350 мм на узел");

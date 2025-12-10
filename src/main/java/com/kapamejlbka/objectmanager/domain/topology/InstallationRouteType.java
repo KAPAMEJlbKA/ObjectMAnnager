@@ -5,8 +5,8 @@ public enum InstallationRouteType {
     CORRUGATED_PIPE("Гофрированная труба"),
     CABLE_CHANNEL("Кабель-канал"),
     WIRE_ROPE("Трос"),
-    BARE_CABLE("Открытая прокладка кабеля"),
-    TRAY_OR_STRUCTURE("По лоткам/конструкциям");
+    BARE_CABLE("Открытая прокладка"),
+    TRAY_STRUCTURE("По лоткам/конструкциям");
 
     private final String displayNameRu;
 
@@ -25,6 +25,9 @@ public enum InstallationRouteType {
     public static InstallationRouteType fromCode(String code) {
         if (code == null) {
             return null;
+        }
+        if ("TRAY_OR_STRUCTURE".equalsIgnoreCase(code.trim())) {
+            return TRAY_STRUCTURE;
         }
         for (InstallationRouteType type : values()) {
             if (type.name().equalsIgnoreCase(code.trim())) {

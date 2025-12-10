@@ -3,8 +3,8 @@ package com.kapamejlbka.objectmanager.domain.topology;
 public enum LinkType {
 
     UTP("Слаботочный кабель (UTP)"),
-    FIBER("Оптоволокно"),
     POWER("Силовой кабель"),
+    FIBER("Оптоволокно"),
     WIFI("Беспроводное соединение");
 
     private final String displayNameRu;

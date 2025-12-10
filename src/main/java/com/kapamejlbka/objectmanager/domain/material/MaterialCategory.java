@@ -9,18 +9,18 @@ public enum MaterialCategory {
     CABLE_CHANNEL("Кабель-канал"),
     WIRE_ROPE("Трос"),
 
-    FASTENER_CLIP("Клипсы/крепление для трубы/кабеля"),
+    FASTENER_CLIP("Клипсы"),
     FASTENER_DOWEL("Дюбели"),
     FASTENER_SCREW("Саморезы"),
     FASTENER_TIE("Пластиковые стяжки"),
-    FASTENER_WIRE_ROPE("Фурнитура для троса"),
+    FASTENER_WIRE_ROPE("Фурнитура троса"),
 
-    BOX_JUNCTION("Распределительные коробки/адаптеры"),
+    BOX("Коробки"),
     CABINET("Шкафы"),
     CONNECTOR_RJ45("Разъёмы RJ-45"),
 
-    ELECTRIC_BREAKER("Автоматы защиты"),
-    ELECTRIC_SOCKET("Розетки 220 В"),
+    ELECTRIC_BREAKER("Автоматы"),
+    ELECTRIC_SOCKET("Розетки"),
     ELECTRIC_LUG("Наконечники"),
 
     OTHER("Прочее");
