@@ -281,6 +281,33 @@
             <p class="mb-1">Длина: <span class="text-muted">${link.length ?? '—'} м</span></p>
             <p class="mb-2">Трасса: <span class="text-muted">${routeName}</span></p>
         `;
+        if (routes.length) {
+            const assignWrapper = document.createElement('div');
+            assignWrapper.className = 'mb-2';
+            const assignLabel = document.createElement('label');
+            assignLabel.className = 'form-label form-label-sm';
+            assignLabel.textContent = 'Назначить на трассу';
+            const assignSelect = document.createElement('select');
+            assignSelect.className = 'form-select form-select-sm';
+            routes.forEach((route) => {
+                const option = document.createElement('option');
+                option.value = route.id;
+                option.textContent = route.name;
+                option.selected = route.id === link.routeId || (!link.routeId && routes[0]?.id === route.id);
+                assignSelect.appendChild(option);
+            });
+            const assignBtn = document.createElement('button');
+            assignBtn.className = 'btn btn-primary btn-sm w-100 mt-2';
+            assignBtn.textContent = 'Добавить в трассу';
+            assignBtn.addEventListener('click', () => {
+                const routeId = Number(assignSelect.value);
+                if (routeId) {
+                    assignLink(link.id, routeId);
+                }
+            });
+            assignWrapper.append(assignLabel, assignSelect, assignBtn);
+            wrapper.appendChild(assignWrapper);
+        }
         const unassignBtn = document.createElement('button');
         unassignBtn.className = 'btn btn-outline-secondary btn-sm';
         unassignBtn.textContent = 'Убрать из трассы';
