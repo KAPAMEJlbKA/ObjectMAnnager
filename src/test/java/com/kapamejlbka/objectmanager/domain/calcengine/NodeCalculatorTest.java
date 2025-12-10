@@ -2,6 +2,7 @@ package com.kapamejlbka.objectmanager.domain.calcengine;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -10,6 +11,8 @@ import com.kapamejlbka.objectmanager.domain.calcengine.dsl.ExpressionEvaluator;
 import com.kapamejlbka.objectmanager.domain.device.NetworkNode;
 import com.kapamejlbka.objectmanager.domain.material.Material;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
+import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext;
+import com.kapamejlbka.objectmanager.domain.material.MaterialCategory;
 import com.kapamejlbka.objectmanager.repository.MaterialNormRepository;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +39,7 @@ class NodeCalculatorTest {
 
     @Test
     void calculateSkipsCabinetWhenSizeMissing() {
-        when(materialNormRepository.findAllByContextType(anyString())).thenReturn(List.of());
+        when(materialNormRepository.findAllByContextType(any())).thenReturn(List.of());
 
         NetworkNode node = new NetworkNode();
         node.setBaseCircuitBreakers(1);
@@ -56,14 +59,14 @@ class NodeCalculatorTest {
         cabinet.setCode("CABINET");
         cabinet.setName("Cabinet");
         cabinet.setUnit("pc");
-        cabinet.setCategory("nodes");
+        cabinet.setCategory(MaterialCategory.CABINET);
 
         MaterialNorm norm = new MaterialNorm();
-        norm.setContextType("NODE_CABINET_350");
+        norm.setContextType(MaterialNormContext.NODE_CABINET_350);
         norm.setMaterial(cabinet);
         norm.setFormula("1");
 
-        when(materialNormRepository.findAllByContextType("NODE_CABINET_350")).thenReturn(List.of(norm));
+        when(materialNormRepository.findAllByContextType(MaterialNormContext.NODE_CABINET_350)).thenReturn(List.of(norm));
         when(expressionEvaluator.evaluate(anyString(), anyMap())).thenReturn(1.0);
 
         NetworkNode node = new NetworkNode();

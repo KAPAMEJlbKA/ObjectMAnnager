@@ -2,6 +2,8 @@ package com.kapamejlbka.objectmanager.domain.material;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -20,8 +22,9 @@ public class MaterialNorm {
     @JoinColumn(name = "material_id", nullable = false)
     private Material material;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "context_type", nullable = false)
-    private String contextType;
+    private MaterialNormContext contextType;
 
     @Column(nullable = false, columnDefinition = "text")
     private String formula;
@@ -41,11 +44,11 @@ public class MaterialNorm {
         this.material = material;
     }
 
-    public String getContextType() {
+    public MaterialNormContext getContextType() {
         return contextType;
     }
 
-    public void setContextType(String contextType) {
+    public void setContextType(MaterialNormContext contextType) {
         this.contextType = contextType;
     }
 

@@ -4,7 +4,9 @@
 @import com.kapamejlbka.objectmanager.domain.user.dto.UserUpdateRequest
 @import com.kapamejlbka.objectmanager.domain.settings.dto.CalculationSettingsDto
 @import com.kapamejlbka.objectmanager.domain.material.Material
+@import com.kapamejlbka.objectmanager.domain.material.MaterialCategory
 @import com.kapamejlbka.objectmanager.domain.material.MaterialNorm
+@import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext
 @import com.kapamejlbka.objectmanager.domain.material.dto.MaterialForm
 @import com.kapamejlbka.objectmanager.domain.material.dto.MaterialNormForm
 @import org.springframework.security.web.csrf.CsrfToken
@@ -16,15 +18,15 @@
 @param UserUpdateRequest editUserForm = null
 @param CalculationSettingsDto settings
 @param java.util.List<Material> materials
-@param java.util.List<String> materialCategories
+@param java.util.List<MaterialCategory> materialCategories
 @param MaterialForm materialForm
 @param MaterialForm editMaterialForm = null
 @param String materialQuery = ""
-@param String materialCategory = ""
+@param MaterialCategory materialCategory = null
 @param java.util.List<MaterialNorm> norms
 @param MaterialNormForm normForm
 @param MaterialNormForm editNormForm = null
-@param java.util.Map<String, String> normContextNames
+@param java.util.List<MaterialNormContext> normContexts
 @param java.util.List<Material> normMaterials
 @param String flashSuccess = null
 @param String flashError = null
@@ -79,7 +81,7 @@
                         norms = norms,
                         normForm = normForm,
                         editNormForm = editNormForm,
-                        normContextNames = normContextNames,
+                        normContexts = normContexts,
                         materials = normMaterials,
                         _csrf = _csrf)
                 </div>

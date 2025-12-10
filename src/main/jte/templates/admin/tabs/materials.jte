@@ -1,13 +1,14 @@
 @import com.kapamejlbka.objectmanager.domain.material.Material
+@import com.kapamejlbka.objectmanager.domain.material.MaterialCategory
 @import com.kapamejlbka.objectmanager.domain.material.dto.MaterialForm
 @import org.springframework.security.web.csrf.CsrfToken
 
 @param java.util.List<Material> materials
-@param java.util.List<String> categories
+@param java.util.List<MaterialCategory> categories
 @param MaterialForm materialForm
 @param MaterialForm editMaterialForm = null
 @param String searchQuery = ""
-@param String selectedCategory = ""
+@param MaterialCategory selectedCategory = null
 @param CsrfToken _csrf
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -26,8 +27,8 @@
             <label class="form-label" for="category">Категория</label>
             <select class="form-select" id="category" name="category">
                 <option value="">Все категории</option>
-                @for(String category : categories) {
-                    <option value="@category" @(category.equals(selectedCategory) ? "selected" : "")>@category</option>
+                @for(MaterialCategory category : categories) {
+                    <option value="@category.name()" @(category.equals(selectedCategory) ? "selected" : "")>@category.getDisplayNameRu()</option>
                 }
             </select>
         </div>
@@ -58,7 +59,7 @@
             <tr>
                 <td class="fw-bold">@material.getCode()</td>
                 <td>@material.getName()</td>
-                <td>@material.getCategory()</td>
+                <td>@material.getCategory().getDisplayNameRu()</td>
                 <td>@material.getUnit()</td>
                 <td>@(material.getNotes() == null ? "" : material.getNotes())</td>
                 <td class="text-end">
@@ -91,7 +92,12 @@
             </div>
             <div class="form-field">
                 <label for="categoryInput">Категория</label>
-                <input id="categoryInput" name="category" class="form-control" required value="@materialForm.getCategory()" placeholder="PIPE / CLIP / DOWEL" />
+                <select id="categoryInput" name="category" class="form-select" required>
+                    <option value="">Выберите категорию</option>
+                    @for(MaterialCategory category : categories) {
+                        <option value="@category.name()" @(category.equals(materialForm.getCategory()) ? "selected" : "")>@category.getDisplayNameRu()</option>
+                    }
+                </select>
             </div>
             <div class="form-field">
                 <label for="unit">Единица измерения</label>
@@ -124,7 +130,12 @@
                 </div>
                 <div class="form-field">
                     <label for="editCategory">Категория</label>
-                    <input id="editCategory" class="form-control" name="category" required value="@editMaterialForm.getCategory()" />
+                    <select id="editCategory" class="form-select" name="category" required>
+                        <option value="">Выберите категорию</option>
+                        @for(MaterialCategory category : categories) {
+                            <option value="@category.name()" @(category.equals(editMaterialForm.getCategory()) ? "selected" : "")>@category.getDisplayNameRu()</option>
+                        }
+                    </select>
                 </div>
                 <div class="form-field">
                     <label for="editUnit">Единица измерения</label>

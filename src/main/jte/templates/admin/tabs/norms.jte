@@ -1,12 +1,13 @@
 @import com.kapamejlbka.objectmanager.domain.material.Material
 @import com.kapamejlbka.objectmanager.domain.material.MaterialNorm
+@import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext
 @import com.kapamejlbka.objectmanager.domain.material.dto.MaterialNormForm
 @import org.springframework.security.web.csrf.CsrfToken
 
 @param java.util.List<MaterialNorm> norms
 @param MaterialNormForm normForm
 @param MaterialNormForm editNormForm = null
-@param java.util.Map<String, String> normContextNames
+@param java.util.List<MaterialNormContext> normContexts
 @param java.util.List<Material> materials
 @param CsrfToken _csrf
 
@@ -33,7 +34,7 @@
         <tbody>
         @for(MaterialNorm norm : norms) {
             <tr>
-                <td class="fw-bold">@normContextNames.getOrDefault(norm.getContextType(), norm.getContextType())</td>
+                <td class="fw-bold">@norm.getContextType().getDisplayNameRu()</td>
                 <td>@(norm.getMaterial() == null ? "" : norm.getMaterial().getCode() + " — " + norm.getMaterial().getName())</td>
                 <td><code>@norm.getFormula()</code></td>
                 <td>@(norm.getDescription() == null ? "" : norm.getDescription())</td>
@@ -61,8 +62,8 @@
                 <label for="contextType">Контекст</label>
                 <select id="contextType" name="contextType" class="form-select" required>
                     <option value="">Выберите контекст</option>
-                    @for(Map.Entry<String, String> entry : normContextNames.entrySet()) {
-                        <option value="@entry.getKey()" @(entry.getKey().equals(normForm.getContextType()) ? "selected" : "")>@entry.getValue()</option>
+                    @for(MaterialNormContext context : normContexts) {
+                        <option value="@context.name()" @(context.equals(normForm.getContextType()) ? "selected" : "")>@context.getDisplayNameRu()</option>
                     }
                 </select>
                 <p class="text-muted mb-0">Контексты определяют, где применяется материал</p>
@@ -101,8 +102,8 @@
                 <div class="form-field">
                     <label for="editContextType">Контекст</label>
                     <select id="editContextType" name="contextType" class="form-select" required>
-                        @for(Map.Entry<String, String> entry : normContextNames.entrySet()) {
-                            <option value="@entry.getKey()" @(entry.getKey().equals(editNormForm.getContextType()) ? "selected" : "")>@entry.getValue()</option>
+                        @for(MaterialNormContext context : normContexts) {
+                            <option value="@context.name()" @(context.equals(editNormForm.getContextType()) ? "selected" : "")>@context.getDisplayNameRu()</option>
                         }
                     </select>
                 </div>

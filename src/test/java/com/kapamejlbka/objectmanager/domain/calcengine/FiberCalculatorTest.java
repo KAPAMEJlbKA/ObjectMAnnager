@@ -2,11 +2,13 @@ package com.kapamejlbka.objectmanager.domain.calcengine;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.kapamejlbka.objectmanager.domain.material.Material;
+import com.kapamejlbka.objectmanager.domain.material.MaterialCategory;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
+import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
 import com.kapamejlbka.objectmanager.repository.MaterialNormRepository;
 import java.util.HashMap;
@@ -26,12 +28,12 @@ class FiberCalculatorTest {
     private final com.kapamejlbka.objectmanager.domain.calcengine.dsl.ExpressionEvaluator expressionEvaluator =
             new com.kapamejlbka.objectmanager.domain.calcengine.dsl.ExpressionEvaluator();
     private FiberCalculator fiberCalculator;
-    private final Map<String, MaterialNorm> norms = new HashMap<>();
+    private final Map<MaterialNormContext, MaterialNorm> norms = new HashMap<>();
 
     @BeforeEach
     void setUp() {
         materialNormRepository = Mockito.mock(MaterialNormRepository.class);
-        when(materialNormRepository.findAllByContextType(anyString()))
+        when(materialNormRepository.findAllByContextType(any()))
                 .thenAnswer(invocation -> {
                     MaterialNorm norm = norms.get(invocation.getArgument(0));
                     return norm == null ? List.of() : List.of(norm);
@@ -47,11 +49,13 @@ class FiberCalculatorTest {
     @Test
     void calculatesFiberMaterials() {
         Material fiberCable = material("FIBER_8");
-        Material splice = material("FIBER_SPLICE");
+        Material splice = material("FIBER_SPLICE_PROTECTOR");
         Material connector = material("FIBER_CONNECTOR");
-        norms.put("FIBER_8", norm("FIBER_8", fiberCable, "length"));
-        norms.put("FIBER_SPLICE", norm("FIBER_SPLICE", splice, "fiberSpliceCount"));
-        norms.put("FIBER_CONNECTOR", norm("FIBER_CONNECTOR", connector, "fiberConnectorCount"));
+        norms.put(MaterialNormContext.FIBER_8, norm(MaterialNormContext.FIBER_8, fiberCable, "length"));
+        norms.put(MaterialNormContext.FIBER_SPLICE, norm(MaterialNormContext.FIBER_SPLICE, splice, "fiberSpliceCount"));
+        norms.put(
+                MaterialNormContext.FIBER_CONNECTOR,
+                norm(MaterialNormContext.FIBER_CONNECTOR, connector, "fiberConnectorCount"));
 
         TopologyLink fiberLink = new TopologyLink();
         fiberLink.setCableLength(120.5);
@@ -69,7 +73,7 @@ class FiberCalculatorTest {
 
     @Test
     void returnsEmptyWhenNormMissing() {
-        when(materialNormRepository.findAllByContextType(anyString())).thenReturn(List.of());
+        when(materialNormRepository.findAllByContextType(any())).thenReturn(List.of());
 
         TopologyLink fiberLink = new TopologyLink();
         fiberLink.setCableLength(10.0);
@@ -84,11 +88,11 @@ class FiberCalculatorTest {
         material.setCode(code);
         material.setName(code);
         material.setUnit("unit");
-        material.setCategory("category");
+        material.setCategory(MaterialCategory.OTHER);
         return material;
     }
 
-    private MaterialNorm norm(String contextType, Material material, String formula) {
+    private MaterialNorm norm(MaterialNormContext contextType, Material material, String formula) {
         MaterialNorm norm = new MaterialNorm();
         norm.setContextType(contextType);
         norm.setMaterial(material);

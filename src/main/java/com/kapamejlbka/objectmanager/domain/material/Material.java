@@ -2,6 +2,8 @@ package com.kapamejlbka.objectmanager.domain.material;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
@@ -26,8 +28,9 @@ public class Material {
     @Column(nullable = false)
     private String unit;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String category;
+    private MaterialCategory category;
 
     @Column(columnDefinition = "text")
     private String notes;
@@ -82,11 +85,11 @@ public class Material {
         this.unit = unit;
     }
 
-    public String getCategory() {
+    public MaterialCategory getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
+    public void setCategory(MaterialCategory category) {
         this.category = category;
     }
 

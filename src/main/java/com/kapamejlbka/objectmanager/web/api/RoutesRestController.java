@@ -2,6 +2,7 @@ package com.kapamejlbka.objectmanager.web.api;
 
 import com.kapamejlbka.objectmanager.domain.calculation.repository.SystemCalculationRepository;
 import com.kapamejlbka.objectmanager.domain.material.Material;
+import com.kapamejlbka.objectmanager.domain.material.MaterialCategory;
 import com.kapamejlbka.objectmanager.domain.material.dto.MaterialOptionDto;
 import com.kapamejlbka.objectmanager.domain.topology.InstallationRoute;
 import com.kapamejlbka.objectmanager.domain.topology.RouteSegmentLink;
@@ -21,6 +22,7 @@ import com.kapamejlbka.objectmanager.service.InstallationRouteLengthService;
 import com.kapamejlbka.objectmanager.service.InstallationRouteService;
 import com.kapamejlbka.objectmanager.service.RouteSegmentLinkService;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,8 +45,14 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/calculations/{calcId}/routes")
 public class RoutesRestController {
 
-    private static final Set<String> ROUTE_MATERIAL_CATEGORIES = Set.of(
-            "ROUTE_CORRUGATED_PIPE", "ROUTE_CABLE_CHANNEL", "ROUTE_WIRE_ROPE", "ROUTE_BARE_CABLE");
+    private static final Set<MaterialCategory> ROUTE_MATERIAL_CATEGORIES = EnumSet.of(
+            MaterialCategory.PIPE_CORRUGATED,
+            MaterialCategory.CABLE_CHANNEL,
+            MaterialCategory.WIRE_ROPE,
+            MaterialCategory.FASTENER_CLIP,
+            MaterialCategory.FASTENER_DOWEL,
+            MaterialCategory.FASTENER_SCREW,
+            MaterialCategory.FASTENER_TIE);
 
     private final SystemCalculationRepository calculationRepository;
     private final InstallationRouteRepository installationRouteRepository;
@@ -87,7 +95,8 @@ public class RoutesRestController {
                 .collect(Collectors.toSet());
         List<MaterialOptionDto> materials = materialRepository.findAll().stream()
                 .filter(material -> isRouteMaterial(material) || selectedMaterialIds.contains(material.getId()))
-                .sorted(Comparator.comparing(Material::getCategory).thenComparing(Material::getName))
+                .sorted(Comparator.comparing(Material::getCategory, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(Material::getName))
                 .map(material -> new MaterialOptionDto(material.getId(), material.getName(), material.getCategory()))
                 .toList();
 
@@ -110,7 +119,9 @@ public class RoutesRestController {
                         route.getFixingMethod(),
                         Optional.ofNullable(route.getMainMaterial()).map(Material::getId).orElse(null),
                         Optional.ofNullable(route.getMainMaterial()).map(Material::getName).orElse(null),
-                        Optional.ofNullable(route.getMainMaterial()).map(Material::getCategory).orElse(null)))
+                        Optional.ofNullable(route.getMainMaterial())
+                                .map(material -> material.getCategory().name())
+                                .orElse(null)))
                 .toList();
 
         List<RouteLinkDto> linkDtos = links.stream()
@@ -270,7 +281,9 @@ public class RoutesRestController {
                 route.getFixingMethod(),
                 Optional.ofNullable(route.getMainMaterial()).map(Material::getId).orElse(null),
                 Optional.ofNullable(route.getMainMaterial()).map(Material::getName).orElse(null),
-                Optional.ofNullable(route.getMainMaterial()).map(Material::getCategory).orElse(null));
+                Optional.ofNullable(route.getMainMaterial())
+                        .map(material -> material.getCategory().name())
+                        .orElse(null));
     }
 
     private boolean isRouteMaterial(Material material) {

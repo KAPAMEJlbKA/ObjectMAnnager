@@ -150,7 +150,9 @@ public class CalculationEngineImpl implements CalculationEngine {
                 });
 
         List<MaterialItemResult> items = materialTotals.entrySet().stream()
-                .sorted(Comparator.comparing((Map.Entry<Material, Double> e) -> e.getKey().getCategory())
+                .sorted(Comparator.comparing(
+                                (Map.Entry<Material, Double> e) -> e.getKey().getCategory(),
+                                Comparator.nullsLast(Comparator.naturalOrder()))
                         .thenComparing(e -> e.getKey().getName()))
                 .map(entry -> new MaterialItemResult(
                         entry.getKey().getCode(),

@@ -3,6 +3,7 @@ package com.kapamejlbka.objectmanager.domain.calcengine;
 import com.kapamejlbka.objectmanager.domain.calcengine.dsl.ExpressionEvaluator;
 import com.kapamejlbka.objectmanager.domain.material.Material;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
+import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
 import com.kapamejlbka.objectmanager.repository.MaterialNormRepository;
 import java.util.HashMap;
@@ -18,8 +19,8 @@ public class FiberCalculator {
     private static final Logger LOG = LoggerFactory.getLogger(FiberCalculator.class);
 
     private static final String FIBER_CABLE_TEMPLATE = "FIBER_%s";
-    private static final String FIBER_SPLICE = "FIBER_SPLICE";
-    private static final String FIBER_CONNECTOR = "FIBER_CONNECTOR";
+    private static final MaterialNormContext FIBER_SPLICE = MaterialNormContext.FIBER_SPLICE;
+    private static final MaterialNormContext FIBER_CONNECTOR = MaterialNormContext.FIBER_CONNECTOR;
 
     private final MaterialNormRepository materialNormRepository;
     private final ExpressionEvaluator expressionEvaluator;
@@ -64,9 +65,17 @@ public class FiberCalculator {
     }
 
     private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {
-        List<MaterialNorm> norms = materialNormRepository.findAllByContextType(contextType);
+        addFromNorm(result, resolveContext(contextType), context);
+    }
+
+    private void addFromNorm(Map<Material, Double> result, MaterialNormContext normContext, Map<String, Object> context) {
+        if (normContext == null) {
+            return;
+        }
+
+        List<MaterialNorm> norms = materialNormRepository.findAllByContextType(normContext);
         if (norms.isEmpty()) {
-            LOG.warn("Material norm not found for context: {}", contextType);
+            LOG.warn("Material norm not found for context: {}", normContext.name());
             return;
         }
 
@@ -75,6 +84,15 @@ public class FiberCalculator {
             if (quantity > 0) {
                 result.merge(norm.getMaterial(), quantity, Double::sum);
             }
+        }
+    }
+
+    private MaterialNormContext resolveContext(String contextCode) {
+        try {
+            return MaterialNormContext.valueOf(contextCode);
+        } catch (IllegalArgumentException ex) {
+            LOG.warn("Material norm context not supported: {}", contextCode);
+            return null;
         }
     }
 }

@@ -463,7 +463,7 @@ public class CalculationController {
             Row row = sheet.createRow(rowIndex++);
             row.createCell(0).setCellValue(item.materialCode());
             row.createCell(1).setCellValue(item.materialName());
-            row.createCell(2).setCellValue(item.category());
+            row.createCell(2).setCellValue(item.category() != null ? item.category().getDisplayNameRu() : "");
             row.createCell(3).setCellValue(item.unit());
             row.createCell(4).setCellValue(item.quantity());
         }
