@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -106,7 +107,7 @@ public class CalculationEngineImpl implements CalculationEngine {
         });
 
         Map<Long, Long> nodeIncomingCounts = topologyLinks.stream()
-                .flatMap(link -> List.of(link.getFromNode(), link.getToNode()).stream())
+                .flatMap(link -> Stream.of(link.getFromNode(), link.getToNode()))
                 .filter(node -> node != null && node.getId() != null)
                 .collect(Collectors.groupingBy(NetworkNode::getId, Collectors.counting()));
 
