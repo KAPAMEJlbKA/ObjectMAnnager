@@ -23,7 +23,7 @@
     const ROUTE_TYPES = {
         CORRUGATED_PIPE: 'Гофрированная труба',
         CABLE_CHANNEL: 'Кабель-канал',
-        TRAY_OR_STRUCTURE: 'Лоток/конструкция',
+        TRAY_OR_STRUCTURE: 'По лоткам/конструкциям',
         WIRE_ROPE: 'Трос',
         BARE_CABLE: 'Открытая прокладка кабеля',
     };
@@ -54,10 +54,11 @@
     Promise.all([apiFetch(topologyApi), apiFetch(apiBase)])
         .then(([topologyResponse, routesResponse]) => Promise.all([topologyResponse.json(), routesResponse.json()]))
         .then(([topologyData, routesData]) => {
-            topology = topologyData;
-            topology.links = routesData.links || [];
-            routes = routesData.routes || [];
-            materials = routesData.materials || [];
+            topology = normalizeTopology(topologyData);
+            const normalizedRoutes = normalizeRoutesData(routesData);
+            topology.links = normalizedRoutes.links;
+            routes = normalizedRoutes.routes;
+            materials = normalizedRoutes.materials;
             renderAll();
         })
         .catch(() => {
@@ -97,10 +98,11 @@
         return Promise.all([apiFetch(topologyApi), apiFetch(apiBase)])
             .then(([topologyResponse, routesResponse]) => Promise.all([topologyResponse.json(), routesResponse.json()]))
             .then(([topologyData, routesData]) => {
-                topology = topologyData;
-                topology.links = routesData.links || [];
-                routes = routesData.routes || [];
-                materials = routesData.materials || [];
+                topology = normalizeTopology(topologyData);
+                const normalizedRoutes = normalizeRoutesData(routesData);
+                topology.links = normalizedRoutes.links;
+                routes = normalizedRoutes.routes;
+                materials = normalizedRoutes.materials;
                 colorMap = {};
                 if (selectedRouteId && !routes.some((r) => r.id === selectedRouteId)) {
                     selectedRouteId = null;
@@ -486,6 +488,38 @@
         const color = ROUTE_COLORS[idx % ROUTE_COLORS.length];
         colorMap[routeId] = color;
         return color;
+    }
+
+    function normalizeRoutesData(data) {
+        const routesData = data || {};
+        const normalizedRoutes = (routesData.routes || []).map((route) => ({
+            ...route,
+            id: Number(route.id),
+            length: Number(route.length || route.lengthMeters || 0),
+            mainMaterialId: route.mainMaterialId ? Number(route.mainMaterialId) : null,
+        }));
+        const normalizedLinks = (routesData.links || []).map((link) => ({
+            ...link,
+            id: Number(link.id),
+            fromNodeId: link.fromNodeId ? Number(link.fromNodeId) : null,
+            toNodeId: link.toNodeId ? Number(link.toNodeId) : null,
+            fromDeviceId: link.fromDeviceId ? Number(link.fromDeviceId) : null,
+            toDeviceId: link.toDeviceId ? Number(link.toDeviceId) : null,
+            routeId: link.routeId ? Number(link.routeId) : null,
+        }));
+        return {
+            routes: normalizedRoutes,
+            links: normalizedLinks,
+            materials: routesData.materials || [],
+        };
+    }
+
+    function normalizeTopology(data) {
+        const base = data || {};
+        base.nodes = (base.nodes || []).map((node) => ({...node, id: Number(node.id)}));
+        base.devices = (base.devices || []).map((device) => ({...device, id: Number(device.id)}));
+        base.links = (base.links || []).map((link) => ({...link, id: Number(link.id)}));
+        return base;
     }
 
     function apiFetch(url, options = {}) {

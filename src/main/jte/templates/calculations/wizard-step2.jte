@@ -1,15 +1,26 @@
 @import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation
 @import com.kapamejlbka.objectmanager.domain.device.NetworkNode
 @import com.kapamejlbka.objectmanager.domain.device.dto.NetworkNodeCreateRequest
+@import com.kapamejlbka.objectmanager.domain.topology.MountSurfaceType
 @import org.springframework.security.web.csrf.CsrfToken
 
 @param SystemCalculation calculation
 @param java.util.List<NetworkNode> nodes
 @param NetworkNodeCreateRequest nodeForm
-@param java.util.List<String> mountSurfaces
+@param java.util.List<MountSurfaceType> mountSurfaces
 @param CsrfToken _csrf
 @param String flashSuccess = null
 @param String flashError = null
+
+<% String displaySurface(String code) {
+       if (code == null) return "—";
+       try {
+           return MountSurfaceType.valueOf(code).getDisplayNameRu();
+       } catch (Exception ignored) {
+           return code;
+       }
+   }
+%>
 
 @templates.layout(title = "Шаг 2 — узлы", activePage = "sites", flashSuccess = flashSuccess, flashError = flashError) {
     <section class="page-card">
@@ -37,7 +48,7 @@
                                 <tr>
                                     <td>@node.getCode()</td>
                                     <td>@node.getName()</td>
-                                    <td>@(node.getMountSurface() == null ? "—" : node.getMountSurface())</td>
+                                    <td>@displaySurface(node.getMountSurface())</td>
                                     <td>@(node.getCabinetSize() == null ? "Авто" : node.getCabinetSize())</td>
                                     <td class="text-end text-muted">Базовые автоматы: @node.getBaseCircuitBreakers(), розетки: @node.getBaseSockets()</td>
                                 </tr>
@@ -60,8 +71,8 @@
                 <div class="col-auto">
                     <label class="form-label">Поверхность</label>
                     <select name="mountSurface" class="form-select">
-                        @for(String s : mountSurfaces) {
-                            <option value="@s">@s</option>
+                        @for(MountSurfaceType s : mountSurfaces) {
+                            <option value="@s.getCode()" @if(s.getCode().equals(nodeForm.getMountSurface())){ selected }>@s.getDisplayNameRu()</option>
                         }
                     </select>
                 </div>

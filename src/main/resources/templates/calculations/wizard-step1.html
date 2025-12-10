@@ -45,7 +45,7 @@
                     </thead>
                     <tbody>
                     <tr th:each="device : ${devices}">
-                        <td th:text="${T(com.kapamejlbka.objectmanager.web.view.DeviceTypeDisplayUtil).displayName(device.type)}"></td>
+                        <td th:text="${T(com.kapamejlbka.objectmanager.domain.device.EndpointDeviceType).fromCode(device.type)?.displayNameRu ?: device.type}"></td>
                         <td th:text="${device.code}"></td>
                         <td th:text="${device.name}"></td>
                         <td th:text="${device.locationDescription != null ? device.locationDescription : '—'}"></td>
@@ -69,7 +69,7 @@
                 <div class="col-md-4">
                     <label class="form-label">Тип *</label>
                     <select class="form-select" name="type">
-                        <option th:each="type : ${deviceTypes}" th:value="${type.code}" th:text="${type.displayName}"></option>
+                        <option th:each="type : ${deviceTypes}" th:value="${type.code}" th:text="${type.displayNameRu}"></option>
                     </select>
                 </div>
                 <div class="col-md-4">
@@ -92,7 +92,7 @@
                     <label class="form-label">Поверхность</label>
                     <select class="form-select" name="mountSurface">
                         <option value="" th:selected="${deviceForm.mountSurface == null}">Не указано</option>
-                        <option th:each="surface : ${mountSurfaces}" th:value="${surface}" th:text="${surface}" th:selected="${surface == deviceForm.mountSurface}"></option>
+                        <option th:each="surface : ${mountSurfaces}" th:value="${surface.code}" th:text="${surface.displayNameRu}" th:selected="${surface.code == deviceForm.mountSurface}"></option>
                     </select>
                 </div>
                 <div class="d-flex justify-content-between align-items-center mt-3">

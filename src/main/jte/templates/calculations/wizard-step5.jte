@@ -1,8 +1,11 @@
 @import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation
 
 @param SystemCalculation calculation
-@param java.util.List<String> routeTypes
-@param java.util.List<String> mountSurfaces
+@import com.kapamejlbka.objectmanager.domain.topology.InstallationRouteType
+@import com.kapamejlbka.objectmanager.domain.topology.RouteSurfaceType
+
+@param InstallationRouteType[] routeTypes
+@param RouteSurfaceType[] mountSurfaces
 @param String flashSuccess = null
 @param String flashError = null
 
@@ -40,14 +43,14 @@
                             <div class="col-6">
                                 <label class="form-label form-label-sm">Тип</label>
                                 <select class="form-select form-select-sm" id="route-create-type" required>
-                                    @for(String type : routeTypes) { <option value="@type">@type</option> }
+                                    @for(InstallationRouteType type : routeTypes) { <option value="@type.getCode()">@type.getDisplayNameRu()</option> }
                                 </select>
                             </div>
                             <div class="col-6">
                                 <label class="form-label form-label-sm">Поверхность</label>
                                 <select class="form-select form-select-sm" id="route-create-surface" required>
                                     <option value="">—</option>
-                                    @for(String surface : mountSurfaces) { <option value="@surface">@surface</option> }
+                                    @for(RouteSurfaceType surface : mountSurfaces) { <option value="@surface.getCode()">@surface.getDisplayNameRu()</option> }
                                 </select>
                             </div>
                         </div>

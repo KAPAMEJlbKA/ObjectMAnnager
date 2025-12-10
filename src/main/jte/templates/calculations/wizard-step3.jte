@@ -1,9 +1,10 @@
 @import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation
 @import com.kapamejlbka.objectmanager.domain.device.EndpointDevice
+@import com.kapamejlbka.objectmanager.domain.device.EndpointDeviceType
 @import com.kapamejlbka.objectmanager.domain.device.NetworkNode
 @import com.kapamejlbka.objectmanager.domain.topology.TopologyLink
+@import com.kapamejlbka.objectmanager.domain.topology.LinkType
 @import com.kapamejlbka.objectmanager.domain.topology.dto.TopologyLinkCreateRequest
-@import com.kapamejlbka.objectmanager.web.view.DeviceTypeDisplayUtil
 @import org.springframework.security.web.csrf.CsrfToken
 
 @param SystemCalculation calculation
@@ -11,14 +12,17 @@
 @param java.util.List<NetworkNode> nodes
 @param java.util.List<TopologyLink> links
 @param TopologyLinkCreateRequest linkForm
-@param java.util.List<String> linkTypes
+@param LinkType[] linkTypes
 @param CsrfToken _csrf
 @param String flashSuccess = null
 @param String flashError = null
 
 <% String formatEndpoint(NetworkNode n, EndpointDevice d) {
        if (n != null) return "[NODE] " + n.getName();
-       if (d != null) return "[DEVICE] " + DeviceTypeDisplayUtil.displayName(d.getType()) + " — " + d.getName();
+       if (d != null) {
+           String typeName = EndpointDeviceType.fromCode(d.getType())?.getDisplayNameRu() ?: d.getType();
+           return "[DEVICE] " + typeName + " — " + d.getName();
+       }
        return "—";
    }
 %>
@@ -50,7 +54,7 @@
                                 <tr>
                                     <td>@formatEndpoint(link.getFromNode(), link.getFromDevice())</td>
                                     <td>@formatEndpoint(link.getToNode(), link.getToDevice())</td>
-                                    <td>@link.getLinkType()</td>
+                                    <td>@LinkType.fromCode(link.getLinkType())?.getDisplayNameRu() ?: link.getLinkType()</td>
                                     <td>@(link.getFiberCores() == null ? "—" : link.getFiberCores())</td>
                                     <td>@(link.getCableLength() == null ? "—" : link.getCableLength() + " м")</td>
                                     <td class="text-end">
@@ -72,20 +76,24 @@
                     <label class="form-label">От</label>
                     <select name="fromEndpoint" class="form-select" required>
                         @for(NetworkNode node : nodes) { <option value="NODE:@node.getId()">[NODE] @node.getName()</option> }
-                        @for(EndpointDevice d : devices) { <option value="DEVICE:@d.getId()">[DEVICE] @DeviceTypeDisplayUtil.displayName(d.getType()) — @d.getName()</option> }
+                        @for(EndpointDevice d : devices) {
+                            <option value="DEVICE:@d.getId()">[DEVICE] @EndpointDeviceType.fromCode(d.getType())?.getDisplayNameRu() ?: d.getType() — @d.getName()</option>
+                        }
                     </select>
                 </div>
                 <div class="col-auto">
                     <label class="form-label">К</label>
                     <select name="toEndpoint" class="form-select" required>
                         @for(NetworkNode node : nodes) { <option value="NODE:@node.getId()">[NODE] @node.getName()</option> }
-                        @for(EndpointDevice d : devices) { <option value="DEVICE:@d.getId()">[DEVICE] @DeviceTypeDisplayUtil.displayName(d.getType()) — @d.getName()</option> }
+                        @for(EndpointDevice d : devices) {
+                            <option value="DEVICE:@d.getId()">[DEVICE] @EndpointDeviceType.fromCode(d.getType())?.getDisplayNameRu() ?: d.getType() — @d.getName()</option>
+                        }
                     </select>
                 </div>
                 <div class="col-auto">
                     <label class="form-label">Тип линии</label>
                     <select name="linkType" class="form-select" required>
-                        @for(String type : linkTypes) { <option value="@type">@type</option> }
+                        @for(LinkType type : linkTypes) { <option value="@type.getCode()">@type.getDisplayNameRu()</option> }
                     </select>
                 </div>
                 <div class="col-auto">

@@ -47,7 +47,7 @@
                     <tr th:each="node : ${nodes}">
                         <td th:text="${node.code}"></td>
                         <td th:text="${node.name}"></td>
-                        <td th:text="${node.mountSurface != null ? node.mountSurface : '—'}"></td>
+                        <td th:text="${node.mountSurface != null ? T(com.kapamejlbka.objectmanager.domain.topology.MountSurfaceType).valueOf(node.mountSurface).displayNameRu : '—'}"></td>
                         <td th:text="${node.cabinetSizeAuto ? 'Да' : 'Нет'}"></td>
                         <td th:text="${node.baseCircuitBreakers}"></td>
                         <td th:text="${node.baseSockets + node.extraSockets}"></td>
@@ -73,7 +73,7 @@
                     <label class="form-label">Тип поверхности</label>
                     <select class="form-select" name="mountSurface">
                         <option value="" th:selected="${nodeForm.mountSurface == null}">Не указано</option>
-                        <option th:each="surface : ${mountSurfaces}" th:value="${surface}" th:text="${surface}" th:selected="${surface == nodeForm.mountSurface}"></option>
+                        <option th:each="surface : ${mountSurfaces}" th:value="${surface.code}" th:text="${surface.displayNameRu}" th:selected="${surface.code == nodeForm.mountSurface}"></option>
                     </select>
                 </div>
                 <div class="col-md-6">
