@@ -3,6 +3,7 @@ package com.kapamejlbka.objectmanager.domain.calcengine.routes;
 import com.kapamejlbka.objectmanager.domain.calcengine.dsl.ExpressionEvaluator;
 import com.kapamejlbka.objectmanager.domain.material.Material;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
+import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext;
 import com.kapamejlbka.objectmanager.domain.settings.dto.CalculationSettingsDto;
 import com.kapamejlbka.objectmanager.domain.topology.InstallationRoute;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
@@ -22,18 +23,20 @@ public class RouteCalculator {
 
     private static final Logger LOG = LoggerFactory.getLogger(RouteCalculator.class);
 
-    private static final String CORRUGATED_PIPE_HORIZONTAL_CLIP = "CORRUGATED_PIPE_HORIZONTAL_CLIP";
-    private static final String CORRUGATED_PIPE_VERTICAL_CLIP = "CORRUGATED_PIPE_VERTICAL_CLIP";
-    private static final String CORRUGATED_PIPE_COUPLING = "CORRUGATED_PIPE_COUPLING";
-    private static final String CORRUGATED_PIPE_BRANCH = "CORRUGATED_PIPE_BRANCH";
-    private static final String CABLE_CHANNEL_CLIP = "CABLE_CHANNEL_CLIP";
-    private static final String CABLE_CHANNEL_FASTENER = "CABLE_CHANNEL_FASTENER";
-    private static final String TRAY_OR_STRUCTURE_TIES = "CABLE_TIE_ON_TRAY";
-    private static final String WIRE_ROPE_ANCHOR = "WIRE_ROPE_ANCHOR";
-    private static final String WIRE_ROPE_TURNBUCKLE = "WIRE_ROPE_TURNBUCKLE";
-    private static final String WIRE_ROPE_CLAMP = "WIRE_ROPE_CLAMP";
-    private static final String BARE_CABLE_ONE_CLIP = "BARE_CABLE_ONE_CLIP";
-    private static final String BARE_CABLE_PE_TIES = "BARE_CABLE_PE_TIES";
+    private static final MaterialNormContext CORRUGATED_PIPE_HORIZONTAL_CLIP =
+            MaterialNormContext.CORRUGATED_PIPE_HORIZONTAL_CLIP;
+    private static final MaterialNormContext CORRUGATED_PIPE_VERTICAL_CLIP =
+            MaterialNormContext.CORRUGATED_PIPE_VERTICAL_CLIP;
+    private static final MaterialNormContext CORRUGATED_PIPE_COUPLING = MaterialNormContext.CORRUGATED_PIPE_COUPLING;
+    private static final MaterialNormContext CORRUGATED_PIPE_BRANCH = MaterialNormContext.CORRUGATED_PIPE_BRANCH;
+    private static final MaterialNormContext CABLE_CHANNEL_CLIP = MaterialNormContext.CABLE_CHANNEL_CLIP;
+    private static final MaterialNormContext CABLE_CHANNEL_FASTENER = MaterialNormContext.CABLE_CHANNEL_FASTENER;
+    private static final MaterialNormContext TRAY_OR_STRUCTURE_TIES = MaterialNormContext.TRAY_OR_STRUCTURE_TIES;
+    private static final MaterialNormContext WIRE_ROPE_ANCHOR = MaterialNormContext.WIRE_ROPE_ANCHOR;
+    private static final MaterialNormContext WIRE_ROPE_TURNBUCKLE = MaterialNormContext.WIRE_ROPE_TURNBUCKLE;
+    private static final MaterialNormContext WIRE_ROPE_CLAMP = MaterialNormContext.WIRE_ROPE_CLAMP;
+    private static final MaterialNormContext BARE_CABLE_ONE_CLIP = MaterialNormContext.BARE_CABLE_ONE_CLIP;
+    private static final MaterialNormContext BARE_CABLE_PE_TIES = MaterialNormContext.BARE_CABLE_PE_TIES;
 
     private final MaterialNormRepository materialNormRepository;
     private final ExpressionEvaluator expressionEvaluator;
@@ -106,10 +109,8 @@ public class RouteCalculator {
 
         String mountSurface = normalize(route.getMountSurface());
         if (!mountSurface.isEmpty()) {
-            addFromNorm(
-                    result,
-                    CORRUGATED_PIPE_HORIZONTAL_CLIP + "_" + mountSurface,
-                    baseContext(lengthMeters, horizontalStep));
+            MaterialNormContext context = resolveContext(CORRUGATED_PIPE_HORIZONTAL_CLIP.name() + "_" + mountSurface);
+            addFromNorm(result, context, baseContext(lengthMeters, horizontalStep));
         }
     }
 
@@ -118,7 +119,8 @@ public class RouteCalculator {
         addFromNorm(result, CABLE_CHANNEL_CLIP, baseContext(lengthMeters, 0.4));
         addFromNorm(result, CABLE_CHANNEL_FASTENER, baseContext(lengthMeters, 0.4));
         if (!mountSurface.isEmpty()) {
-            addFromNorm(result, CABLE_CHANNEL_FASTENER + "_" + mountSurface, baseContext(lengthMeters, 0.4));
+            MaterialNormContext context = resolveContext(CABLE_CHANNEL_FASTENER.name() + "_" + mountSurface);
+            addFromNorm(result, context, baseContext(lengthMeters, 0.4));
         }
     }
 
@@ -139,15 +141,15 @@ public class RouteCalculator {
             LOG.warn("Fixing method is missing for bare cable route {}", route.getName());
             return;
         }
-        String contextType = switch (fixingMethod) {
+        MaterialNormContext contextType = switch (fixingMethod) {
             case "ONE_CLIP" -> BARE_CABLE_ONE_CLIP;
             case "PE_TIES" -> BARE_CABLE_PE_TIES;
             default -> {
                 LOG.warn("Unsupported bare cable fixing method: {}", fixingMethod);
-                yield "";
+                yield null;
             }
         };
-        if (!contextType.isEmpty()) {
+        if (contextType != null) {
             addFromNorm(result, contextType, baseContext(lengthMeters, 0.4));
         }
     }
@@ -167,17 +169,17 @@ public class RouteCalculator {
             return;
         }
 
-        addFromNorm(result, routeType, baseContext(lengthMeters, 1));
+        addFromNorm(result, resolveContext(routeType), baseContext(lengthMeters, 1));
     }
 
-    private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {
-        if (contextType == null || contextType.isBlank()) {
+    private void addFromNorm(Map<Material, Double> result, MaterialNormContext contextType, Map<String, Object> context) {
+        if (contextType == null) {
             return;
         }
 
         List<MaterialNorm> norms = materialNormRepository.findAllByContextType(contextType);
         if (norms.isEmpty()) {
-            LOG.warn("Material norm not found for context: {}", contextType);
+            LOG.warn("Material norm not found for context: {}", contextType.name());
             return;
         }
 
@@ -194,5 +196,17 @@ public class RouteCalculator {
             return "";
         }
         return value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private MaterialNormContext resolveContext(String contextCode) {
+        if (contextCode == null || contextCode.isBlank()) {
+            return null;
+        }
+        try {
+            return MaterialNormContext.valueOf(contextCode);
+        } catch (IllegalArgumentException ex) {
+            LOG.warn("Material norm context not supported: {}", contextCode);
+            return null;
+        }
     }
 }

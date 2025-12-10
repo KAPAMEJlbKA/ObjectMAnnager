@@ -1,10 +1,12 @@
 package com.kapamejlbka.objectmanager.domain.material.dto;
 
+import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext;
+
 public class MaterialNormForm {
 
     private Long id;
     private Long materialId;
-    private String contextType;
+    private MaterialNormContext contextType;
     private String formula;
     private String description;
 
@@ -24,11 +26,11 @@ public class MaterialNormForm {
         this.materialId = materialId;
     }
 
-    public String getContextType() {
+    public MaterialNormContext getContextType() {
         return contextType;
     }
 
-    public void setContextType(String contextType) {
+    public void setContextType(MaterialNormContext contextType) {
         this.contextType = contextType;
     }
 

@@ -1,6 +1,7 @@
 package com.kapamejlbka.objectmanager.web;
 
 import com.kapamejlbka.objectmanager.domain.material.Material;
+import com.kapamejlbka.objectmanager.domain.material.MaterialCategory;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext;
 import com.kapamejlbka.objectmanager.domain.material.dto.MaterialForm;
@@ -15,10 +16,8 @@ import com.kapamejlbka.objectmanager.service.MaterialService;
 import com.kapamejlbka.objectmanager.service.SettingsService;
 import com.kapamejlbka.objectmanager.service.UserService;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -239,14 +238,15 @@ public class AdminController {
         CalculationSettingsDto settings = settingsService.getSettings();
         model.addAttribute("settings", settings);
 
-        List<String> categories = materialService.listCategories();
-        List<Material> materials = materialService.search(search, category);
+        MaterialCategory selectedCategory = parseCategory(category);
+        List<MaterialCategory> categories = materialService.listCategories();
+        List<Material> materials = materialService.search(search, selectedCategory);
         MaterialForm materialForm = new MaterialForm();
         model.addAttribute("materials", materials);
         model.addAttribute("materialCategories", categories);
         model.addAttribute("materialForm", materialForm);
         model.addAttribute("materialQuery", search == null ? "" : search);
-        model.addAttribute("materialCategory", category == null ? "" : category);
+        model.addAttribute("materialCategory", selectedCategory);
         if (editMaterialId != null) {
             Material material = materialService.getById(editMaterialId);
             MaterialForm editForm = new MaterialForm();
@@ -260,15 +260,16 @@ public class AdminController {
         }
 
         List<MaterialNorm> norms = materialNormService.listAll();
-        norms.sort(Comparator.comparing(MaterialNorm::getContextType, String.CASE_INSENSITIVE_ORDER));
+        norms.sort(Comparator.comparing(
+                norm -> norm.getContextType() == null ? "" : norm.getContextType().name(),
+                String.CASE_INSENSITIVE_ORDER));
         MaterialNormForm normForm = new MaterialNormForm();
         model.addAttribute("norms", norms);
         model.addAttribute("normForm", normForm);
         model.addAttribute("normMaterials", materialService.listAll().stream()
                 .sorted(Comparator.comparing(Material::getCode, String.CASE_INSENSITIVE_ORDER))
                 .toList());
-        Map<String, String> contextNames = new LinkedHashMap<>(MaterialNormContext.availableContexts());
-        model.addAttribute("normContextNames", contextNames);
+        model.addAttribute("normContexts", MaterialNormContext.orderedValues());
         if (editNormId != null) {
             MaterialNorm norm = materialNormService.getById(editNormId);
             MaterialNormForm editForm = new MaterialNormForm();
@@ -287,6 +288,17 @@ public class AdminController {
         }
         if (StringUtils.hasText(form.getEmail())) {
             form.setEmail(form.getEmail().trim().toLowerCase(Locale.ROOT));
+        }
+    }
+
+    private MaterialCategory parseCategory(String category) {
+        if (!StringUtils.hasText(category)) {
+            return null;
+        }
+        try {
+            return MaterialCategory.valueOf(category.trim());
+        } catch (IllegalArgumentException ex) {
+            return null;
         }
     }
 

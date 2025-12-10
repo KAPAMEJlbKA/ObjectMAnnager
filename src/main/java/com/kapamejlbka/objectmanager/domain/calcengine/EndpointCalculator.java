@@ -4,6 +4,7 @@ import com.kapamejlbka.objectmanager.domain.calcengine.dsl.ExpressionEvaluator;
 import com.kapamejlbka.objectmanager.domain.device.EndpointDevice;
 import com.kapamejlbka.objectmanager.domain.material.Material;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
+import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext;
 import com.kapamejlbka.objectmanager.repository.MaterialNormRepository;
 import java.util.HashMap;
 import java.util.List;
@@ -26,17 +27,24 @@ public class EndpointCalculator {
     private static final String TURNSTILE = "TURNSTILE";
     private static final String OTHER_NETWORK_DEVICE = "OTHER_NETWORK_DEVICE";
 
-    private static final String ENDPOINT_CAMERA_FIXING = "ENDPOINT_CAMERA_FIXING";
-    private static final String ENDPOINT_CAMERA_RJ45 = "ENDPOINT_CAMERA_RJ45";
-    private static final String ENDPOINT_ACCESS_POINT_FIXING = "ENDPOINT_ACCESS_POINT_FIXING";
-    private static final String ENDPOINT_ACCESS_POINT_RJ45 = "ENDPOINT_ACCESS_POINT_RJ45";
-    private static final String ENDPOINT_READER_FIXING = "ENDPOINT_READER_FIXING";
-    private static final String ENDPOINT_READER_RJ45 = "ENDPOINT_READER_RJ45";
-    private static final String ENDPOINT_NETWORK_OUTLET_RJ45 = "ENDPOINT_NETWORK_OUTLET_RJ45";
-    private static final String ENDPOINT_NETWORK_OUTLET_FIXING = "ENDPOINT_NETWORK_OUTLET_FIXING";
-    private static final String ENDPOINT_TURNSTILE_FIXING = "ENDPOINT_TURNSTILE_FIXING";
-    private static final String ENDPOINT_OTHER_DEVICE_FIXING = "ENDPOINT_OTHER_NETWORK_DEVICE_FIXING";
-    private static final String ENDPOINT_OTHER_DEVICE_RJ45 = "ENDPOINT_OTHER_NETWORK_DEVICE_RJ45";
+    private static final MaterialNormContext ENDPOINT_CAMERA_FIXING = MaterialNormContext.ENDPOINT_CAMERA_FIXING;
+    private static final MaterialNormContext ENDPOINT_CAMERA_RJ45 = MaterialNormContext.ENDPOINT_CAMERA_RJ45;
+    private static final MaterialNormContext ENDPOINT_ACCESS_POINT_FIXING =
+            MaterialNormContext.ENDPOINT_ACCESS_POINT_FIXING;
+    private static final MaterialNormContext ENDPOINT_ACCESS_POINT_RJ45 =
+            MaterialNormContext.ENDPOINT_ACCESS_POINT_RJ45;
+    private static final MaterialNormContext ENDPOINT_READER_FIXING = MaterialNormContext.ENDPOINT_READER_FIXING;
+    private static final MaterialNormContext ENDPOINT_READER_RJ45 = MaterialNormContext.ENDPOINT_READER_RJ45;
+    private static final MaterialNormContext ENDPOINT_NETWORK_OUTLET_RJ45 =
+            MaterialNormContext.ENDPOINT_NETWORK_OUTLET_RJ45;
+    private static final MaterialNormContext ENDPOINT_NETWORK_OUTLET_FIXING =
+            MaterialNormContext.ENDPOINT_NETWORK_OUTLET_FIXING;
+    private static final MaterialNormContext ENDPOINT_TURNSTILE_FIXING =
+            MaterialNormContext.ENDPOINT_TURNSTILE_FIXING;
+    private static final MaterialNormContext ENDPOINT_OTHER_DEVICE_FIXING =
+            MaterialNormContext.ENDPOINT_OTHER_NETWORK_DEVICE_FIXING;
+    private static final MaterialNormContext ENDPOINT_OTHER_DEVICE_RJ45 =
+            MaterialNormContext.ENDPOINT_OTHER_NETWORK_DEVICE_RJ45;
 
     private final MaterialNormRepository materialNormRepository;
     private final ExpressionEvaluator expressionEvaluator;
@@ -87,10 +95,10 @@ public class EndpointCalculator {
         return result;
     }
 
-    private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {
+    private void addFromNorm(Map<Material, Double> result, MaterialNormContext contextType, Map<String, Object> context) {
         List<MaterialNorm> norms = materialNormRepository.findAllByContextType(contextType);
         if (norms.isEmpty()) {
-            LOG.warn("Material norm not found for context: {}", contextType);
+            LOG.warn("Material norm not found for context: {}", contextType.name());
             return;
         }
 

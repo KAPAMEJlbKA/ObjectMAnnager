@@ -58,12 +58,15 @@ public class MaterialNormService {
         normRepository.deleteById(id);
     }
 
-    public String resolveContextName(String contextType) {
-        return MaterialNormContext.displayName(contextType);
+    public String resolveContextName(MaterialNormContext contextType) {
+        if (contextType == null) {
+            return "";
+        }
+        return contextType.getDisplayNameRu();
     }
 
-    public List<String> availableContextCodes() {
-        return MaterialNormContext.availableContexts().keySet().stream().toList();
+    public List<MaterialNormContext> availableContextCodes() {
+        return MaterialNormContext.orderedValues();
     }
 
     public Material resolveMaterial(Long materialId) {
@@ -75,7 +78,7 @@ public class MaterialNormService {
     }
 
     private void validate(MaterialNormForm form) {
-        if (!StringUtils.hasText(form.getContextType())) {
+        if (form.getContextType() == null) {
             throw new IllegalArgumentException("Контекст обязателен");
         }
         if (!StringUtils.hasText(form.getFormula())) {

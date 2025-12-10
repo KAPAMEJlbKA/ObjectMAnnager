@@ -1,13 +1,12 @@
 package com.kapamejlbka.objectmanager.service;
 
 import com.kapamejlbka.objectmanager.domain.material.Material;
+import com.kapamejlbka.objectmanager.domain.material.MaterialCategory;
 import com.kapamejlbka.objectmanager.domain.material.dto.MaterialForm;
 import com.kapamejlbka.objectmanager.repository.MaterialRepository;
 import jakarta.transaction.Transactional;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -25,14 +24,8 @@ public class MaterialService {
         return materialRepository.findAll();
     }
 
-    public List<String> listCategories() {
-        Set<String> categories = new HashSet<>();
-        for (Material material : materialRepository.findAll()) {
-            if (StringUtils.hasText(material.getCategory())) {
-                categories.add(material.getCategory());
-            }
-        }
-        return categories.stream().sorted(String::compareToIgnoreCase).collect(Collectors.toList());
+    public List<MaterialCategory> listCategories() {
+        return List.of(MaterialCategory.values());
     }
 
     public Material getById(Long id) {
@@ -40,12 +33,12 @@ public class MaterialService {
                 .orElseThrow(() -> new IllegalArgumentException("Материал не найден"));
     }
 
-    public List<Material> search(String query, String category) {
+    public List<Material> search(String query, MaterialCategory category) {
         List<Material> all = materialRepository.findAll();
         return all.stream()
                 .filter(material -> {
-                    if (StringUtils.hasText(category)) {
-                        return category.equalsIgnoreCase(material.getCategory());
+                    if (category != null) {
+                        return category.equals(material.getCategory());
                     }
                     return true;
                 })
@@ -68,7 +61,7 @@ public class MaterialService {
         Material material = new Material();
         material.setCode(form.getCode().trim().toUpperCase(Locale.ROOT));
         material.setName(form.getName().trim());
-        material.setCategory(normalizeRequired(form.getCategory(), "Категория обязательна"));
+        material.setCategory(requiredCategory(form.getCategory()));
         material.setUnit(normalizeRequired(form.getUnit(), "Единица измерения обязательна"));
         material.setNotes(form.getNotes());
         return materialRepository.save(material);
@@ -81,7 +74,7 @@ public class MaterialService {
         validateName(form.getName());
         existing.setCode(form.getCode().trim().toUpperCase(Locale.ROOT));
         existing.setName(form.getName().trim());
-        existing.setCategory(normalizeRequired(form.getCategory(), "Категория обязательна"));
+        existing.setCategory(requiredCategory(form.getCategory()));
         existing.setUnit(normalizeRequired(form.getUnit(), "Единица измерения обязательна"));
         existing.setNotes(form.getNotes());
         return materialRepository.save(existing);
@@ -113,5 +106,12 @@ public class MaterialService {
             throw new IllegalArgumentException(message);
         }
         return value.trim();
+    }
+
+    private MaterialCategory requiredCategory(MaterialCategory category) {
+        if (category == null) {
+            throw new IllegalArgumentException("Категория обязательна");
+        }
+        return category;
     }
 }

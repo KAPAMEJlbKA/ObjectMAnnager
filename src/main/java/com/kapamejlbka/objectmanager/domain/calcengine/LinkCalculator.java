@@ -3,6 +3,7 @@ package com.kapamejlbka.objectmanager.domain.calcengine;
 import com.kapamejlbka.objectmanager.domain.calcengine.dsl.ExpressionEvaluator;
 import com.kapamejlbka.objectmanager.domain.material.Material;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
+import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
 import com.kapamejlbka.objectmanager.repository.MaterialNormRepository;
 import java.util.HashMap;
@@ -18,8 +19,8 @@ public class LinkCalculator {
 
     private static final Logger LOG = LoggerFactory.getLogger(LinkCalculator.class);
 
-    private static final String LINK_UTP_LENGTH = "LINK_UTP_LENGTH";
-    private static final String LINK_POWER_LENGTH = "LINK_POWER_LENGTH";
+    private static final MaterialNormContext LINK_UTP_LENGTH = MaterialNormContext.LINK_UTP_LENGTH;
+    private static final MaterialNormContext LINK_POWER_LENGTH = MaterialNormContext.LINK_POWER_LENGTH;
 
     private final MaterialNormRepository materialNormRepository;
     private final ExpressionEvaluator expressionEvaluator;
@@ -71,10 +72,10 @@ public class LinkCalculator {
         return context;
     }
 
-    private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {
+    private void addFromNorm(Map<Material, Double> result, MaterialNormContext contextType, Map<String, Object> context) {
         List<MaterialNorm> norms = materialNormRepository.findAllByContextType(contextType);
         if (norms.isEmpty()) {
-            LOG.warn("Material norm not found for context: {}", contextType);
+            LOG.warn("Material norm not found for context: {}", contextType.name());
             return;
         }
 

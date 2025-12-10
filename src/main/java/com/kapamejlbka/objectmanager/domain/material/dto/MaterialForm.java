@@ -1,12 +1,14 @@
 package com.kapamejlbka.objectmanager.domain.material.dto;
 
+import com.kapamejlbka.objectmanager.domain.material.MaterialCategory;
+
 public class MaterialForm {
 
     private Long id;
     private String code;
     private String name;
     private String unit;
-    private String category;
+    private MaterialCategory category;
     private String notes;
 
     public Long getId() {
@@ -41,11 +43,11 @@ public class MaterialForm {
         this.unit = unit;
     }
 
-    public String getCategory() {
+    public MaterialCategory getCategory() {
         return category;
     }
 
-    public void setCategory(String category) {
+    public void setCategory(MaterialCategory category) {
         this.category = category;
     }
 

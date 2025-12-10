@@ -4,6 +4,7 @@ import com.kapamejlbka.objectmanager.domain.calcengine.dsl.ExpressionEvaluator;
 import com.kapamejlbka.objectmanager.domain.device.NetworkNode;
 import com.kapamejlbka.objectmanager.domain.material.Material;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
+import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext;
 import com.kapamejlbka.objectmanager.domain.settings.dto.CalculationSettingsDto;
 import com.kapamejlbka.objectmanager.repository.MaterialNormRepository;
 import java.util.HashMap;
@@ -20,11 +21,11 @@ public class NodeCalculator {
 
     private static final Logger LOG = LoggerFactory.getLogger(NodeCalculator.class);
 
-    private static final String NODE_CABINET_FIXING = "NODE_CABINET_FIXING";
-    private static final String NODE_INPUT_GLAND = "NODE_INPUT_GLAND";
-    private static final String NODE_LUGS = "NODE_LUGS";
-    private static final String NODE_CIRCUIT_BREAKER = "NODE_CIRCUIT_BREAKER";
-    private static final String NODE_SOCKET_DOUBLE = "NODE_SOCKET_DOUBLE";
+    private static final MaterialNormContext NODE_CABINET_FIXING = MaterialNormContext.NODE_CABINET_FIXING;
+    private static final MaterialNormContext NODE_INPUT_GLAND = MaterialNormContext.NODE_INPUT_GLAND;
+    private static final MaterialNormContext NODE_LUGS = MaterialNormContext.NODE_LUGS;
+    private static final MaterialNormContext NODE_CIRCUIT_BREAKER = MaterialNormContext.NODE_CIRCUIT_BREAKER;
+    private static final MaterialNormContext NODE_SOCKET_DOUBLE = MaterialNormContext.NODE_SOCKET_DOUBLE;
     private static final String CABINET_PREFIX = "NODE_CABINET";
 
     private static final int MIN_LUGS = 10;
@@ -57,11 +58,14 @@ public class NodeCalculator {
     }
 
     private void addCabinetFixing(String mountSurface, Map<Material, Double> result) {
-        String contextType = NODE_CABINET_FIXING;
+        String contextType = NODE_CABINET_FIXING.name();
         if (StringUtils.hasText(mountSurface)) {
             contextType += "_" + mountSurface.trim().toUpperCase(Locale.ROOT);
         }
-        addFromNorm(result, contextType, Map.of("deviceCount", 1));
+        MaterialNormContext normContext = resolveContext(contextType);
+        if (normContext != null) {
+            addFromNorm(result, normContext, Map.of("deviceCount", 1));
+        }
     }
 
     private void addIncomingGlands(int incomingLinesCount, Map<Material, Double> result) {
@@ -114,13 +118,16 @@ public class NodeCalculator {
             context.put("dropLength", settings.getStandardCabinetDropLengthMeters());
         }
         String contextType = CABINET_PREFIX + "_" + size;
-        addFromNorm(result, contextType, context);
+        MaterialNormContext normContext = resolveContext(contextType);
+        if (normContext != null) {
+            addFromNorm(result, normContext, context);
+        }
     }
 
-    private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {
+    private void addFromNorm(Map<Material, Double> result, MaterialNormContext contextType, Map<String, Object> context) {
         List<MaterialNorm> norms = materialNormRepository.findAllByContextType(contextType);
         if (norms.isEmpty()) {
-            LOG.warn("Material norm not found for context: {}", contextType);
+            LOG.warn("Material norm not found for context: {}", contextType.name());
             return;
         }
 
@@ -129,6 +136,15 @@ public class NodeCalculator {
             if (quantity > 0) {
                 result.merge(norm.getMaterial(), quantity, Double::sum);
             }
+        }
+    }
+
+    private MaterialNormContext resolveContext(String contextCode) {
+        try {
+            return MaterialNormContext.valueOf(contextCode);
+        } catch (IllegalArgumentException ex) {
+            LOG.warn("Material norm context not supported: {}", contextCode);
+            return null;
         }
     }
 }
