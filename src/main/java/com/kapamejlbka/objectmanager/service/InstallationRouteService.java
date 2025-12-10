@@ -19,7 +19,7 @@ import org.springframework.util.StringUtils;
 public class InstallationRouteService {
 
     private static final Set<String> SUPPORTED_ROUTE_TYPES =
-            Set.of("CORRUGATED_PIPE", "CABLE_CHANNEL", "TRAY_OR_STRUCTURE", "WIRE_ROPE", "BARE_CABLE");
+            Set.of("CORRUGATED_PIPE", "CABLE_CHANNEL", "TRAY_STRUCTURE", "WIRE_ROPE", "BARE_CABLE");
     private static final Set<String> SUPPORTED_FIXING_METHODS = Set.of("ONE_CLIP", "PE_TIES");
     private static final Set<String> SUPPORTED_ORIENTATIONS = Set.of("HORIZONTAL", "VERTICAL");
 

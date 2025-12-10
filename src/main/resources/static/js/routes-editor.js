@@ -23,9 +23,9 @@
     const ROUTE_TYPES = {
         CORRUGATED_PIPE: 'Гофрированная труба',
         CABLE_CHANNEL: 'Кабель-канал',
-        TRAY_OR_STRUCTURE: 'По лоткам/конструкциям',
+        TRAY_STRUCTURE: 'По лоткам/конструкциям',
         WIRE_ROPE: 'Трос',
-        BARE_CABLE: 'Открытая прокладка кабеля',
+        BARE_CABLE: 'Открытая прокладка',
     };
     const SURFACE_TYPES = {
         WALL: 'Стена',
@@ -38,9 +38,29 @@
     };
     const LINK_TYPES = {
         UTP: 'Слаботочный кабель (UTP)',
-        FIBER: 'Оптоволокно',
         POWER: 'Силовой кабель',
+        FIBER: 'Оптоволокно',
         WIFI: 'Беспроводное соединение',
+    };
+    const MATERIAL_CATEGORY_NAMES = {
+        CABLE_UTP: 'Слаботочный кабель UTP',
+        CABLE_POWER: 'Силовой кабель',
+        CABLE_FIBER: 'Оптоволоконный кабель',
+        PIPE_CORRUGATED: 'Гофрированная труба',
+        CABLE_CHANNEL: 'Кабель-канал',
+        WIRE_ROPE: 'Трос',
+        FASTENER_CLIP: 'Клипсы',
+        FASTENER_DOWEL: 'Дюбели',
+        FASTENER_SCREW: 'Саморезы',
+        FASTENER_TIE: 'Пластиковые стяжки',
+        FASTENER_WIRE_ROPE: 'Фурнитура троса',
+        BOX: 'Коробки',
+        CABINET: 'Шкафы',
+        CONNECTOR_RJ45: 'Разъёмы RJ-45',
+        ELECTRIC_SOCKET: 'Розетки',
+        ELECTRIC_BREAKER: 'Автоматы',
+        ELECTRIC_LUG: 'Наконечники',
+        OTHER: 'Прочее',
     };
     const ROUTE_COLORS = ['#2563eb', '#059669', '#f97316', '#8b5cf6', '#14b8a6', '#ef4444', '#0ea5e9', '#f59e0b'];
 
@@ -216,9 +236,10 @@
             hitbox.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (selectedRouteId !== null) {
-                    link.routeId = selectedRouteId;
+                    const routeId = selectedRouteId;
+                    link.routeId = routeId;
                     renderLinks();
-                    assignLink(link.id, selectedRouteId);
+                    assignLink(link.id, routeId);
                 } else {
                     selectLink(link.id);
                 }
@@ -300,7 +321,7 @@
         const groupedMaterials = groupMaterialsByCategory();
         Object.entries(groupedMaterials).forEach(([category, items]) => {
             const group = document.createElement('optgroup');
-            group.label = category;
+            group.label = MATERIAL_CATEGORY_NAMES[category] || category;
             items.forEach((material) => {
                 const option = document.createElement('option');
                 option.value = material.id;

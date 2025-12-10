@@ -68,7 +68,7 @@ public class RouteCalculator {
         switch (routeType) {
             case "CORRUGATED_PIPE" -> handleCorrugatedPipe(route, lengthMeters, links, settings, result);
             case "CABLE_CHANNEL" -> handleCableChannel(route, lengthMeters, result);
-            case "TRAY_OR_STRUCTURE" -> handleTrayOrStructure(lengthMeters, result);
+            case "TRAY_STRUCTURE" -> handleTrayOrStructure(lengthMeters, result);
             case "WIRE_ROPE" -> handleWireRope(lengthMeters, result);
             case "BARE_CABLE" -> handleBareCable(route, lengthMeters, result);
             default -> LOG.warn("Unsupported route type: {}", routeType);
