@@ -26,9 +26,6 @@
                     <li class="nav-item">
                         <a class="nav-link" th:classappend="${navActive} == 'customers' ? ' active' : ''" href="/customers">Заказчики</a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:classappend="${navActive} == 'objects' ? ' active' : ''" href="/objects">Объекты</a>
-                    </li>
                     <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                         <a class="nav-link" th:classappend="${navActive} == 'admin' ? ' active' : ''" href="/admin">Администрирование</a>
                     </li>
