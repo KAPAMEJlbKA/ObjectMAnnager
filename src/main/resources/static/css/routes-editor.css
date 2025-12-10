@@ -107,6 +107,17 @@
     cursor: pointer;
 }
 
+.route-link-hitbox {
+    stroke: transparent;
+    stroke-width: 12;
+    pointer-events: stroke;
+    cursor: pointer;
+}
+
+.route-link-visible {
+    pointer-events: none;
+}
+
 .om-routes-inspector label {
     font-size: 13px;
     font-weight: 600;
