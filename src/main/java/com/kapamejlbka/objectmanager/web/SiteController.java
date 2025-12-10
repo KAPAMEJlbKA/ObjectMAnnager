@@ -2,6 +2,7 @@ package com.kapamejlbka.objectmanager.web;
 
 import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation;
 import com.kapamejlbka.objectmanager.domain.calculation.dto.SystemCalculationCreateRequest;
+import com.kapamejlbka.objectmanager.domain.calcengine.CalculationResult;
 import com.kapamejlbka.objectmanager.domain.customer.Customer;
 import com.kapamejlbka.objectmanager.domain.customer.Site;
 import com.kapamejlbka.objectmanager.domain.customer.dto.SiteCreateRequest;
@@ -75,17 +76,23 @@ public class SiteController {
         Site site = getSite(id);
         List<SystemCalculation> calculations = systemCalculationService.findBySite(id);
         SystemCalculation calculation = calculations.isEmpty() ? null : calculations.get(0);
-        Integer deviceCount = null;
-        Integer nodeCount = null;
+        CalculationResult calculationResult = null;
+        Integer materialItemCount = null;
+        long deviceCount = endpointDeviceService.countBySite(id);
+        long nodeCount = networkNodeService.countBySite(id);
         if (calculation != null) {
-            deviceCount = endpointDeviceService.listByCalculation(calculation.getId()).size();
-            nodeCount = networkNodeService.listByCalculation(calculation.getId()).size();
+            deviceCount = endpointDeviceService.countByCalculation(calculation.getId());
+            nodeCount = networkNodeService.countByCalculation(calculation.getId());
+            calculationResult = systemCalculationService.runCalculation(calculation.getId());
+            materialItemCount = calculationResult.items().size();
         }
         model.addAttribute("site", site);
         model.addAttribute("calculations", calculations);
         model.addAttribute("calculation", calculation);
         model.addAttribute("deviceCount", deviceCount);
         model.addAttribute("nodeCount", nodeCount);
+        model.addAttribute("calculationResult", calculationResult);
+        model.addAttribute("materialItemCount", materialItemCount);
         return "sites/detail";
     }
 

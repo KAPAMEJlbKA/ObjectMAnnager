@@ -7,4 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface NetworkNodeRepository extends JpaRepository<NetworkNode, Long> {
 
     List<NetworkNode> findByCalculationId(Long calculationId);
+
+    long countByCalculationId(Long calculationId);
+
+    long countByCalculationSiteId(Long siteId);
 }

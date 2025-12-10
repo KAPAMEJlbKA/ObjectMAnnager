@@ -54,6 +54,20 @@ public class NetworkNodeService {
         return networkNodeRepository.findByCalculationId(calculationId);
     }
 
+    public long countByCalculation(Long calculationId) {
+        if (calculationId == null) {
+            return 0;
+        }
+        return networkNodeRepository.countByCalculationId(calculationId);
+    }
+
+    public long countBySite(Long siteId) {
+        if (siteId == null) {
+            return 0;
+        }
+        return networkNodeRepository.countByCalculationSiteId(siteId);
+    }
+
     @Transactional
     public void delete(Long id) {
         NetworkNode networkNode = getById(id);

@@ -1,13 +1,16 @@
 @import com.kapamejlbka.objectmanager.domain.customer.Site
 @import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation
+@import com.kapamejlbka.objectmanager.domain.calcengine.CalculationResult
 @import java.time.format.DateTimeFormatter
 @import java.time.ZoneId
 
 @param Site site
 @param java.util.List<SystemCalculation> calculations
 @param SystemCalculation calculation = null
-@param Integer deviceCount = null
-@param Integer nodeCount = null
+@param Long deviceCount = null
+@param Long nodeCount = null
+@param Integer materialItemCount = null
+@param CalculationResult calculationResult = null
 @param String flashSuccess = null
 @param String flashError = null
 
@@ -29,7 +32,7 @@
                 <h2 class="h5 mb-0">Данные по объекту</h2>
                 <div class="d-flex gap-2">
                     @if(calculation != null) {
-                        <a href="/calculations/@calculation.getId()/wizard/step7" class="btn btn-outline-secondary btn-sm">Показать ведомость</a>
+                        <a href="/calculations/@calculation.getId()/result" class="btn btn-outline-secondary btn-sm">Показать ведомость материалов</a>
                     }
                     <a href="/sites/@site.getId()/calculations/start" class="btn btn-primary btn-sm">Открыть заполнение данных</a>
                 </div>
@@ -56,6 +59,14 @@
                     <div class="col-md-3 col-6">
                         <div class="metric-label">Узлов/шкафов</div>
                         <div class="metric-value">@(nodeCount == null ? "—" : nodeCount)</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="metric-label">Позиции материалов</div>
+                        <div class="metric-value">@(materialItemCount == null ? "—" : materialItemCount)</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="metric-label">Последний расчёт</div>
+                        <div class="metric-value">@(calculationResult == null || calculationResult.executedAt() == null ? "—" : updatedFormatter.format(calculationResult.executedAt()))</div>
                     </div>
                     <div class="col-md-3 col-6">
                         <div class="metric-label">Обновлено</div>
