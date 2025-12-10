@@ -1,0 +1,52 @@
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{layout :: layout(~{::title}, 'customers', ~{::content}, ~{::extraHead}, ~{::extraScripts})}">
+<head>
+    <title th:text="${calculation.name} + ' — ведомость материалов'">Ведомость материалов</title>
+    <th:block th:fragment="extraHead"></th:block>
+</head>
+<body>
+<th:block th:fragment="content">
+    <div class="mb-3">
+        <h1 class="h4 mb-1">Ведомость материалов</h1>
+        <p class="text-muted mb-1" th:text="${calculation.site.name} + ' — ' + ${calculation.name}"></p>
+        <div class="d-flex gap-2 flex-wrap mt-2">
+            <span class="badge text-bg-light">Всего позиций: <span th:text="${itemsCount}"></span></span>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mb-3">
+        <a th:href="@{'/sites/' + ${calculation.site.id}}" class="btn btn-outline-secondary btn-sm">Вернуться к объекту</a>
+        <a th:href="@{'/calculations/' + ${calculation.id} + '/wizard/step1'}" class="btn btn-outline-primary btn-sm">Открыть заполнение данных</a>
+        <a th:href="@{'/calculations/' + ${calculation.id} + '/result.xlsx'}" class="btn btn-outline-secondary btn-sm">Экспорт в Excel</a>
+    </div>
+
+    <div class="om-page-card">
+        <p class="text-muted" th:if="${result.items().isEmpty()}">Результаты расчёта отсутствуют.</p>
+        <div class="table-responsive" th:if="${!result.items().isEmpty()}">
+            <table class="table table-striped align-middle mb-0">
+                <thead class="table-light">
+                <tr>
+                    <th>Наименование материала</th>
+                    <th>Категория</th>
+                    <th>Ед. изм.</th>
+                    <th>Количество</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${result.items()}">
+                    <td>
+                        <div class="fw-semibold" th:text="${item.materialName()}"></div>
+                        <div class="text-muted small" th:text="${item.materialCode()}"></div>
+                    </td>
+                    <td th:text="${item.category()}"></td>
+                    <td th:text="${item.unit()}"></td>
+                    <td th:text="${#numbers.formatDecimal(item.quantity(), 1, 'COMMA', 2, 'POINT')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</th:block>
+<th:block th:fragment="extraScripts"></th:block>
+</body>
+</html>

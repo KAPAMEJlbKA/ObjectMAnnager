@@ -2,6 +2,7 @@ package com.kapamejlbka.objectmanager.web;
 
 import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation;
 import com.kapamejlbka.objectmanager.domain.calcengine.CalculationResult;
+import com.kapamejlbka.objectmanager.domain.calcengine.MaterialItemResult;
 import com.kapamejlbka.objectmanager.domain.device.EndpointDevice;
 import com.kapamejlbka.objectmanager.domain.device.NetworkNode;
 import com.kapamejlbka.objectmanager.domain.device.dto.EndpointDeviceCreateRequest;
@@ -24,8 +25,19 @@ import com.kapamejlbka.objectmanager.service.RouteSegmentLinkService;
 import com.kapamejlbka.objectmanager.service.SystemCalculationService;
 import com.kapamejlbka.objectmanager.service.TopologyLinkService;
 import com.kapamejlbka.objectmanager.web.view.DeviceTypeDisplayUtil;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -356,6 +368,37 @@ public class CalculationController {
         return "calculations/wizard-step7";
     }
 
+    @GetMapping("/calculations/{id}/result")
+    public String calculationResult(@PathVariable("id") Long id, Model model) {
+        CalculationResult result = systemCalculationService.runCalculation(id);
+        SystemCalculation calculation = getCalculation(id);
+        model.addAttribute("calculation", calculation);
+        model.addAttribute("result", result);
+        model.addAttribute("itemsCount", result.items().size());
+        return "calculations/result";
+    }
+
+    @GetMapping("/calculations/{id}/result.xlsx")
+    public ResponseEntity<byte[]> calculationResultExcel(@PathVariable("id") Long id) {
+        CalculationResult result = systemCalculationService.runCalculation(id);
+        SystemCalculation calculation = getCalculation(id);
+
+        try (Workbook workbook = buildWorkbook(calculation, result);
+                ByteArrayOutputStream output = new ByteArrayOutputStream()) {
+            workbook.write(output);
+            String filename = ("vedomost_site-" + calculation.getId() + ".xlsx")
+                    .replaceAll("[^A-Za-z0-9._-]", "_");
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + filename)
+                    .contentType(MediaType.parseMediaType(
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                    .body(output.toByteArray());
+        } catch (IOException ex) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Не удалось сформировать Excel", ex);
+        }
+    }
+
     private void applyEndpointSelection(TopologyLinkCreateRequest form, String endpoint, boolean isFrom) {
         if (endpoint == null || endpoint.isBlank()) {
             throw new IllegalArgumentException("Укажите оба конца линии");
@@ -396,6 +439,51 @@ public class CalculationController {
         if (form.getExtraSockets() == null) {
             form.setExtraSockets(0);
         }
+    }
+
+    private Workbook buildWorkbook(SystemCalculation calculation, CalculationResult result) {
+        Workbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Ведомость материалов");
+
+        int rowIndex = 0;
+        Row titleRow = sheet.createRow(rowIndex++);
+        titleRow.createCell(0).setCellValue("Ведомость материалов");
+
+        Row siteRow = sheet.createRow(rowIndex++);
+        siteRow.createCell(0).setCellValue("Объект:");
+        siteRow.createCell(1).setCellValue(calculation.getSite().getName());
+
+        Row calcRow = sheet.createRow(rowIndex++);
+        calcRow.createCell(0).setCellValue("Расчёт:");
+        calcRow.createCell(1).setCellValue(calculation.getName());
+
+        Row dateRow = sheet.createRow(rowIndex++);
+        dateRow.createCell(0).setCellValue("Дата:");
+        dateRow.createCell(1).setCellValue(LocalDate.now().toString());
+
+        rowIndex++;
+
+        Row header = sheet.createRow(rowIndex++);
+        header.createCell(0).setCellValue("Код материала");
+        header.createCell(1).setCellValue("Наименование");
+        header.createCell(2).setCellValue("Категория");
+        header.createCell(3).setCellValue("Ед. изм.");
+        header.createCell(4).setCellValue("Количество");
+
+        for (MaterialItemResult item : result.items()) {
+            Row row = sheet.createRow(rowIndex++);
+            row.createCell(0).setCellValue(item.materialCode());
+            row.createCell(1).setCellValue(item.materialName());
+            row.createCell(2).setCellValue(item.category());
+            row.createCell(3).setCellValue(item.unit());
+            row.createCell(4).setCellValue(item.quantity());
+        }
+
+        for (int i = 0; i <= 4; i++) {
+            sheet.autoSizeColumn(i);
+        }
+
+        return workbook;
     }
 
     private SystemCalculation getCalculation(Long id) {

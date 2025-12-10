@@ -8,20 +8,28 @@ import com.kapamejlbka.objectmanager.domain.device.NetworkNode;
 import com.kapamejlbka.objectmanager.domain.device.repository.EndpointDeviceRepository;
 import com.kapamejlbka.objectmanager.domain.device.repository.NetworkNodeRepository;
 import com.kapamejlbka.objectmanager.domain.material.Material;
+import com.kapamejlbka.objectmanager.domain.settings.dto.CalculationSettingsDto;
 import com.kapamejlbka.objectmanager.domain.topology.InstallationRoute;
 import com.kapamejlbka.objectmanager.domain.topology.RouteSegmentLink;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
 import com.kapamejlbka.objectmanager.domain.topology.repository.InstallationRouteRepository;
 import com.kapamejlbka.objectmanager.domain.topology.repository.RouteSegmentLinkRepository;
 import com.kapamejlbka.objectmanager.domain.topology.repository.TopologyLinkRepository;
+import com.kapamejlbka.objectmanager.service.SettingsService;
 import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CalculationEngineImpl implements CalculationEngine {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CalculationEngineImpl.class);
 
     private final SystemCalculationRepository systemCalculationRepository;
     private final EndpointDeviceRepository endpointDeviceRepository;
@@ -33,6 +41,7 @@ public class CalculationEngineImpl implements CalculationEngine {
     private final EndpointCalculator endpointCalculator;
     private final NodeCalculator nodeCalculator;
     private final FiberCalculator fiberCalculator;
+    private final SettingsService settingsService;
 
     public CalculationEngineImpl(
             SystemCalculationRepository systemCalculationRepository,
@@ -44,7 +53,8 @@ public class CalculationEngineImpl implements CalculationEngine {
             RouteCalculator routeCalculator,
             EndpointCalculator endpointCalculator,
             NodeCalculator nodeCalculator,
-            FiberCalculator fiberCalculator) {
+            FiberCalculator fiberCalculator,
+            SettingsService settingsService) {
         this.systemCalculationRepository = systemCalculationRepository;
         this.endpointDeviceRepository = endpointDeviceRepository;
         this.networkNodeRepository = networkNodeRepository;
@@ -55,6 +65,7 @@ public class CalculationEngineImpl implements CalculationEngine {
         this.endpointCalculator = endpointCalculator;
         this.nodeCalculator = nodeCalculator;
         this.fiberCalculator = fiberCalculator;
+        this.settingsService = settingsService;
     }
 
     @Override
@@ -67,6 +78,7 @@ public class CalculationEngineImpl implements CalculationEngine {
         List<NetworkNode> networkNodes = networkNodeRepository.findByCalculationId(calculationId);
         List<TopologyLink> topologyLinks = topologyLinkRepository.findByCalculationId(calculationId);
         List<InstallationRoute> installationRoutes = installationRouteRepository.findByCalculationId(calculationId);
+        CalculationSettingsDto settings = settingsService.getSettings();
         Map<Long, List<RouteSegmentLink>> routeToSegments = installationRoutes.stream()
                 .collect(java.util.stream.Collectors.toMap(
                         InstallationRoute::getId,
@@ -75,22 +87,58 @@ public class CalculationEngineImpl implements CalculationEngine {
         Map<Material, Double> materialTotals = new HashMap<>();
 
         installationRoutes.forEach(route -> {
-            List<TopologyLink> linksInRoute = routeToSegments.getOrDefault(route.getId(), List.of()).stream()
-                    .map(RouteSegmentLink::getTopologyLink)
-                    .toList();
-            merge(materialTotals, routeCalculator.calculateForRoute(route, linksInRoute));
+            try {
+                List<TopologyLink> linksInRoute = routeToSegments.getOrDefault(route.getId(), List.of()).stream()
+                        .map(RouteSegmentLink::getTopologyLink)
+                        .toList();
+                merge(materialTotals, routeCalculator.calculateForRoute(route, linksInRoute, settings));
+            } catch (Exception ex) {
+                LOG.warn("Failed to calculate materials for route {}: {}", route.getName(), ex.getMessage());
+            }
         });
 
-        endpointDevices.forEach(device -> merge(materialTotals, endpointCalculator.calculate(device)));
-        networkNodes.forEach(node -> merge(materialTotals, nodeCalculator.calculate(node)));
+        endpointDevices.forEach(device -> {
+            try {
+                merge(materialTotals, endpointCalculator.calculateForDevice(device));
+            } catch (Exception ex) {
+                LOG.warn("Failed to calculate materials for endpoint {}: {}", device.getName(), ex.getMessage());
+            }
+        });
+
+        Map<Long, Long> nodeIncomingCounts = topologyLinks.stream()
+                .flatMap(link -> List.of(link.getFromNode(), link.getToNode()).stream())
+                .filter(node -> node != null && node.getId() != null)
+                .collect(Collectors.groupingBy(NetworkNode::getId, Collectors.counting()));
+
+        networkNodes.forEach(node -> {
+            try {
+                int incoming = nodeIncomingCounts.getOrDefault(node.getId(), 0L).intValue();
+                if (node.getIncomingLinesCount() != null) {
+                    incoming = Math.max(incoming, node.getIncomingLinesCount());
+                }
+                merge(materialTotals, nodeCalculator.calculateForNode(node, incoming, settings));
+            } catch (Exception ex) {
+                LOG.warn("Failed to calculate materials for node {}: {}", node.getName(), ex.getMessage());
+            }
+        });
+
         topologyLinks.stream()
                 .filter(link -> link.getLinkType() != null && "FIBER".equalsIgnoreCase(link.getLinkType()))
-                .forEach(link -> merge(materialTotals, fiberCalculator.calculate(link)));
+                .forEach(link -> {
+                    try {
+                        merge(materialTotals, fiberCalculator.calculateForFiberLink(link));
+                    } catch (Exception ex) {
+                        LOG.warn("Failed to calculate materials for fiber link {}: {}", link.getId(), ex.getMessage());
+                    }
+                });
 
         List<MaterialItemResult> items = materialTotals.entrySet().stream()
+                .sorted(Comparator.comparing((Map.Entry<Material, Double> e) -> e.getKey().getCategory())
+                        .thenComparing(e -> e.getKey().getName()))
                 .map(entry -> new MaterialItemResult(
                         entry.getKey().getCode(),
                         entry.getKey().getName(),
+                        entry.getKey().getCategory(),
                         entry.getKey().getUnit(),
                         entry.getValue()))
                 .toList();
@@ -99,6 +147,9 @@ public class CalculationEngineImpl implements CalculationEngine {
     }
 
     private void merge(Map<Material, Double> target, Map<Material, Double> addition) {
+        if (addition == null) {
+            return;
+        }
         addition.forEach((material, quantity) -> target.merge(material, quantity, Double::sum));
     }
 }

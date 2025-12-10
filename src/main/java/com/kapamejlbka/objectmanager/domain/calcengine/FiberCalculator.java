@@ -1,50 +1,58 @@
 package com.kapamejlbka.objectmanager.domain.calcengine;
 
+import com.kapamejlbka.objectmanager.domain.calcengine.dsl.ExpressionEvaluator;
 import com.kapamejlbka.objectmanager.domain.material.Material;
+import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
-import com.kapamejlbka.objectmanager.repository.MaterialRepository;
+import com.kapamejlbka.objectmanager.repository.MaterialNormRepository;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class FiberCalculator {
 
-    private static final String FIBER_CABLE_TEMPLATE = "FIBER_%s_CORES";
-    private static final String FIBER_SPLICE_SLEEVE = "FIBER_SPLICE_SLEEVE";
-    private static final String FIBER_SPLICE_CASSETTE = "FIBER_SPLICE_CASSETTE";
+    private static final Logger LOG = LoggerFactory.getLogger(FiberCalculator.class);
+
+    private static final String FIBER_CABLE_TEMPLATE = "FIBER_%s";
+    private static final String FIBER_SPLICE = "FIBER_SPLICE";
     private static final String FIBER_CONNECTOR = "FIBER_CONNECTOR";
 
-    private final MaterialRepository materialRepository;
+    private final MaterialNormRepository materialNormRepository;
+    private final ExpressionEvaluator expressionEvaluator;
 
-    public FiberCalculator(MaterialRepository materialRepository) {
-        this.materialRepository = materialRepository;
+    public FiberCalculator(MaterialNormRepository materialNormRepository, ExpressionEvaluator expressionEvaluator) {
+        this.materialNormRepository = materialNormRepository;
+        this.expressionEvaluator = expressionEvaluator;
     }
 
-    public Map<Material, Double> calculate(TopologyLink fiberLink) {
-        Objects.requireNonNull(fiberLink, "Fiber link is required");
+    public Map<Material, Double> calculateForFiberLink(TopologyLink fiberLink) {
+        Map<Material, Double> result = new HashMap<>();
+        if (fiberLink == null) {
+            LOG.warn("Fiber link is null, skipping calculation");
+            return result;
+        }
 
-        Double cableLength = Objects.requireNonNull(fiberLink.getCableLength(), "Fiber cable length is required");
-        Integer fiberCores = Objects.requireNonNull(fiberLink.getFiberCores(), "Fiber cores are required");
+        Double cableLength = fiberLink.getCableLength();
+        Integer fiberCores = fiberLink.getFiberCores();
+        if (cableLength == null || fiberCores == null) {
+            LOG.warn("Fiber link data is incomplete for link {}", fiberLink.getId());
+            return result;
+        }
+
         Integer fiberSpliceCount = defaultZero(fiberLink.getFiberSpliceCount());
         Integer fiberConnectorCount = defaultZero(fiberLink.getFiberConnectorCount());
 
-        Map<Material, Double> result = new HashMap<>();
-
-        Material fiberCable = findByCode(FIBER_CABLE_TEMPLATE.formatted(fiberCores));
-        result.put(fiberCable, cableLength);
+        addFromNorm(result, FIBER_CABLE_TEMPLATE.formatted(fiberCores), Map.of("length", cableLength));
 
         if (fiberSpliceCount > 0) {
-            Material spliceSleeve = findByCode(FIBER_SPLICE_SLEEVE);
-            Material spliceCassette = findByCode(FIBER_SPLICE_CASSETTE);
-            result.put(spliceSleeve, fiberSpliceCount.doubleValue());
-            result.put(spliceCassette, fiberSpliceCount.doubleValue());
+            addFromNorm(result, FIBER_SPLICE, Map.of("fiberSpliceCount", fiberSpliceCount));
         }
 
         if (fiberConnectorCount > 0) {
-            Material connector = findByCode(FIBER_CONNECTOR);
-            result.put(connector, fiberConnectorCount.doubleValue());
+            addFromNorm(result, FIBER_CONNECTOR, Map.of("fiberConnectorCount", fiberConnectorCount));
         }
 
         return result;
@@ -54,9 +62,21 @@ public class FiberCalculator {
         return value == null ? 0 : value;
     }
 
-    private Material findByCode(String code) {
-        return materialRepository
-                .findByCode(code)
-                .orElseThrow(() -> new IllegalArgumentException("Material not found for code: " + code));
+    private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {
+        MaterialNorm norm = materialNormRepository
+                .findByContextType(contextType)
+                .orElseGet(() -> {
+                    LOG.warn("Material norm not found for context: {}", contextType);
+                    return null;
+                });
+
+        if (norm == null) {
+            return;
+        }
+
+        double quantity = expressionEvaluator.evaluate(norm.getFormula(), context);
+        if (quantity > 0) {
+            result.merge(norm.getMaterial(), quantity, Double::sum);
+        }
     }
 }
