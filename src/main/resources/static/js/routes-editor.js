@@ -20,8 +20,28 @@
     const createSurfaceInput = document.getElementById('route-create-surface');
     const canvasWrapper = document.querySelector('.om-routes-canvas-wrapper');
 
-    const ROUTE_TYPES = ['CORRUGATED_PIPE', 'CABLE_CHANNEL', 'TRAY_OR_STRUCTURE', 'WIRE_ROPE', 'BARE_CABLE'];
-    const SURFACE_TYPES = ['WALL', 'CEILING', 'STRUCTURE', 'BETON_OR_BRICK', 'METAL', 'WOOD', 'GYPSUM'];
+    const ROUTE_TYPES = {
+        CORRUGATED_PIPE: 'Гофрированная труба',
+        CABLE_CHANNEL: 'Кабель-канал',
+        TRAY_OR_STRUCTURE: 'Лоток/конструкция',
+        WIRE_ROPE: 'Трос',
+        BARE_CABLE: 'Открытая прокладка кабеля',
+    };
+    const SURFACE_TYPES = {
+        WALL: 'Стена',
+        CEILING: 'Потолок',
+        STRUCTURE: 'Конструкция',
+        BETON_OR_BRICK: 'Бетон/кирпич',
+        METAL: 'Металл',
+        WOOD: 'Дерево',
+        GYPSUM: 'Гипсокартон',
+    };
+    const LINK_TYPES = {
+        UTP: 'Слаботочный кабель (UTP)',
+        FIBER: 'Оптоволокно',
+        POWER: 'Силовой кабель',
+        WIFI: 'Беспроводное соединение',
+    };
     const ROUTE_COLORS = ['#2563eb', '#059669', '#f97316', '#8b5cf6', '#14b8a6', '#ef4444', '#0ea5e9', '#f59e0b'];
 
     let routes = [];
@@ -112,10 +132,11 @@
                     item.classList.add('active');
                 }
                 const color = getRouteColor(route.id, idx);
-                item.innerHTML = `<div><span class="om-route-color" style="background:${color}"></span>${route.name}<br><small class="text-muted">${route.routeType}</small></div><div class="text-muted small">${counts[route.id] || 0} линий</div>`;
+                const routeTypeName = ROUTE_TYPES[route.routeType] || route.routeType;
+                item.innerHTML = `<div><span class="om-route-color" style="background:${color}"></span>${route.name}<br><small class="text-muted">${routeTypeName}</small></div><div class="text-muted small">${counts[route.id] || 0} линий</div>`;
                 item.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    selectRoute(route.id);
+                    selectRoute(Number(route.id));
                 });
                 routesList.appendChild(item);
             });
@@ -245,23 +266,23 @@
         nameInput.value = route.name;
         const typeSelect = document.createElement('select');
         typeSelect.className = 'form-select form-select-sm mb-2';
-        ROUTE_TYPES.forEach((t) => {
+        Object.entries(ROUTE_TYPES).forEach(([value, label]) => {
             const option = document.createElement('option');
-            option.value = t;
-            option.textContent = t;
-            option.selected = route.routeType === t;
+            option.value = value;
+            option.textContent = label;
+            option.selected = route.routeType === value;
             typeSelect.appendChild(option);
         });
         const surfaceSelect = document.createElement('select');
         surfaceSelect.className = 'form-select form-select-sm mb-2';
-        const surfaces = [...SURFACE_TYPES];
+        const surfaces = Object.keys(SURFACE_TYPES);
         if (route.surfaceType && !surfaces.includes(route.surfaceType)) {
             surfaces.push(route.surfaceType);
         }
         surfaces.forEach((s) => {
             const option = document.createElement('option');
             option.value = s;
-            option.textContent = s;
+            option.textContent = SURFACE_TYPES[s] || s;
             option.selected = (route.surfaceType || route.mountSurface) === s;
             surfaceSelect.appendChild(option);
         });
@@ -329,7 +350,7 @@
             <p class="mb-1"><strong>Линия #${link.id}</strong></p>
             <p class="mb-1">Откуда: <span class="text-muted">${describeEndpoint(link.fromNodeId, link.fromDeviceId)}</span></p>
             <p class="mb-1">Куда: <span class="text-muted">${describeEndpoint(link.toNodeId, link.toDeviceId)}</span></p>
-            <p class="mb-1">Тип: <span class="text-muted">${link.linkType || '—'}</span></p>
+            <p class="mb-1">Тип: <span class="text-muted">${LINK_TYPES[link.linkType] || link.linkType || '—'}</span></p>
             <p class="mb-1">Длина: <span class="text-muted">${link.length ?? '—'} м</span></p>
             <p class="mb-2">Трасса: <span class="text-muted">${routeName}</span></p>
         `;
