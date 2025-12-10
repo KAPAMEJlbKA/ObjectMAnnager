@@ -1,9 +1,12 @@
 package com.kapamejlbka.objectmanager.domain.topology.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 public class InstallationRouteUpdateRequest {
 
     private String name;
     private String routeType;
+    @JsonAlias("surfaceType")
     private String mountSurface;
     private Double lengthMeters;
     private String orientation;

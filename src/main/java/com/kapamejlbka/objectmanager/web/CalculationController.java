@@ -10,8 +10,6 @@ import com.kapamejlbka.objectmanager.domain.device.dto.NetworkNodeCreateRequest;
 import com.kapamejlbka.objectmanager.domain.device.dto.NetworkNodeSettingsForm;
 import com.kapamejlbka.objectmanager.domain.device.dto.NetworkNodeSettingsItem;
 import com.kapamejlbka.objectmanager.domain.device.dto.NetworkNodeUpdateRequest;
-import com.kapamejlbka.objectmanager.domain.topology.InstallationRoute;
-import com.kapamejlbka.objectmanager.domain.topology.RouteSegmentLink;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
 import com.kapamejlbka.objectmanager.domain.topology.dto.InstallationRouteCreateRequest;
 import com.kapamejlbka.objectmanager.domain.topology.dto.RouteSegmentLinkCreateRequest;
@@ -231,22 +229,9 @@ public class CalculationController {
     @GetMapping("/calculations/{id}/wizard/step5")
     public String wizardStep5(@PathVariable("id") Long id, Model model) {
         SystemCalculation calculation = getCalculation(id);
-        List<InstallationRoute> routes = installationRouteService.listByCalculation(id);
-        Map<Long, List<RouteSegmentLink>> routeLinks = routes.stream()
-                .collect(java.util.stream.Collectors.toMap(
-                        InstallationRoute::getId, r -> routeSegmentLinkService.listByRoute(r.getId())));
         model.addAttribute("calculation", calculation);
-        model.addAttribute("routes", routes);
-        model.addAttribute("routeLinks", routeLinks);
-        model.addAttribute("topologyLinks", topologyLinkService.listByCalculation(id));
-        InstallationRouteCreateRequest routeForm = new InstallationRouteCreateRequest();
-        routeForm.setRouteType("CORRUGATED_PIPE");
-        model.addAttribute("routeForm", routeForm);
         model.addAttribute("routeTypes", List.of("CORRUGATED_PIPE", "CABLE_CHANNEL", "TRAY_OR_STRUCTURE", "WIRE_ROPE", "BARE_CABLE"));
         model.addAttribute("mountSurfaces", List.of("BETON_OR_BRICK", "METAL", "WOOD", "GYPSUM"));
-        model.addAttribute("orientations", List.of("HORIZONTAL", "VERTICAL"));
-        model.addAttribute("fixingMethods", List.of("ONE_CLIP", "PE_TIES"));
-        model.addAttribute("routeLinkForm", new RouteSegmentLinkCreateRequest());
         return "calculations/wizard-step5";
     }
 
