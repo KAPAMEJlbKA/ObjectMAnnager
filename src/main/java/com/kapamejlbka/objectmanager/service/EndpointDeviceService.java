@@ -54,6 +54,20 @@ public class EndpointDeviceService {
         return endpointDeviceRepository.findByCalculationId(calculationId);
     }
 
+    public long countByCalculation(Long calculationId) {
+        if (calculationId == null) {
+            return 0;
+        }
+        return endpointDeviceRepository.countByCalculationId(calculationId);
+    }
+
+    public long countBySite(Long siteId) {
+        if (siteId == null) {
+            return 0;
+        }
+        return endpointDeviceRepository.countByCalculationSiteId(siteId);
+    }
+
     @Transactional
     public void delete(Long id) {
         EndpointDevice endpointDevice = getById(id);

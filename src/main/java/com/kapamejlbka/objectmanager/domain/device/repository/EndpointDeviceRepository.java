@@ -7,4 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface EndpointDeviceRepository extends JpaRepository<EndpointDevice, Long> {
 
     List<EndpointDevice> findByCalculationId(Long calculationId);
+
+    long countByCalculationId(Long calculationId);
+
+    long countByCalculationSiteId(Long siteId);
 }
