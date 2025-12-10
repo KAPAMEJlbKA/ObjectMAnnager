@@ -44,12 +44,15 @@ public class SiteAttachmentService {
         return listAttachments(siteId);
     }
 
-    @Transactional
-    public void deleteAttachment(Long attachmentId) {
-        SiteAttachment attachment = siteAttachmentRepository
+    public SiteAttachment getById(Long attachmentId) {
+        return siteAttachmentRepository
                 .findById(attachmentId)
                 .orElseThrow(() -> new IllegalArgumentException("Attachment not found: " + attachmentId));
-        siteAttachmentRepository.delete(attachment);
+    }
+
+    @Transactional
+    public void deleteAttachment(Long attachmentId) {
+        siteAttachmentRepository.delete(getById(attachmentId));
     }
 
     private void applyDto(SiteAttachment attachment, SiteAttachmentCreateRequest dto) {
