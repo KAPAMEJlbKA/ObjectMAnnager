@@ -1,14 +1,15 @@
 @import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation
 @import com.kapamejlbka.objectmanager.domain.device.EndpointDevice
+@import com.kapamejlbka.objectmanager.domain.device.EndpointDeviceType
 @import com.kapamejlbka.objectmanager.domain.device.dto.EndpointDeviceCreateRequest
-@import com.kapamejlbka.objectmanager.web.view.DeviceTypeDisplayUtil
+@import com.kapamejlbka.objectmanager.domain.topology.MountSurfaceType
 @import org.springframework.security.web.csrf.CsrfToken
 
 @param SystemCalculation calculation
 @param java.util.List<EndpointDevice> devices
 @param EndpointDeviceCreateRequest deviceForm
-@param java.util.List<DeviceTypeDisplayUtil.DeviceTypeOption> deviceTypes
-@param java.util.List<String> mountSurfaces
+@param EndpointDeviceType[] deviceTypes
+@param java.util.List<MountSurfaceType> mountSurfaces
 @param CsrfToken _csrf
 @param String flashSuccess = null
 @param String flashError = null
@@ -38,7 +39,7 @@
                         } else {
                             @for(EndpointDevice device : devices) {
                                 <tr>
-                                    <td>@DeviceTypeDisplayUtil.displayName(device.getType())</td>
+                                    <td>@EndpointDeviceType.fromCode(device.getType())?.getDisplayNameRu() ?: device.getType()</td>
                                     <td>@(device.getCode() == null ? "—" : device.getCode())</td>
                                     <td>@device.getName()</td>
                                     <td>@(device.getLocationDescription() == null ? "—" : device.getLocationDescription())</td>
@@ -61,8 +62,8 @@
                 <div class="col-auto">
                     <label class="form-label">Тип</label>
                     <select name="type" class="form-select" required>
-                        @for(DeviceTypeDisplayUtil.DeviceTypeOption type : deviceTypes) {
-                            <option value="@type.code()">@type.displayName()</option>
+                        @for(EndpointDeviceType type : deviceTypes) {
+                            <option value="@type.getCode()">@type.getDisplayNameRu()</option>
                         }
                     </select>
                 </div>
@@ -85,8 +86,8 @@
                 <div class="col-auto">
                     <label class="form-label">Поверхность</label>
                     <select name="mountSurface" class="form-select">
-                        @for(String s : mountSurfaces) {
-                            <option value="@s">@s</option>
+                        @for(MountSurfaceType s : mountSurfaces) {
+                            <option value="@s.getCode()" @if(s.getCode().equals(deviceForm.getMountSurface())){ selected }>@s.getDisplayNameRu()</option>
                         }
                     </select>
                 </div>

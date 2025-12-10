@@ -45,14 +45,14 @@
                         <div class="col-6">
                             <label class="form-label form-label-sm">Тип</label>
                             <select class="form-select form-select-sm" id="route-create-type" required>
-                                <option th:each="type : ${routeTypes}" th:value="${type}" th:text="${type}"></option>
+                                <option th:each="type : ${routeTypes}" th:value="${type.code}" th:text="${type.displayNameRu}"></option>
                             </select>
                         </div>
                         <div class="col-6">
                             <label class="form-label form-label-sm">Поверхность</label>
                             <select class="form-select form-select-sm" id="route-create-surface" required>
                                 <option value="">—</option>
-                                <option th:each="surface : ${mountSurfaces}" th:value="${surface}" th:text="${surface}"></option>
+                                <option th:each="surface : ${mountSurfaces}" th:value="${surface.code}" th:text="${surface.displayNameRu}"></option>
                             </select>
                         </div>
                     </div>

@@ -4,12 +4,17 @@ import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation;
 import com.kapamejlbka.objectmanager.domain.calcengine.CalculationResult;
 import com.kapamejlbka.objectmanager.domain.calcengine.MaterialItemResult;
 import com.kapamejlbka.objectmanager.domain.device.EndpointDevice;
+import com.kapamejlbka.objectmanager.domain.device.EndpointDeviceType;
 import com.kapamejlbka.objectmanager.domain.device.NetworkNode;
 import com.kapamejlbka.objectmanager.domain.device.dto.EndpointDeviceCreateRequest;
 import com.kapamejlbka.objectmanager.domain.device.dto.NetworkNodeCreateRequest;
 import com.kapamejlbka.objectmanager.domain.device.dto.NetworkNodeSettingsForm;
 import com.kapamejlbka.objectmanager.domain.device.dto.NetworkNodeSettingsItem;
 import com.kapamejlbka.objectmanager.domain.device.dto.NetworkNodeUpdateRequest;
+import com.kapamejlbka.objectmanager.domain.topology.InstallationRouteType;
+import com.kapamejlbka.objectmanager.domain.topology.LinkType;
+import com.kapamejlbka.objectmanager.domain.topology.MountSurfaceType;
+import com.kapamejlbka.objectmanager.domain.topology.RouteSurfaceType;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
 import com.kapamejlbka.objectmanager.domain.topology.dto.InstallationRouteCreateRequest;
 import com.kapamejlbka.objectmanager.domain.topology.dto.RouteSegmentLinkCreateRequest;
@@ -22,7 +27,6 @@ import com.kapamejlbka.objectmanager.service.NetworkNodeService;
 import com.kapamejlbka.objectmanager.service.RouteSegmentLinkService;
 import com.kapamejlbka.objectmanager.service.SystemCalculationService;
 import com.kapamejlbka.objectmanager.service.TopologyLinkService;
-import com.kapamejlbka.objectmanager.web.view.DeviceTypeDisplayUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDate;
@@ -86,8 +90,8 @@ public class CalculationController {
         model.addAttribute("calculation", calculation);
         model.addAttribute("devices", devices);
         model.addAttribute("deviceForm", new EndpointDeviceCreateRequest());
-        model.addAttribute("deviceTypes", DeviceTypeDisplayUtil.availableOptions());
-        model.addAttribute("mountSurfaces", List.of("WALL", "CEILING", "POLE", "UNKNOWN"));
+        model.addAttribute("deviceTypes", EndpointDeviceType.values());
+        model.addAttribute("mountSurfaces", MountSurfaceType.endpointSurfaces());
         return "calculations/wizard-step1";
     }
 
@@ -128,7 +132,7 @@ public class CalculationController {
         model.addAttribute("calculation", calculation);
         model.addAttribute("nodes", nodes);
         model.addAttribute("nodeForm", form);
-        model.addAttribute("mountSurfaces", List.of("WALL", "CEILING", "POLE", "RACK"));
+        model.addAttribute("mountSurfaces", MountSurfaceType.nodeSurfaces());
         return "calculations/wizard-step2";
     }
 
@@ -157,7 +161,7 @@ public class CalculationController {
         model.addAttribute("nodes", nodes);
         model.addAttribute("links", links);
         model.addAttribute("linkForm", new TopologyLinkCreateRequest());
-        model.addAttribute("linkTypes", List.of("UTP", "FIBER", "WIFI", "POWER"));
+        model.addAttribute("linkTypes", LinkType.values());
         return "calculations/wizard-step3";
     }
 
@@ -230,8 +234,8 @@ public class CalculationController {
     public String wizardStep5(@PathVariable("id") Long id, Model model) {
         SystemCalculation calculation = getCalculation(id);
         model.addAttribute("calculation", calculation);
-        model.addAttribute("routeTypes", List.of("CORRUGATED_PIPE", "CABLE_CHANNEL", "TRAY_OR_STRUCTURE", "WIRE_ROPE", "BARE_CABLE"));
-        model.addAttribute("mountSurfaces", List.of("BETON_OR_BRICK", "METAL", "WOOD", "GYPSUM"));
+        model.addAttribute("routeTypes", InstallationRouteType.values());
+        model.addAttribute("mountSurfaces", RouteSurfaceType.values());
         return "calculations/wizard-step5";
     }
 

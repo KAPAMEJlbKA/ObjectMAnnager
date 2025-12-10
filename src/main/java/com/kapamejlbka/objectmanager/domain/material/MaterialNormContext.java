@@ -8,16 +8,29 @@ public final class MaterialNormContext {
     private static final Map<String, String> CONTEXT_NAMES = new LinkedHashMap<>();
 
     static {
+        CONTEXT_NAMES.put("CORRUGATED_PIPE", "Гофрированная труба — основной материал");
         CONTEXT_NAMES.put("CORRUGATED_PIPE_HORIZONTAL_CLIP", "Гофра горизонтальная — клипсы");
         CONTEXT_NAMES.put("CORRUGATED_PIPE_VERTICAL_CLIP", "Гофра вертикальная — клипсы");
         CONTEXT_NAMES.put("CORRUGATED_PIPE_COUPLING", "Гофра — соединительные муфты");
         CONTEXT_NAMES.put("CORRUGATED_PIPE_BRANCH", "Гофра — ответвления");
+        CONTEXT_NAMES.put("CORRUGATED_PIPE_HORIZONTAL_CLIP_BETON_OR_BRICK", "Гофра по бетону/кирпичу — клипсы");
+        CONTEXT_NAMES.put("CORRUGATED_PIPE_HORIZONTAL_CLIP_METAL", "Гофра по металлу — клипсы");
+        CONTEXT_NAMES.put("CORRUGATED_PIPE_HORIZONTAL_CLIP_WOOD", "Гофра по дереву — клипсы");
+        CONTEXT_NAMES.put("CORRUGATED_PIPE_HORIZONTAL_CLIP_GYPSUM", "Гофра по гипсокартону — клипсы");
+        CONTEXT_NAMES.put("CABLE_CHANNEL", "Кабель-канал — основной материал");
         CONTEXT_NAMES.put("CABLE_CHANNEL_CLIP", "Кабель-канал — клипсы");
         CONTEXT_NAMES.put("CABLE_CHANNEL_FASTENER", "Кабель-канал — крепёж");
+        CONTEXT_NAMES.put("CABLE_CHANNEL_FASTENER_BETON_OR_BRICK", "Кабель-канал — крепёж для бетона/кирпича");
+        CONTEXT_NAMES.put("CABLE_CHANNEL_FASTENER_METAL", "Кабель-канал — крепёж для металла");
+        CONTEXT_NAMES.put("CABLE_CHANNEL_FASTENER_WOOD", "Кабель-канал — крепёж для дерева");
+        CONTEXT_NAMES.put("CABLE_CHANNEL_FASTENER_GYPSUM", "Кабель-канал — крепёж для гипсокартона");
+        CONTEXT_NAMES.put("TRAY_OR_STRUCTURE", "Лоток/конструкция — основной материал");
         CONTEXT_NAMES.put("TRAY_OR_STRUCTURE_TIES", "Лоток/конструкция — стяжки");
+        CONTEXT_NAMES.put("WIRE_ROPE", "Трос — основной материал");
         CONTEXT_NAMES.put("WIRE_ROPE_ANCHOR", "Трос — анкеры");
         CONTEXT_NAMES.put("WIRE_ROPE_TURNBUCKLE", "Трос — талреп");
         CONTEXT_NAMES.put("WIRE_ROPE_CLAMP", "Трос — зажимы");
+        CONTEXT_NAMES.put("BARE_CABLE", "Открытая прокладка — основной материал");
         CONTEXT_NAMES.put("BARE_CABLE_ONE_CLIP", "Голый кабель — крепление одной клипсой");
         CONTEXT_NAMES.put("BARE_CABLE_PE_TIES", "Голый кабель — крепление стяжками");
         CONTEXT_NAMES.put("ENDPOINT_CAMERA_FIXING", "Видеокамера — крепление");
