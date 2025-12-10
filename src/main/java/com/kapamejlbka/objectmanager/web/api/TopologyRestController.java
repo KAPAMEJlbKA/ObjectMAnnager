@@ -103,6 +103,7 @@ public class TopologyRestController {
             dto.setFromDeviceId(payload.fromDeviceId());
             dto.setToDeviceId(payload.toDeviceId());
             dto.setLinkType(payload.linkType());
+            dto.setCableLength(payload.length());
             TopologyLink created = topologyLinkService.create(calculationId, dto);
             return toDto(created);
         } catch (IllegalArgumentException ex) {

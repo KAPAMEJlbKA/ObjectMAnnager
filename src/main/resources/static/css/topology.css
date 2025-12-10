@@ -29,6 +29,11 @@
     background-color: #f3f4f6;
 }
 
+.om-connecting-from {
+    outline: 2px dashed #0d6efd;
+    outline-offset: 2px;
+}
+
 .om-topology-canvas-wrapper {
     position: relative;
     border-radius: 12px;

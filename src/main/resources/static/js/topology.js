@@ -12,9 +12,12 @@
     const inspectorEmpty = document.getElementById('inspector-empty');
     const inspectorContent = document.getElementById('inspector-content');
     const linkOptions = ['UTP', 'FIBER', 'POWER', 'WIFI'];
+    const SCALE_METERS_PER_PX = 0.1;
 
     let topology = {nodes: [], devices: [], links: []};
     let selected = {type: null, id: null};
+    let mode = 'select';
+    let connectStart = null;
 
     function fetchTopology() {
         fetch(apiBase)
@@ -63,7 +66,7 @@
             attachDrag(el, node, 'node');
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
-                selectItem('node', node.id);
+                handleEndpointClick('node', node.id, e.currentTarget);
             });
             nodesLayer.appendChild(el);
         });
@@ -79,7 +82,7 @@
             attachDrag(el, device, 'device');
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
-                selectItem('device', device.id);
+                handleEndpointClick('device', device.id, e.currentTarget);
             });
             nodesLayer.appendChild(el);
         });
@@ -141,6 +144,9 @@
         let dragging = false;
 
         const onMouseDown = (e) => {
+            if (mode === 'connect') {
+                return;
+            }
             dragging = true;
             startX = e.clientX;
             startY = e.clientY;
@@ -196,6 +202,7 @@
 
     function selectItem(type, id) {
         selected = {type, id};
+        connectStart = null;
         highlightSelection();
         renderInspector();
     }
@@ -212,6 +219,8 @@
         nodesLayer.querySelectorAll('.om-node, .om-device').forEach((el) => {
             el.classList.toggle('om-selected',
                 selected.type !== null && el.dataset.type === selected.type && Number(el.dataset.id) === selected.id);
+            el.classList.toggle('om-connecting-from',
+                connectStart !== null && el.dataset.type === connectStart.type && Number(el.dataset.id) === connectStart.id);
         });
         linksLayer.querySelectorAll('.om-link-line').forEach((line) => {
             line.classList.toggle('om-selected', selected.type === 'link' && Number(line.dataset.id) === selected.id);
@@ -248,7 +257,13 @@
         }
         const wrapper = document.createElement('div');
         wrapper.className = 'om-topology-inspector';
+        const fromInfo = getEndpointInfo(link, true);
+        const toInfo = getEndpointInfo(link, false);
         wrapper.innerHTML = `
+            <div class="mb-2 small text-muted">
+                <div>От: <strong>${fromInfo}</strong></div>
+                <div>К: <strong>${toInfo}</strong></div>
+            </div>
             <div class="mb-2">
                 <label class="form-label">Тип линии</label>
                 <select class="form-select form-select-sm" id="link-type">
@@ -340,11 +355,98 @@
         return Number.isNaN(parsed) ? null : parsed;
     }
 
+    function handleEndpointClick(type, id, el) {
+        if (mode === 'connect') {
+            if (!connectStart) {
+                connectStart = {type, id, el};
+                selected = {type: null, id: null};
+                highlightSelection();
+                return;
+            }
+            if (connectStart.type === type && connectStart.id === id) {
+                connectStart = null;
+                highlightSelection();
+                return;
+            }
+            createLink(connectStart, {type, id, el});
+            connectStart = null;
+            return;
+        }
+        selectItem(type, id);
+    }
+
+    function createLink(from, to) {
+        const fromPayload = buildEndpointPayload(from.type, from.id, true);
+        const toPayload = buildEndpointPayload(to.type, to.id, false);
+        const wrapperRect = nodesLayer.getBoundingClientRect();
+        const fromCenter = getCenter(from.el, wrapperRect);
+        const toCenter = getCenter(to.el, wrapperRect);
+        const distancePx = Math.hypot(toCenter.x - fromCenter.x, toCenter.y - fromCenter.y);
+        const suggestedLength = Math.round(distancePx * SCALE_METERS_PER_PX * 100) / 100;
+        const payload = {
+            ...fromPayload,
+            ...toPayload,
+            linkType: 'UTP',
+            length: suggestedLength,
+        };
+        fetch(`${apiBase}/links`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(payload),
+        })
+            .then((r) => {
+                if (!r.ok) {
+                    throw new Error('failed');
+                }
+                return r.json();
+            })
+            .then((created) => {
+                topology.links.push(created);
+                renderLinks();
+                selectItem('link', created.id);
+            })
+            .catch(() => alert('Не удалось создать связь'));
+    }
+
+    function buildEndpointPayload(type, id, isFrom) {
+        if (type === 'node') {
+            return isFrom ? {fromNodeId: id} : {toNodeId: id};
+        }
+        return isFrom ? {fromDeviceId: id} : {toDeviceId: id};
+    }
+
+    function getEndpointInfo(link, isFrom) {
+        const nodeId = isFrom ? link.fromNodeId : link.toNodeId;
+        const deviceId = isFrom ? link.fromDeviceId : link.toDeviceId;
+        if (nodeId) {
+            const node = topology.nodes.find((n) => n.id === nodeId);
+            return node ? `Узел ${node.code || ''} ${node.name || ''}`.trim() : 'Узел';
+        }
+        if (deviceId) {
+            const device = topology.devices.find((d) => d.id === deviceId);
+            return device ? `Устройство ${device.code || ''} ${device.name || ''}`.trim() : 'Устройство';
+        }
+        return '—';
+    }
+
     editor.addEventListener('click', (e) => {
         if (e.target === editor || e.target.classList.contains('om-topology-editor')) {
             clearSelection();
+            connectStart = null;
+            highlightSelection();
         }
     });
+
+    document.getElementById('mode-select')?.addEventListener('click', () => setMode('select'));
+    document.getElementById('mode-connect')?.addEventListener('click', () => setMode('connect'));
+
+    function setMode(nextMode) {
+        mode = nextMode;
+        connectStart = null;
+        highlightSelection();
+        document.getElementById('mode-select')?.classList.toggle('active', mode === 'select');
+        document.getElementById('mode-connect')?.classList.toggle('active', mode === 'connect');
+    }
 
     window.addEventListener('resize', () => renderLinks());
 
