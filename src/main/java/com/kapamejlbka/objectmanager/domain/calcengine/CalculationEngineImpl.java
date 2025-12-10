@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -92,6 +93,17 @@ public class CalculationEngineImpl implements CalculationEngine {
                 List<TopologyLink> linksInRoute = routeToSegments.getOrDefault(route.getId(), List.of()).stream()
                         .map(RouteSegmentLink::getTopologyLink)
                         .toList();
+                if (linksInRoute.isEmpty()) {
+                    return;
+                }
+                double totalLength = linksInRoute.stream()
+                        .map(TopologyLink::getCableLength)
+                        .filter(Objects::nonNull)
+                        .mapToDouble(Double::doubleValue)
+                        .sum();
+                if (totalLength > 0) {
+                    route.setLengthMeters(totalLength);
+                }
                 merge(materialTotals, routeCalculator.calculateForRoute(route, linksInRoute, settings));
             } catch (Exception ex) {
                 LOG.warn("Failed to calculate materials for route {}: {}", route.getName(), ex.getMessage());
