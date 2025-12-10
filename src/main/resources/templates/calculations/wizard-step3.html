@@ -24,7 +24,11 @@
                     — <a class="text-decoration-none" th:href="@{'/sites/' + ${calculation.site.id}}" th:text="${calculation.site.name}"></a>
                 </p>
             </div>
-            <div class="d-flex gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <div class="btn-group btn-group-sm" role="group" aria-label="Режимы редактора">
+                    <button type="button" class="btn btn-outline-secondary active" data-mode="select" id="mode-select">Выделение</button>
+                    <button type="button" class="btn btn-outline-secondary" data-mode="connect" id="mode-connect">Соединение</button>
+                </div>
                 <a class="btn btn-outline-secondary" th:href="@{'/calculations/' + ${calculation.id} + '/wizard/step2'}">Назад</a>
                 <a class="btn btn-primary" th:href="@{'/calculations/' + ${calculation.id} + '/wizard/step4'}">Далее</a>
             </div>

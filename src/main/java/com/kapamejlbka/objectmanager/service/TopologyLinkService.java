@@ -206,13 +206,18 @@ public class TopologyLinkService {
     }
 
     private void validateEndpoints(TopologyLink topologyLink) {
-        int nodeCount = (topologyLink.getFromNode() != null ? 1 : 0) + (topologyLink.getToNode() != null ? 1 : 0);
-        int deviceCount =
-                (topologyLink.getFromDevice() != null ? 1 : 0) + (topologyLink.getToDevice() != null ? 1 : 0);
-        if ((nodeCount == 2 && deviceCount == 0) || (nodeCount == 1 && deviceCount == 1)) {
-            return;
+        int endpointCount = (topologyLink.getFromNode() != null ? 1 : 0)
+                + (topologyLink.getToNode() != null ? 1 : 0)
+                + (topologyLink.getFromDevice() != null ? 1 : 0)
+                + (topologyLink.getToDevice() != null ? 1 : 0);
+        if (endpointCount != 2) {
+            throw new IllegalArgumentException("Topology link must have exactly two endpoints");
         }
-        throw new IllegalArgumentException("Topology link must connect node-to-node or node-to-device");
+        boolean hasFrom = topologyLink.getFromNode() != null || topologyLink.getFromDevice() != null;
+        boolean hasTo = topologyLink.getToNode() != null || topologyLink.getToDevice() != null;
+        if (!hasFrom || !hasTo) {
+            throw new IllegalArgumentException("Topology link must include both start and end points");
+        }
     }
 
     private TopologyLink getById(Long id) {

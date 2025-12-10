@@ -5,4 +5,5 @@ public record TopologyLinkRestCreateRequest(
         Long toNodeId,
         Long fromDeviceId,
         Long toDeviceId,
-        String linkType) {}
+        String linkType,
+        Double length) {}
