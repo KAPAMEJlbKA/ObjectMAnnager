@@ -60,6 +60,8 @@ public class RouteCalculator {
 
         List<TopologyLink> links = linksInRoute == null ? List.of() : linksInRoute;
 
+        addBaseMaterial(route, lengthMeters, routeType, result);
+
         switch (routeType) {
             case "CORRUGATED_PIPE" -> handleCorrugatedPipe(route, lengthMeters, links, settings, result);
             case "CABLE_CHANNEL" -> handleCableChannel(route, lengthMeters, result);
@@ -156,6 +158,16 @@ public class RouteCalculator {
         context.put("lengthMeters", lengthMeters);
         context.put("step", step);
         return context;
+    }
+
+    private void addBaseMaterial(
+            InstallationRoute route, double lengthMeters, String routeType, Map<Material, Double> result) {
+        if (route.getMainMaterial() != null) {
+            result.merge(route.getMainMaterial(), lengthMeters, Double::sum);
+            return;
+        }
+
+        addFromNorm(result, routeType, baseContext(lengthMeters, 1));
     }
 
     private void addFromNorm(Map<Material, Double> result, String contextType, Map<String, Object> context) {

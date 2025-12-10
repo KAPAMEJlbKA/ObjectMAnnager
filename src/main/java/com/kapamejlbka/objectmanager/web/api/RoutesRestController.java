@@ -1,6 +1,8 @@
 package com.kapamejlbka.objectmanager.web.api;
 
 import com.kapamejlbka.objectmanager.domain.calculation.repository.SystemCalculationRepository;
+import com.kapamejlbka.objectmanager.domain.material.Material;
+import com.kapamejlbka.objectmanager.domain.material.dto.MaterialOptionDto;
 import com.kapamejlbka.objectmanager.domain.topology.InstallationRoute;
 import com.kapamejlbka.objectmanager.domain.topology.RouteSegmentLink;
 import com.kapamejlbka.objectmanager.domain.topology.TopologyLink;
@@ -14,14 +16,17 @@ import com.kapamejlbka.objectmanager.domain.topology.dto.RoutesResponse;
 import com.kapamejlbka.objectmanager.domain.topology.repository.InstallationRouteRepository;
 import com.kapamejlbka.objectmanager.domain.topology.repository.RouteSegmentLinkRepository;
 import com.kapamejlbka.objectmanager.domain.topology.repository.TopologyLinkRepository;
+import com.kapamejlbka.objectmanager.repository.MaterialRepository;
+import com.kapamejlbka.objectmanager.service.InstallationRouteLengthService;
 import com.kapamejlbka.objectmanager.service.InstallationRouteService;
 import com.kapamejlbka.objectmanager.service.RouteSegmentLinkService;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -38,26 +43,35 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/calculations/{calcId}/routes")
 public class RoutesRestController {
 
+    private static final Set<String> ROUTE_MATERIAL_CATEGORIES = Set.of(
+            "ROUTE_CORRUGATED_PIPE", "ROUTE_CABLE_CHANNEL", "ROUTE_WIRE_ROPE", "ROUTE_BARE_CABLE");
+
     private final SystemCalculationRepository calculationRepository;
     private final InstallationRouteRepository installationRouteRepository;
     private final TopologyLinkRepository topologyLinkRepository;
     private final RouteSegmentLinkRepository routeSegmentLinkRepository;
+    private final MaterialRepository materialRepository;
     private final InstallationRouteService installationRouteService;
     private final RouteSegmentLinkService routeSegmentLinkService;
+    private final InstallationRouteLengthService installationRouteLengthService;
 
     public RoutesRestController(
             SystemCalculationRepository calculationRepository,
             InstallationRouteRepository installationRouteRepository,
             TopologyLinkRepository topologyLinkRepository,
             RouteSegmentLinkRepository routeSegmentLinkRepository,
+            MaterialRepository materialRepository,
             InstallationRouteService installationRouteService,
-            RouteSegmentLinkService routeSegmentLinkService) {
+            RouteSegmentLinkService routeSegmentLinkService,
+            InstallationRouteLengthService installationRouteLengthService) {
         this.calculationRepository = calculationRepository;
         this.installationRouteRepository = installationRouteRepository;
         this.topologyLinkRepository = topologyLinkRepository;
         this.routeSegmentLinkRepository = routeSegmentLinkRepository;
+        this.materialRepository = materialRepository;
         this.installationRouteService = installationRouteService;
         this.routeSegmentLinkService = routeSegmentLinkService;
+        this.installationRouteLengthService = installationRouteLengthService;
     }
 
     @GetMapping
@@ -66,6 +80,16 @@ public class RoutesRestController {
         List<InstallationRoute> routes = installationRouteRepository.findByCalculationId(calculationId);
         List<RouteSegmentLink> assignments = routeSegmentLinkRepository.findByRouteCalculation_Id(calculationId);
         List<TopologyLink> links = topologyLinkRepository.findByCalculationId(calculationId);
+        Set<Long> selectedMaterialIds = routes.stream()
+                .map(InstallationRoute::getMainMaterial)
+                .filter(Objects::nonNull)
+                .map(Material::getId)
+                .collect(Collectors.toSet());
+        List<MaterialOptionDto> materials = materialRepository.findAll().stream()
+                .filter(material -> isRouteMaterial(material) || selectedMaterialIds.contains(material.getId()))
+                .sorted(Comparator.comparing(Material::getCategory).thenComparing(Material::getName))
+                .map(material -> new MaterialOptionDto(material.getId(), material.getName(), material.getCategory()))
+                .toList();
 
         Map<Long, Long> linkToRoute = assignments.stream()
                 .filter(rl -> rl.getTopologyLink() != null && rl.getRoute() != null)
@@ -74,13 +98,6 @@ public class RoutesRestController {
                         rl -> rl.getRoute().getId(),
                         (existing, replacement) -> existing));
 
-        Map<Long, Double> routeLengths = new HashMap<>();
-        assignments.forEach(assignment -> {
-            Long routeId = assignment.getRoute().getId();
-            Double length = Optional.ofNullable(assignment.getTopologyLink().getCableLength()).orElse(0d);
-            routeLengths.merge(routeId, length, Double::sum);
-        });
-
         List<InstallationRouteDto> routeDtos = routes.stream()
                 .sorted(Comparator.comparing(InstallationRoute::getName, String.CASE_INSENSITIVE_ORDER))
                 .map(route -> new InstallationRouteDto(
@@ -88,10 +105,12 @@ public class RoutesRestController {
                         route.getName(),
                         route.getRouteType(),
                         route.getMountSurface(),
-                        Optional.ofNullable(routeLengths.get(route.getId()))
-                                .orElse(Optional.ofNullable(route.getLengthMeters()).orElse(0d)),
+                        Optional.ofNullable(route.getLengthMeters()).orElse(0d),
                         route.getOrientation(),
-                        route.getFixingMethod()))
+                        route.getFixingMethod(),
+                        Optional.ofNullable(route.getMainMaterial()).map(Material::getId).orElse(null),
+                        Optional.ofNullable(route.getMainMaterial()).map(Material::getName).orElse(null),
+                        Optional.ofNullable(route.getMainMaterial()).map(Material::getCategory).orElse(null)))
                 .toList();
 
         List<RouteLinkDto> linkDtos = links.stream()
@@ -106,7 +125,7 @@ public class RoutesRestController {
                         link.getLinkType()))
                 .toList();
 
-        return new RoutesResponse(routeDtos, linkDtos);
+        return new RoutesResponse(routeDtos, linkDtos, materials);
     }
 
     @PostMapping
@@ -132,9 +151,11 @@ public class RoutesRestController {
         dto.setName(Optional.ofNullable(payload.getName()).orElse(existing.getName()));
         dto.setRouteType(Optional.ofNullable(payload.getRouteType()).orElse(existing.getRouteType()));
         dto.setMountSurface(Optional.ofNullable(payload.getMountSurface()).orElse(existing.getMountSurface()));
-        dto.setLengthMeters(Optional.ofNullable(payload.getLengthMeters()).orElse(existing.getLengthMeters()));
+        dto.setLengthMeters(existing.getLengthMeters());
         dto.setOrientation(Optional.ofNullable(payload.getOrientation()).orElse(existing.getOrientation()));
         dto.setFixingMethod(Optional.ofNullable(payload.getFixingMethod()).orElse(existing.getFixingMethod()));
+        dto.setMainMaterialId(Optional.ofNullable(payload.getMainMaterialId())
+                .orElse(Optional.ofNullable(existing.getMainMaterial()).map(Material::getId).orElse(null)));
         try {
             InstallationRoute updated = installationRouteService.update(routeId, dto);
             return toDto(updated, existing.getLengthMeters());
@@ -161,11 +182,15 @@ public class RoutesRestController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Link id is required");
         }
         TopologyLink link = findLink(calculationId, payload.linkId());
+        Set<Long> affectedRouteIds = new HashSet<>();
 
         List<RouteSegmentLink> existingAssignments = routeSegmentLinkRepository.findByTopologyLinkId(link.getId());
         existingAssignments.stream()
                 .filter(assignment -> !Objects.equals(assignment.getRoute().getId(), route.getId()))
-                .forEach(routeSegmentLinkRepository::delete);
+                .forEach(assignment -> {
+                    affectedRouteIds.add(assignment.getRoute().getId());
+                    routeSegmentLinkRepository.delete(assignment);
+                });
         boolean alreadyAssigned = existingAssignments.stream()
                 .anyMatch(assignment -> Objects.equals(assignment.getRoute().getId(), route.getId()));
         if (!alreadyAssigned) {
@@ -174,6 +199,9 @@ public class RoutesRestController {
             dto.setTopologyLinkId(link.getId());
             routeSegmentLinkService.create(dto);
         }
+
+        affectedRouteIds.add(route.getId());
+        installationRouteLengthService.recalculateRouteLengths(affectedRouteIds);
 
         return new RouteLinkDto(
                 link.getId(),
@@ -199,6 +227,7 @@ public class RoutesRestController {
         routeSegmentLinkRepository.findByTopologyLinkId(link.getId()).stream()
                 .filter(assignment -> Objects.equals(assignment.getRoute().getId(), routeId))
                 .forEach(routeSegmentLinkRepository::delete);
+        installationRouteLengthService.recalculateRouteLength(routeId);
     }
 
     private InstallationRoute findRoute(Long calculationId, Long routeId) {
@@ -238,6 +267,16 @@ public class RoutesRestController {
                 route.getMountSurface(),
                 length,
                 route.getOrientation(),
-                route.getFixingMethod());
+                route.getFixingMethod(),
+                Optional.ofNullable(route.getMainMaterial()).map(Material::getId).orElse(null),
+                Optional.ofNullable(route.getMainMaterial()).map(Material::getName).orElse(null),
+                Optional.ofNullable(route.getMainMaterial()).map(Material::getCategory).orElse(null));
+    }
+
+    private boolean isRouteMaterial(Material material) {
+        if (material == null || material.getCategory() == null) {
+            return false;
+        }
+        return ROUTE_MATERIAL_CATEGORIES.contains(material.getCategory());
     }
 }

@@ -11,6 +11,7 @@ public class InstallationRouteUpdateRequest {
     private Double lengthMeters;
     private String orientation;
     private String fixingMethod;
+    private Long mainMaterialId;
 
     public String getName() {
         return name;
@@ -58,5 +59,13 @@ public class InstallationRouteUpdateRequest {
 
     public void setFixingMethod(String fixingMethod) {
         this.fixingMethod = fixingMethod;
+    }
+
+    public Long getMainMaterialId() {
+        return mainMaterialId;
+    }
+
+    public void setMainMaterialId(Long mainMaterialId) {
+        this.mainMaterialId = mainMaterialId;
     }
 }

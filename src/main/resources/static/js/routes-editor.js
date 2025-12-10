@@ -26,7 +26,9 @@
 
     let routes = [];
     let topology = {nodes: [], devices: [], links: []};
-    let selected = {type: null, id: null};
+    let materials = [];
+    let selectedRouteId = null;
+    let selectedLinkId = null;
     let colorMap = {};
 
     Promise.all([apiFetch(topologyApi), apiFetch(apiBase)])
@@ -35,6 +37,7 @@
             topology = topologyData;
             topology.links = routesData.links || [];
             routes = routesData.routes || [];
+            materials = routesData.materials || [];
             renderAll();
         })
         .catch(() => {
@@ -42,7 +45,8 @@
         });
 
     canvasWrapper?.addEventListener('click', () => {
-        selected = {type: null, id: null};
+        selectedRouteId = null;
+        selectedLinkId = null;
         renderRoutesList();
         renderLinks();
         renderInspector();
@@ -76,7 +80,14 @@
                 topology = topologyData;
                 topology.links = routesData.links || [];
                 routes = routesData.routes || [];
+                materials = routesData.materials || [];
                 colorMap = {};
+                if (selectedRouteId && !routes.some((r) => r.id === selectedRouteId)) {
+                    selectedRouteId = null;
+                }
+                if (selectedLinkId && !topology.links.some((l) => l.id === selectedLinkId)) {
+                    selectedLinkId = null;
+                }
                 renderAll();
             });
     }
@@ -97,12 +108,15 @@
                 const item = document.createElement('div');
                 item.className = 'om-routes-list-item';
                 item.dataset.id = route.id;
-                if (selected.type === 'route' && selected.id === route.id) {
+                if (selectedRouteId === route.id) {
                     item.classList.add('active');
                 }
                 const color = getRouteColor(route.id, idx);
                 item.innerHTML = `<div><span class="om-route-color" style="background:${color}"></span>${route.name}<br><small class="text-muted">${route.routeType}</small></div><div class="text-muted small">${counts[route.id] || 0} линий</div>`;
-                item.addEventListener('click', () => selectRoute(route.id));
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectRoute(route.id);
+                });
                 routesList.appendChild(item);
             });
     }
@@ -146,44 +160,61 @@
             }
             const fromPos = getCenter(fromEl, wrapperRect);
             const toPos = getCenter(toEl, wrapperRect);
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', fromPos.x);
-            line.setAttribute('y1', fromPos.y);
-            line.setAttribute('x2', toPos.x);
-            line.setAttribute('y2', toPos.y);
-            line.dataset.id = link.id;
-            line.classList.add('om-route-line');
+            const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            group.dataset.id = link.id;
+            const hitbox = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            hitbox.setAttribute('x1', fromPos.x);
+            hitbox.setAttribute('y1', fromPos.y);
+            hitbox.setAttribute('x2', toPos.x);
+            hitbox.setAttribute('y2', toPos.y);
+            hitbox.classList.add('om-link-line-hitbox');
+
+            const visibleLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            visibleLine.setAttribute('x1', fromPos.x);
+            visibleLine.setAttribute('y1', fromPos.y);
+            visibleLine.setAttribute('x2', toPos.x);
+            visibleLine.setAttribute('y2', toPos.y);
+            visibleLine.dataset.id = link.id;
+            visibleLine.classList.add('om-route-line');
             if (!link.routeId) {
-                line.classList.add('unassigned');
+                visibleLine.classList.add('unassigned');
             }
             const routeIdx = routes.findIndex((r) => r.id === link.routeId);
             if (routeIdx >= 0) {
-                line.setAttribute('stroke', getRouteColor(link.routeId, routeIdx));
+                visibleLine.setAttribute('stroke', getRouteColor(link.routeId, routeIdx));
             }
-            if (selected.type === 'link' && selected.id === link.id) {
-                line.classList.add('active-line');
+            if (selectedLinkId === link.id) {
+                visibleLine.classList.add('active-line');
             }
-            line.addEventListener('click', (e) => {
+
+            group.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (selected.type === 'route') {
-                    assignLink(link.id, selected.id);
+                if (selectedRouteId) {
+                    link.routeId = selectedRouteId;
+                    renderLinks();
+                    assignLink(link.id, selectedRouteId);
                 } else {
                     selectLink(link.id);
                 }
             });
-            linksLayer.appendChild(line);
+
+            group.appendChild(hitbox);
+            group.appendChild(visibleLine);
+            linksLayer.appendChild(group);
         });
     }
 
     function selectRoute(id) {
-        selected = {type: 'route', id};
+        selectedRouteId = id;
+        selectedLinkId = null;
         renderRoutesList();
         renderLinks();
         renderInspector();
     }
 
     function selectLink(id) {
-        selected = {type: 'link', id};
+        selectedLinkId = id;
+        selectedRouteId = null;
         renderRoutesList();
         renderLinks();
         renderInspector();
@@ -192,9 +223,9 @@
     function renderInspector() {
         inspector.innerHTML = '';
         inspector.className = 'om-routes-inspector';
-        if (selected.type === 'route') {
+        if (selectedRouteId) {
             renderRouteInspector();
-        } else if (selected.type === 'link') {
+        } else if (selectedLinkId) {
             renderLinkInspector();
         } else {
             inspector.classList.add('text-muted', 'small');
@@ -203,7 +234,7 @@
     }
 
     function renderRouteInspector() {
-        const route = routes.find((r) => r.id === selected.id);
+        const route = routes.find((r) => r.id === selectedRouteId);
         if (!route) {
             inspector.textContent = 'Трасса не найдена';
             return;
@@ -234,14 +265,34 @@
             option.selected = (route.surfaceType || route.mountSurface) === s;
             surfaceSelect.appendChild(option);
         });
+        const materialSelect = document.createElement('select');
+        materialSelect.className = 'form-select form-select-sm mb-2';
+        const emptyMaterialOption = document.createElement('option');
+        emptyMaterialOption.value = '';
+        emptyMaterialOption.textContent = '— Не выбрано —';
+        materialSelect.appendChild(emptyMaterialOption);
+        const groupedMaterials = groupMaterialsByCategory();
+        Object.entries(groupedMaterials).forEach(([category, items]) => {
+            const group = document.createElement('optgroup');
+            group.label = category;
+            items.forEach((material) => {
+                const option = document.createElement('option');
+                option.value = material.id;
+                option.textContent = material.name;
+                option.selected = route.mainMaterialId === material.id;
+                group.appendChild(option);
+            });
+            materialSelect.appendChild(group);
+        });
         const lengthField = document.createElement('div');
         lengthField.className = 'small text-muted mb-2';
-        lengthField.textContent = `Длина: ${route.length ?? 0} м`;
+        lengthField.textContent = `Длина трассы (по максимальной линии): ${route.length ?? 0} м`;
 
         const saveBtn = document.createElement('button');
         saveBtn.className = 'btn btn-primary btn-sm w-100';
         saveBtn.textContent = 'Сохранить';
         saveBtn.addEventListener('click', () => {
+            const materialId = materialSelect.value ? Number(materialSelect.value) : 0;
             apiFetch(`${apiBase}/${route.id}`, {
                 method: 'PATCH',
                 headers: {'Content-Type': 'application/json'},
@@ -249,7 +300,7 @@
                     name: nameInput.value.trim(),
                     routeType: typeSelect.value,
                     surfaceType: surfaceSelect.value,
-                    lengthMeters: route.length,
+                    mainMaterialId: materialId,
                 }),
             })
                 .then((r) => (r.ok ? r.json() : Promise.reject()))
@@ -260,13 +311,14 @@
         wrapper.append(labelWithControl('Имя', nameInput));
         wrapper.append(labelWithControl('Тип', typeSelect));
         wrapper.append(labelWithControl('Поверхность', surfaceSelect));
+        wrapper.append(labelWithControl('Материал трассы', materialSelect));
         wrapper.append(lengthField);
         wrapper.append(saveBtn);
         inspector.appendChild(wrapper);
     }
 
     function renderLinkInspector() {
-        const link = topology.links.find((l) => l.id === selected.id);
+        const link = topology.links.find((l) => l.id === selectedLinkId);
         if (!link) {
             inspector.textContent = 'Линия не найдена';
             return;
@@ -308,21 +360,21 @@
             assignWrapper.append(assignLabel, assignSelect, assignBtn);
             wrapper.appendChild(assignWrapper);
         }
-        const unassignBtn = document.createElement('button');
-        unassignBtn.className = 'btn btn-outline-secondary btn-sm';
-        unassignBtn.textContent = 'Убрать из трассы';
-        unassignBtn.disabled = !link.routeId;
-        unassignBtn.addEventListener('click', () => {
-            if (!link.routeId) return;
-            apiFetch(`${apiBase}/${link.routeId}/unassign-link`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({linkId: link.id}),
-            })
-                .then(() => refreshRoutes())
-                .catch(() => alert('Не удалось отвязать линию'));
-        });
-        wrapper.appendChild(unassignBtn);
+        if (link.routeId) {
+            const unassignBtn = document.createElement('button');
+            unassignBtn.className = 'btn btn-outline-secondary btn-sm';
+            unassignBtn.textContent = 'Убрать из трассы';
+            unassignBtn.addEventListener('click', () => {
+                apiFetch(`${apiBase}/${link.routeId}/unassign-link`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({linkId: link.id}),
+                })
+                    .then(() => refreshRoutes())
+                    .catch(() => alert('Не удалось отвязать линию'));
+            });
+            wrapper.appendChild(unassignBtn);
+        }
         inspector.appendChild(wrapper);
     }
 
@@ -366,13 +418,21 @@
     }
 
     function assignLink(linkId, routeId) {
+        const targetLink = topology.links.find((l) => l.id === linkId);
+        if (targetLink) {
+            targetLink.routeId = routeId;
+            renderLinks();
+        }
         apiFetch(`${apiBase}/${routeId}/assign-link`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({linkId}),
         })
             .then(() => refreshRoutes())
-            .catch(() => alert('Не удалось привязать линию'));
+            .catch(() => {
+                alert('Не удалось привязать линию');
+                refreshRoutes();
+            });
     }
 
     function labelWithControl(label, control) {
@@ -383,6 +443,19 @@
         wrapper.appendChild(lbl);
         wrapper.appendChild(control);
         return wrapper;
+    }
+
+    function groupMaterialsByCategory() {
+        const grouped = {};
+        materials.forEach((material) => {
+            const category = material.category || 'Материалы';
+            if (!grouped[category]) {
+                grouped[category] = [];
+            }
+            grouped[category].push(material);
+        });
+        Object.values(grouped).forEach((list) => list.sort((a, b) => a.name.localeCompare(b.name)));
+        return grouped;
     }
 
     function getRouteColor(routeId, idx) {

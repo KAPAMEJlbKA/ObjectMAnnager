@@ -7,4 +7,7 @@ public record InstallationRouteDto(
         String surfaceType,
         Double length,
         String orientation,
-        String fixingMethod) {}
+        String fixingMethod,
+        Long mainMaterialId,
+        String mainMaterialName,
+        String mainMaterialCategory) {}

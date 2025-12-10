@@ -40,6 +40,7 @@
 .om-routes-list-item.active {
     border-color: var(--om-primary);
     box-shadow: 0 0 0 2px rgba(13, 110, 253, 0.2);
+    background-color: #eef2ff;
 }
 
 .om-route-color {
@@ -88,7 +89,7 @@
 
 .om-route-line {
     stroke: #94a3b8;
-    stroke-width: 2.5;
+    stroke-width: 3;
     cursor: pointer;
 }
 
@@ -97,6 +98,13 @@
 .om-route-line.active-line {
     stroke-width: 3.5;
     filter: drop-shadow(0 0 4px rgba(13, 110, 253, 0.4));
+}
+
+.om-link-line-hitbox {
+    stroke: transparent;
+    stroke-width: 12;
+    pointer-events: stroke;
+    cursor: pointer;
 }
 
 .om-routes-inspector label {
