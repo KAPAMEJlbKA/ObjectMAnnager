@@ -10,6 +10,7 @@ import com.kapamejlbka.objectmanager.domain.customer.dto.SiteUpdateRequest;
 import com.kapamejlbka.objectmanager.service.CustomerService;
 import com.kapamejlbka.objectmanager.service.EndpointDeviceService;
 import com.kapamejlbka.objectmanager.service.NetworkNodeService;
+import com.kapamejlbka.objectmanager.service.SiteAttachmentService;
 import com.kapamejlbka.objectmanager.service.SiteService;
 import com.kapamejlbka.objectmanager.service.SystemCalculationService;
 import java.util.List;
@@ -31,18 +32,21 @@ public class SiteController {
     private final SystemCalculationService systemCalculationService;
     private final EndpointDeviceService endpointDeviceService;
     private final NetworkNodeService networkNodeService;
+    private final SiteAttachmentService siteAttachmentService;
 
     public SiteController(
             CustomerService customerService,
             SiteService siteService,
             SystemCalculationService systemCalculationService,
             EndpointDeviceService endpointDeviceService,
-            NetworkNodeService networkNodeService) {
+            NetworkNodeService networkNodeService,
+            SiteAttachmentService siteAttachmentService) {
         this.customerService = customerService;
         this.siteService = siteService;
         this.systemCalculationService = systemCalculationService;
         this.endpointDeviceService = endpointDeviceService;
         this.networkNodeService = networkNodeService;
+        this.siteAttachmentService = siteAttachmentService;
     }
 
     @GetMapping("/customers/{customerId}/sites/new")
@@ -93,6 +97,7 @@ public class SiteController {
         model.addAttribute("nodeCount", nodeCount);
         model.addAttribute("calculationResult", calculationResult);
         model.addAttribute("materialItemCount", materialItemCount);
+        model.addAttribute("attachments", siteAttachmentService.listBySite(id));
         return "sites/detail";
     }
 
