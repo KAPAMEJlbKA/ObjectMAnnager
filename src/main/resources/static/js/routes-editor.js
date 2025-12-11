@@ -70,6 +70,7 @@
     let selectedRouteId = null;
     let selectedLinkId = null;
     let colorMap = {};
+    let lastSelectedRouteId = null;
 
     window.selectedRouteId = selectedRouteId;
     window.selectedLinkId = selectedLinkId;
@@ -129,6 +130,7 @@
                 colorMap = {};
                 if (selectedRouteId && !routes.some((r) => r.id === selectedRouteId)) {
                     setSelectedRoute(null);
+                    lastSelectedRouteId = null;
                 }
                 if (selectedLinkId && !topology.links.some((l) => l.id === selectedLinkId)) {
                     setSelectedLink(null);
@@ -388,12 +390,23 @@
             assignLabel.textContent = 'Назначить на трассу';
             const assignSelect = document.createElement('select');
             assignSelect.className = 'form-select form-select-sm';
+            const preferredRouteId =
+                (lastSelectedRouteId && routes.some((route) => route.id === lastSelectedRouteId))
+                    ? lastSelectedRouteId
+                    : routes[0]?.id;
             routes.forEach((route) => {
                 const option = document.createElement('option');
                 option.value = route.id;
                 option.textContent = route.name;
-                option.selected = route.id === link.routeId || (!link.routeId && routes[0]?.id === route.id);
+                option.selected =
+                    route.id === link.routeId || (!link.routeId && preferredRouteId === route.id);
                 assignSelect.appendChild(option);
+            });
+            assignSelect.addEventListener('change', () => {
+                const selectedId = Number(assignSelect.value);
+                if (selectedId) {
+                    lastSelectedRouteId = selectedId;
+                }
             });
             const assignBtn = document.createElement('button');
             assignBtn.className = 'btn btn-primary btn-sm w-100 mt-2';
@@ -470,6 +483,9 @@
             targetLink.routeId = routeId;
             renderLinks();
         }
+        if (routeId) {
+            lastSelectedRouteId = routeId;
+        }
         apiFetch(`${apiBase}/${routeId}/assign-link`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -484,6 +500,9 @@
 
     function setSelectedRoute(id) {
         selectedRouteId = id;
+        if (id) {
+            lastSelectedRouteId = id;
+        }
         window.selectedRouteId = id;
     }
 
