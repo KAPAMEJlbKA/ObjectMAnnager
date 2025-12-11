@@ -25,22 +25,46 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // h2-console без CSRF
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+
+                // Кому что разрешено
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/login", "/ping-open", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers(
+                                "/login",
+                                "/ping-open",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/h2-console/**"
+                        ).permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .anyRequest().hasAnyRole("ADMIN", "ENGINEER", "VIEWER"))
+                        .anyRequest().hasAnyRole("ADMIN", "ENGINEER", "VIEWER")
+                )
+
+                // Форма логина
                 .formLogin(form -> form
                         .loginPage("/login")
                         .defaultSuccessUrl("/admin", true)
-                        .permitAll())
+                        .permitAll()
+                )
+
+                // Логаут
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/login?logout")
-                        .permitAll())
+                        .permitAll()
+                )
+
+                // Базовая авторизация выключена
                 .httpBasic(AbstractHttpConfigurer::disable)
+
+                // Наш UserDetailsService
                 .userDetailsService(userDetailsService);
+
+        // Разрешаем h2-console в iframe
         http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
+
         return http.build();
     }
 
