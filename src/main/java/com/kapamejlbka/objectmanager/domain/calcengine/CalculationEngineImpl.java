@@ -2,8 +2,8 @@ package com.kapamejlbka.objectmanager.domain.calcengine;
 
 import com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation;
 import com.kapamejlbka.objectmanager.domain.calculation.repository.SystemCalculationRepository;
-import com.kapamejlbka.objectmanager.domain.calcengine.routes.RouteCalculator;
 import com.kapamejlbka.objectmanager.domain.calcengine.LinkCalculator;
+import com.kapamejlbka.objectmanager.domain.calcengine.routes.RouteCalculator;
 import com.kapamejlbka.objectmanager.domain.device.EndpointDevice;
 import com.kapamejlbka.objectmanager.domain.device.NetworkNode;
 import com.kapamejlbka.objectmanager.domain.device.repository.EndpointDeviceRepository;
@@ -22,7 +22,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
