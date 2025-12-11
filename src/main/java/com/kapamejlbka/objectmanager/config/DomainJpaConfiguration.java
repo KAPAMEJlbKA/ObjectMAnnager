@@ -6,8 +6,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @Configuration
 @EnableJpaRepositories(basePackages = {
         "com.kapamejlbka.objectmanager.domain",
-        "com.kapamejlbka.objectmanager.repository",
-        "com.kapamejlbka.objectmanager.legacy.objectmannage.repository"
+        "com.kapamejlbka.objectmanager.repository"
 })
 public class DomainJpaConfiguration {
 }
