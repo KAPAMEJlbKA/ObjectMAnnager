@@ -76,13 +76,6 @@ public class CalculationController {
         this.routeSegmentLinkService = routeSegmentLinkService;
     }
 
-    @GetMapping("/calculations/{id}")
-    public String overview(@PathVariable("id") Long id, Model model) {
-        SystemCalculation calculation = getCalculation(id);
-        model.addAttribute("calculation", calculation);
-        return "calculations/overview";
-    }
-
     @GetMapping("/calculations/{id}/wizard/step1")
     public String wizardStep1(@PathVariable("id") Long id, Model model) {
         SystemCalculation calculation = getCalculation(id);
