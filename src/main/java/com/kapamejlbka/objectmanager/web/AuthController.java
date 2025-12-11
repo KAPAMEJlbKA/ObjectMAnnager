@@ -1,19 +1,21 @@
 package com.kapamejlbka.objectmanager.web;
 
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
 public class AuthController {
 
     @GetMapping("/login")
-    @ResponseBody
-    public String loginPageDebug(
+    public String loginPage(
             @RequestParam(value = "error", required = false) String error,
-            @RequestParam(value = "logout", required = false) String logout) {
+            @RequestParam(value = "logout", required = false) String logout,
+            Model model) {
 
-        return "LOGIN CONTROLLER OK, error=" + (error != null) + ", logout=" + (logout != null);
+        model.addAttribute("error", error != null);
+        model.addAttribute("logout", logout != null);
+        return "auth/login"; // JTE-шаблон src/main/jte/templates/auth/login.jte
     }
 }
