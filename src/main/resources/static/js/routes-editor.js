@@ -479,6 +479,7 @@
 
     function assignLink(linkId, routeId) {
         const targetLink = topology.links.find((l) => l.id === linkId);
+        const previousRouteId = targetLink?.routeId || null;
         if (targetLink) {
             targetLink.routeId = routeId;
             renderLinks();
@@ -491,10 +492,19 @@
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({linkId}),
         })
-            .then(() => refreshRoutes())
+            .then((r) => (r.ok ? r.json() : Promise.reject()))
+            .then((updatedLink) => {
+                if (updatedLink && targetLink) {
+                    targetLink.routeId = Number(updatedLink.routeId) || targetLink.routeId;
+                }
+                return refreshRoutes();
+            })
             .catch(() => {
+                if (targetLink) {
+                    targetLink.routeId = previousRouteId;
+                    renderLinks();
+                }
                 alert('Не удалось привязать линию');
-                refreshRoutes();
             });
     }
 
