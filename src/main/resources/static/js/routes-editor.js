@@ -70,6 +70,7 @@
     let selectedRouteId = null;
     let selectedLinkId = null;
     let colorMap = {};
+    let lastSelectedRouteId = null;
 
     window.selectedRouteId = selectedRouteId;
     window.selectedLinkId = selectedLinkId;
@@ -129,6 +130,7 @@
                 colorMap = {};
                 if (selectedRouteId && !routes.some((r) => r.id === selectedRouteId)) {
                     setSelectedRoute(null);
+                    lastSelectedRouteId = null;
                 }
                 if (selectedLinkId && !topology.links.some((l) => l.id === selectedLinkId)) {
                     setSelectedLink(null);
@@ -388,12 +390,23 @@
             assignLabel.textContent = 'Назначить на трассу';
             const assignSelect = document.createElement('select');
             assignSelect.className = 'form-select form-select-sm';
+            const preferredRouteId =
+                (lastSelectedRouteId && routes.some((route) => route.id === lastSelectedRouteId))
+                    ? lastSelectedRouteId
+                    : routes[0]?.id;
             routes.forEach((route) => {
                 const option = document.createElement('option');
                 option.value = route.id;
                 option.textContent = route.name;
-                option.selected = route.id === link.routeId || (!link.routeId && routes[0]?.id === route.id);
+                option.selected =
+                    route.id === link.routeId || (!link.routeId && preferredRouteId === route.id);
                 assignSelect.appendChild(option);
+            });
+            assignSelect.addEventListener('change', () => {
+                const selectedId = Number(assignSelect.value);
+                if (selectedId) {
+                    lastSelectedRouteId = selectedId;
+                }
             });
             const assignBtn = document.createElement('button');
             assignBtn.className = 'btn btn-primary btn-sm w-100 mt-2';
@@ -466,24 +479,40 @@
 
     function assignLink(linkId, routeId) {
         const targetLink = topology.links.find((l) => l.id === linkId);
+        const previousRouteId = targetLink?.routeId || null;
         if (targetLink) {
             targetLink.routeId = routeId;
             renderLinks();
+        }
+        if (routeId) {
+            lastSelectedRouteId = routeId;
         }
         apiFetch(`${apiBase}/${routeId}/assign-link`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({linkId}),
         })
-            .then(() => refreshRoutes())
+            .then((r) => (r.ok ? r.json() : Promise.reject()))
+            .then((updatedLink) => {
+                if (updatedLink && targetLink) {
+                    targetLink.routeId = Number(updatedLink.routeId) || targetLink.routeId;
+                }
+                return refreshRoutes();
+            })
             .catch(() => {
+                if (targetLink) {
+                    targetLink.routeId = previousRouteId;
+                    renderLinks();
+                }
                 alert('Не удалось привязать линию');
-                refreshRoutes();
             });
     }
 
     function setSelectedRoute(id) {
         selectedRouteId = id;
+        if (id) {
+            lastSelectedRouteId = id;
+        }
         window.selectedRouteId = id;
     }
 
