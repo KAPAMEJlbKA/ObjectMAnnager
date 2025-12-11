@@ -1,23 +1,27 @@
-<!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{layout :: layout(~{::title}, 'login', ~{::content}, ~{::extraHead}, ~{::extraScripts})}">
-<head>
-    <title>Вход в систему</title>
-    <th:block th:fragment="extraHead"></th:block>
-</head>
-<body>
-<th:block th:fragment="content">
+@import org.springframework.security.web.csrf.CsrfToken
+
+@param boolean error = false
+@param boolean logout = false
+@param CsrfToken _csrf = null
+
+@templates.layout(title = "Вход в систему", activePage = "login") {
     <div class="om-login-wrapper">
         <div class="om-login-card">
             <h1 class="om-login-title">Войти в ObjectMAnnager</h1>
-            <div th:if="${param.error}" class="alert alert-danger" role="alert">
-                Неверное имя пользователя или пароль
-            </div>
-            <div th:if="${param.logout}" class="alert alert-success" role="alert">
-                Вы вышли из системы
-            </div>
+            @if(error) {
+                <div class="alert alert-danger" role="alert">
+                    Неверное имя пользователя или пароль
+                </div>
+            }
+            @if(logout) {
+                <div class="alert alert-success" role="alert">
+                    Вы вышли из системы
+                </div>
+            }
             <form method="post" action="/login" class="needs-validation" novalidate>
-                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                @if(_csrf != null) {
+                    <input type="hidden" name="@_csrf.getParameterName()" value="@_csrf.getToken()">
+                }
                 <div class="mb-3">
                     <label for="username" class="form-label">Имя пользователя</label>
                     <input type="text" class="form-control" id="username" name="username" required autofocus>
@@ -30,7 +34,4 @@
             </form>
         </div>
     </div>
-</th:block>
-<th:block th:fragment="extraScripts"></th:block>
-</body>
-</html>
+}
