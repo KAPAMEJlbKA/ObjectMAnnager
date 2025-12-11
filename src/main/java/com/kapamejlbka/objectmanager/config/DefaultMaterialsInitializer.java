@@ -10,6 +10,8 @@ import jakarta.transaction.Transactional;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -32,22 +34,13 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        Map<String, Material> materials = new LinkedHashMap<>();
-        boolean seededMaterials = false;
-
-        if (materialRepository.count() == 0) {
-            LOG.info("Seeding default materials");
-            materials.putAll(createDefaultMaterials());
-            seededMaterials = true;
-        } else {
-            materialRepository.findAll().forEach(material -> materials.put(material.getCode(), material));
-        }
+        Map<String, Material> materials = materialRepository.count() == 0
+                ? createDefaultMaterials()
+                : loadExistingMaterials();
 
         if (materialNormRepository.count() == 0) {
             LOG.info("Seeding default material norms");
             createDefaultNorms(materials);
-        } else if (seededMaterials) {
-            LOG.info("Material norms already present, skipping norms seeding");
         }
     }
 
@@ -322,6 +315,16 @@ public class DefaultMaterialsInitializer implements CommandLineRunner {
                 "FIBER_CONNECTOR",
                 "fiberConnectorCount",
                 "Коннекторы оптики");
+    }
+
+    private Map<String, Material> loadExistingMaterials() {
+        return materialRepository.findAll().stream()
+                .collect(
+                        Collectors.toMap(
+                                material -> material.getCode().toUpperCase(Locale.ROOT),
+                                Function.identity(),
+                                (first, second) -> first,
+                                LinkedHashMap::new));
     }
 
     private void addNorm(
