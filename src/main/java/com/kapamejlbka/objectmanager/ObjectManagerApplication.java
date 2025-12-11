@@ -10,8 +10,7 @@ import org.springframework.context.annotation.Bean;
 
 @SpringBootApplication(
         scanBasePackages = {
-                "com.kapamejlbka.objectmanager",
-                "com.kapamejlbka.objectmannage"
+                "com.kapamejlbka.objectmanager"
         },
         excludeName = {
         "org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration",
