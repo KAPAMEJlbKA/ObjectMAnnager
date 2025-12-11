@@ -18,12 +18,46 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // ВРЕМЕННО: полностью отключаем CSRF и логин/логаут/роли
-                .csrf(AbstractHttpConfigurer::disable)
+                // Разрешаем h2-console без CSRF
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        // Открытые маршруты (без авторизации)
+                        .requestMatchers(
+                                "/login",
+                                "/auth/login",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/h2-console/**"
+                        ).permitAll()
+
+                        // Админка только для ADMIN
+                        .requestMatchers("/admin/**").hasRole("ADMIN")
+
+                        // Всё остальное — только для авторизованных ролей
+                        .anyRequest().hasAnyRole("ADMIN", "ENGINEER", "VIEWER")
                 )
+
+                // Форма логина
+                .formLogin(form -> form
+                        .loginPage("/login")
+                        .defaultSuccessUrl("/admin", true) // после логина идём в админку
+                        .permitAll()
+                )
+
+                // Логаут
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/login?logout")
+                        .permitAll()
+                )
+
+                // Базовую HTTP-авторизацию не используем
                 .httpBasic(AbstractHttpConfigurer::disable);
+
+        // Разрешаем h2-console в iframe
+        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         return http.build();
     }

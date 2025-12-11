@@ -2,10 +2,8 @@ package com.kapamejlbka.objectmanager.config;
 
 import gg.jte.TemplateEngine;
 import gg.jte.ContentType;
-import gg.jte.resolve.DirectoryCodeResolver;
 import gg.jte.springframework.boot.autoconfigure.JteProperties;
 import gg.jte.springframework.boot.autoconfigure.JteViewResolver;
-import java.nio.file.Path;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.ViewResolver;
@@ -19,9 +17,10 @@ public class JteConfig {
      */
     @Bean
     public TemplateEngine jteTemplateEngine() {
-        // DEV-вариант: читаем шаблоны прямо из src/main/jte/templates
-        DirectoryCodeResolver codeResolver = new DirectoryCodeResolver(Path.of("src/main/jte"));
-        return TemplateEngine.create(codeResolver, ContentType.Html);
+        // DEV-вариант: использовать файловую систему src/main/jte
+        return TemplateEngine.createPrecompiled(
+                ContentType.Html
+        );
     }
 
     /**
