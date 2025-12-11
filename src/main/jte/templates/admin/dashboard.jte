@@ -32,6 +32,11 @@
 @param String flashError = null
 @param CsrfToken _csrf
 
+<% String currentTab = switch (activeTab) {
+    case "settings", "materials", "norms" -> activeTab;
+    default -> "users";
+}; %>
+
 @templates.layout(title = "Администрирование", activePage = "admin", flashSuccess = flashSuccess, flashError = flashError) {
     <section class="page-card">
         <div class="page-header">
@@ -45,27 +50,27 @@
         <div class="om-page-card">
             <ul class="nav nav-tabs">
                 <li class="nav-item">
-                    <a class="nav-link @("users".equals(activeTab) ? "active" : "")" href="/admin?tab=users">Пользователи</a>
+                    <a class="nav-link @("users".equals(currentTab) ? "active" : "")" href="/admin?tab=users">Пользователи</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link @("settings".equals(activeTab) ? "active" : "")" href="/admin?tab=settings">Настройки</a>
+                    <a class="nav-link @("settings".equals(currentTab) ? "active" : "")" href="/admin?tab=settings">Настройки</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link @("materials".equals(activeTab) ? "active" : "")" href="/admin?tab=materials">Материалы</a>
+                    <a class="nav-link @("materials".equals(currentTab) ? "active" : "")" href="/admin?tab=materials">Материалы</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link @("norms".equals(activeTab) ? "active" : "")" href="/admin?tab=norms">Нормы расчёта</a>
+                    <a class="nav-link @("norms".equals(currentTab) ? "active" : "")" href="/admin?tab=norms">Нормы расчёта</a>
                 </li>
             </ul>
 
-            <div class="tab-content mt-3">
-                <div class="tab-pane @("users".equals(activeTab) ? "active" : "")">
+            <div class="tab-content mt-3" data-current-tab="@currentTab">
+                <div class="tab-pane @("users".equals(currentTab) ? "active" : "")">
                     @templates.admin.tabs.users(users = users, roles = roles, userForm = userForm, editUserForm = editUserForm, _csrf = _csrf)
                 </div>
-                <div class="tab-pane @("settings".equals(activeTab) ? "active" : "")">
+                <div class="tab-pane @("settings".equals(currentTab) ? "active" : "")">
                     @templates.admin.tabs.settings(settings = settings, _csrf = _csrf)
                 </div>
-                <div class="tab-pane @("materials".equals(activeTab) ? "active" : "")">
+                <div class="tab-pane @("materials".equals(currentTab) ? "active" : "")">
                     @templates.admin.tabs.materials(
                         materials = materials,
                         categories = materialCategories,
@@ -75,7 +80,7 @@
                         selectedCategory = materialCategory,
                         _csrf = _csrf)
                 </div>
-                <div class="tab-pane @("norms".equals(activeTab) ? "active" : "")">
+                <div class="tab-pane @("norms".equals(currentTab) ? "active" : "")">
                     @templates.admin.tabs.norms(
                         norms = norms,
                         normForm = normForm,
