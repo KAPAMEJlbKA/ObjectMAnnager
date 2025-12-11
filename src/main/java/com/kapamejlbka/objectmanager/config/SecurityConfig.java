@@ -32,7 +32,7 @@ public class SecurityConfig {
                         .anyRequest().hasAnyRole("ADMIN", "ENGINEER", "VIEWER"))
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/customers", true)
+                        .defaultSuccessUrl("/admin", true)
                         .permitAll())
                 .logout(logout -> logout
                         .logoutUrl("/logout")
