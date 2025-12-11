@@ -2,7 +2,8 @@ package com.kapamejlbka.objectmanager.config;
 
 import gg.jte.TemplateEngine;
 import gg.jte.ContentType;
-import gg.jte.spring.boot3.JteViewResolver;
+import gg.jte.springframework.boot.autoconfigure.JteProperties;
+import gg.jte.springframework.boot.autoconfigure.JteViewResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.ViewResolver;
@@ -27,11 +28,21 @@ public class JteConfig {
      * как файлы src/main/jte/templates/auth/login.jte
      */
     @Bean
-    public ViewResolver jteViewResolver(TemplateEngine templateEngine) {
-        JteViewResolver resolver = new JteViewResolver();
-        resolver.setTemplateEngine(templateEngine);
-        resolver.setPrefix("templates/");
-        resolver.setSuffix(".jte");
+    public JteProperties jteProperties() {
+        JteProperties properties = new JteProperties();
+        properties.setTemplateLocation("templates/");
+        properties.setTemplateSuffix(".jte");
+        return properties;
+    }
+
+    /**
+     * Регистрируем JteViewResolver, который будет искать шаблоны по имени вида "auth/login"
+     * как файлы src/main/jte/templates/auth/login.jte
+     */
+    @Bean
+    public ViewResolver jteViewResolver(TemplateEngine templateEngine, JteProperties jteProperties) {
+        JteViewResolver resolver = new JteViewResolver(templateEngine, jteProperties);
+        resolver.setPrefix(jteProperties.getTemplateLocation());
         resolver.setOrder(0); // приоритет выше дефолтных резолверов
         return resolver;
     }
