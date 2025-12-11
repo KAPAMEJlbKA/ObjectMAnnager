@@ -16,6 +16,6 @@ public class AuthController {
 
         model.addAttribute("error", error != null);
         model.addAttribute("logout", logout != null);
-        return "auth/login"; // JTE-шаблон src/main/jte/templates/auth/login.jte
+        return "auth/login"; // JTE-шаблон: src/main/jte/templates/auth/login.jte
     }
 }

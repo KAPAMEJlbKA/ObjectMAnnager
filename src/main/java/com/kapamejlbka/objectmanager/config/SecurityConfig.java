@@ -18,9 +18,10 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Разрешаем h2-console без CSRF
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/h2-console/**"))
+                // CSRF можно оставить выключенным, если пока не используем формы кроме логина
+                .csrf(AbstractHttpConfigurer::disable)
 
+                // Правила доступа
                 .authorizeHttpRequests(auth -> auth
                         // Открытые маршруты (без авторизации)
                         .requestMatchers(
@@ -32,16 +33,16 @@ public class SecurityConfig {
                                 "/h2-console/**"
                         ).permitAll()
 
-                        // Админка только для ADMIN
+                        // Админка только для администратора
                         .requestMatchers("/admin/**").hasRole("ADMIN")
 
-                        // Всё остальное — только для авторизованных ролей
+                        // Все остальные запросы только для авторизованных ролей
                         .anyRequest().hasAnyRole("ADMIN", "ENGINEER", "VIEWER")
                 )
 
                 // Форма логина
                 .formLogin(form -> form
-                        .loginPage("/login")
+                        .loginPage("/login")         // используем наш кастомный /login
                         .defaultSuccessUrl("/admin", true) // после логина идём в админку
                         .permitAll()
                 )
@@ -53,11 +54,8 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
-                // Базовую HTTP-авторизацию не используем
+                // HTTP Basic не нужен
                 .httpBasic(AbstractHttpConfigurer::disable);
-
-        // Разрешаем h2-console в iframe
-        http.headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()));
 
         return http.build();
     }
