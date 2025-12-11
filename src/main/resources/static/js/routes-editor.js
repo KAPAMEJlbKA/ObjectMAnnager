@@ -254,7 +254,11 @@
     }
 
     function selectRoute(id) {
-        setSelectedRoute(Number(id));
+        const numericId = Number(id);
+        if (!Number.isFinite(numericId)) {
+            return;
+        }
+        setSelectedRoute(numericId);
         setSelectedLink(null);
         renderRoutesList();
         renderLinks();
@@ -478,16 +482,22 @@
     }
 
     function assignLink(linkId, routeId) {
+        const numericRouteId = Number(routeId);
+        if (!Number.isFinite(numericRouteId)) {
+            alert('Не удалось определить выбранную трассу. Обновите страницу и попробуйте снова.');
+            return;
+        }
+
         const targetLink = topology.links.find((l) => l.id === linkId);
         const previousRouteId = targetLink?.routeId || null;
         if (targetLink) {
-            targetLink.routeId = routeId;
+            targetLink.routeId = numericRouteId;
             renderLinks();
         }
-        if (routeId) {
-            lastSelectedRouteId = routeId;
+        if (numericRouteId) {
+            lastSelectedRouteId = numericRouteId;
         }
-        apiFetch(`${apiBase}/${routeId}/assign-link`, {
+        apiFetch(`${apiBase}/${numericRouteId}/assign-link`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({linkId}),
