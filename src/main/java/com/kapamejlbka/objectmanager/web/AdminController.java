@@ -210,7 +210,8 @@ public class AdminController {
             Long editNormId,
             String search,
             String category) {
-        model.addAttribute("activeTab", tab);
+        String activeTab = (tab == null || tab.isBlank()) ? "users" : tab;
+        model.addAttribute("activeTab", activeTab);
 
         List<AppUser> users = userService.findAll().stream()
                 .sorted(Comparator.comparing(AppUser::getUsername, String.CASE_INSENSITIVE_ORDER))
