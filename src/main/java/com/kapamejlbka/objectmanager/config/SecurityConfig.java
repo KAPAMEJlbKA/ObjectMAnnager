@@ -43,7 +43,7 @@ public class SecurityConfig {
                 // Форма логина
                 .formLogin(form -> form
                         .loginPage("/login")         // используем наш кастомный /login
-                        .defaultSuccessUrl("/admin", true) // после логина идём в админку
+                        .defaultSuccessUrl("/", true) // после логина идём на главную
                         .permitAll()
                 )
 
