@@ -16,6 +16,7 @@
 @param java.util.List<com.kapamejlbka.objectmanager.domain.material.MaterialNormContext> normContexts
 @param java.util.Map<String, String> normContextNames
 @param com.kapamejlbka.objectmanager.domain.material.dto.MaterialNormForm editNormForm
+@param java.util.List<com.kapamejlbka.objectmanager.model.DatabaseConnectionSettings> connections
 @param String flashSuccess
 @param String flashError
 
@@ -58,6 +59,7 @@
         <a class="tabs__item ${"settings".equals(activeTab) ? "tabs__item--active" : ""}" href="/admin?tab=settings">Настройки расчётов</a>
         <a class="tabs__item ${"materials".equals(activeTab) ? "tabs__item--active" : ""}" href="/admin?tab=materials">Материалы</a>
         <a class="tabs__item ${"norms".equals(activeTab) ? "tabs__item--active" : ""}" href="/admin?tab=norms">Нормы</a>
+        <a class="tabs__item ${"databases".equals(activeTab) ? "tabs__item--active" : ""}" href="/admin?tab=databases">Базы данных</a>
     </div>
 
     @if("users".equals(activeTab))
@@ -499,6 +501,120 @@
                 </form>
             </section>
         @endif
+    @endif
+
+    @if("databases".equals(activeTab))
+        <section class="grid">
+            <div class="card">
+                <div class="card__header">
+                    <div>
+                        <p class="muted">PostgreSQL</p>
+                        <h2>Добавить подключение</h2>
+                    </div>
+                </div>
+
+                <form class="form" method="post" action="/admin/databases/postgres">
+                    <div class="form__grid form__grid--two">
+                        <label class="form__label">Имя подключения
+                            <input class="form__control" type="text" name="name" required>
+                        </label>
+                        <label class="form__label">Хост
+                            <input class="form__control" type="text" name="host" placeholder="localhost" required>
+                        </label>
+                        <label class="form__label">Порт
+                            <input class="form__control" type="number" name="port" value="5432" min="1" max="65535" required>
+                        </label>
+                        <label class="form__label">База данных
+                            <input class="form__control" type="text" name="databaseName" required>
+                        </label>
+                        <label class="form__label">Пользователь
+                            <input class="form__control" type="text" name="username" required>
+                        </label>
+                        <label class="form__label">Пароль
+                            <input class="form__control" type="password" name="password" required>
+                        </label>
+                    </div>
+
+                    <button class="button button--primary" type="submit">Сохранить</button>
+                </form>
+            </div>
+
+            <div class="card">
+                <div class="card__header">
+                    <div>
+                        <p class="muted">H2</p>
+                        <h2>Создать локальное хранилище</h2>
+                    </div>
+                </div>
+
+                <form class="form form--narrow" method="post" action="/admin/databases/h2">
+                    <label class="form__label">Имя файла
+                        <input class="form__control" type="text" name="name" placeholder="object-manager" required>
+                    </label>
+                    <p class="muted">Файл будет создан в каталоге <code>./data</code>. При повторном вводе имя подключения будет обновлено.</p>
+                    <button class="button button--primary" type="submit">Создать/обновить</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="card">
+            <div class="card__header">
+                <div>
+                    <p class="muted">Подключения</p>
+                    <h2>Доступные базы данных</h2>
+                </div>
+            </div>
+
+            <div class="table">
+                <div class="table__row table__row--head">
+                    <div>Имя</div>
+                    <div>Тип</div>
+                    <div>Параметры</div>
+                    <div>Статус</div>
+                    <div>Действия</div>
+                </div>
+
+                @for(com.kapamejlbka.objectmanager.model.DatabaseConnectionSettings connection : connections)
+                    <div class="table__row">
+                        <div class="table__title">${connection.getName()}</div>
+                        <div>${connection.getDatabaseType().name()}</div>
+                        <div>
+                            @if(connection.getDatabaseType().name().equals("H2"))
+                                <div class="muted">${connection.getDatabaseName()}</div>
+                            @else
+                                <div>Хост: ${connection.getHost()}:${connection.getPort()}</div>
+                                <div class="muted">БД: ${connection.getDatabaseName()} • Пользователь: ${connection.getUsername()}</div>
+                            @endif
+                        </div>
+                        <div>
+                            <div class="badge ${connection.isInitialized() ? "badge--green" : "badge--gray"}">
+                                ${connection.isInitialized() ? "Инициализировано" : "Не инициализировано"}
+                            </div>
+                            @if(connection.getStatusMessage() != null)
+                                <div class="muted">${connection.getStatusMessage()}</div>
+                            @endif
+                            @if(connection.getLastVerifiedAt() != null)
+                                <div class="muted">Проверено: ${connection.getLastVerifiedAt()}</div>
+                            @endif
+                            @if(connection.isActive())
+                                <div class="badge badge--blue">Активно</div>
+                            @endif
+                        </div>
+                        <div class="actions">
+                            @if(connection.isActive())
+                                <form method="post" action="/admin/databases/${connection.getId()}/deactivate">
+                                    <button class="button" type="submit">Деактивировать</button>
+                                </form>
+                            @else
+                                <form method="post" action="/admin/databases/${connection.getId()}/activate">
+                                    <button class="button button--primary" type="submit">Активировать</button>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
+                @endfor
+            </div>
+        </section>
     @endif
 </main>
 </body>

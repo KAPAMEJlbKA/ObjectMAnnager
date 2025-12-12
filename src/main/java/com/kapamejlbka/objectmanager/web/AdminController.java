@@ -11,6 +11,8 @@ import com.kapamejlbka.objectmanager.domain.user.AppRole;
 import com.kapamejlbka.objectmanager.domain.user.AppUser;
 import com.kapamejlbka.objectmanager.domain.user.dto.UserCreateRequest;
 import com.kapamejlbka.objectmanager.domain.user.dto.UserUpdateRequest;
+import com.kapamejlbka.objectmanager.model.DatabaseConnectionSettings;
+import com.kapamejlbka.objectmanager.service.DatabaseSettingsService;
 import com.kapamejlbka.objectmanager.service.MaterialNormService;
 import com.kapamejlbka.objectmanager.service.MaterialService;
 import com.kapamejlbka.objectmanager.service.SettingsService;
@@ -18,6 +20,8 @@ import com.kapamejlbka.objectmanager.service.UserService;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -37,16 +41,19 @@ public class AdminController {
     private final SettingsService settingsService;
     private final MaterialService materialService;
     private final MaterialNormService materialNormService;
+    private final DatabaseSettingsService databaseSettingsService;
 
     public AdminController(
             UserService userService,
             SettingsService settingsService,
             MaterialService materialService,
-            MaterialNormService materialNormService) {
+            MaterialNormService materialNormService,
+            DatabaseSettingsService databaseSettingsService) {
         this.userService = userService;
         this.settingsService = settingsService;
         this.materialService = materialService;
         this.materialNormService = materialNormService;
+        this.databaseSettingsService = databaseSettingsService;
     }
 
     @GetMapping("/admin")
@@ -202,6 +209,78 @@ public class AdminController {
         return "redirect:/admin";
     }
 
+    @PostMapping("/admin/databases/postgres")
+    public String configurePostgres(
+            @RequestParam("name") String name,
+            @RequestParam("host") String host,
+            @RequestParam("port") int port,
+            @RequestParam("databaseName") String databaseName,
+            @RequestParam("username") String username,
+            @RequestParam("password") String password,
+            RedirectAttributes redirectAttributes) {
+        try {
+            DatabaseConnectionSettings settings = databaseSettingsService.configurePostgres(
+                    name,
+                    host,
+                    port,
+                    databaseName,
+                    username,
+                    password);
+            redirectAttributes.addFlashAttribute("flashSuccess", settings.getStatusMessage());
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("flashError", ex.getMessage());
+        }
+        redirectAttributes.addAttribute("tab", "databases");
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/databases/h2")
+    public String createLocalH2Store(
+            @RequestParam("name") String name,
+            RedirectAttributes redirectAttributes) {
+        try {
+            DatabaseConnectionSettings settings = databaseSettingsService.createLocalH2Store(name);
+            redirectAttributes.addFlashAttribute("flashSuccess", settings.getStatusMessage());
+        } catch (IllegalArgumentException | IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("flashError", ex.getMessage());
+        }
+        redirectAttributes.addAttribute("tab", "databases");
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/databases/{id}/activate")
+    public String activateConnection(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
+        try {
+            boolean activated = databaseSettingsService.activateConnection(id);
+            String statusMessage = findStatusMessage(id);
+            if (activated) {
+                redirectAttributes.addFlashAttribute(
+                        "flashSuccess",
+                        statusMessage == null || statusMessage.isBlank()
+                                ? "Подключение активировано"
+                                : statusMessage);
+            } else {
+                redirectAttributes.addFlashAttribute(
+                        "flashError",
+                        statusMessage == null || statusMessage.isBlank()
+                                ? "Не удалось активировать подключение"
+                                : statusMessage);
+            }
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("flashError", ex.getMessage());
+        }
+        redirectAttributes.addAttribute("tab", "databases");
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/databases/{id}/deactivate")
+    public String deactivateConnection(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
+        databaseSettingsService.deactivateConnection(id);
+        redirectAttributes.addFlashAttribute("flashSuccess", "Подключение деактивировано");
+        redirectAttributes.addAttribute("tab", "databases");
+        return "redirect:/admin";
+    }
+
     private void populateDashboardModel(
             Model model,
             String tab,
@@ -282,6 +361,11 @@ public class AdminController {
             editForm.setDescription(norm.getDescription());
             model.addAttribute("editNormForm", editForm);
         }
+
+        List<DatabaseConnectionSettings> connections = databaseSettingsService.findAll().stream()
+                .sorted(Comparator.comparing(DatabaseConnectionSettings::getName, String.CASE_INSENSITIVE_ORDER))
+                .collect(Collectors.toList());
+        model.addAttribute("connections", connections);
     }
 
     private void normalizeUserForm(UserCreateRequest form) {
@@ -308,5 +392,13 @@ public class AdminController {
         if (StringUtils.hasText(form.getEmail())) {
             form.setEmail(form.getEmail().trim().toLowerCase(Locale.ROOT));
         }
+    }
+
+    private String findStatusMessage(UUID id) {
+        return databaseSettingsService.findAll().stream()
+                .filter(connection -> id.equals(connection.getId()))
+                .map(DatabaseConnectionSettings::getStatusMessage)
+                .findFirst()
+                .orElse(null);
     }
 }
