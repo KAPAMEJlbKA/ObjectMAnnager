@@ -594,7 +594,7 @@
                                 <div class="muted">${connection.getStatusMessage()}</div>
                             @endif
                             @if(connection.getLastVerifiedAt() != null)
-                                <div class="muted">Проверено: ${connection.getLastVerifiedAt()}</div>
+                                <div class="muted">Проверено: ${connection.getLastVerifiedAt().toString()}</div>
                             @endif
                             @if(connection.isActive())
                                 <div class="badge badge--blue">Активно</div>
@@ -602,11 +602,11 @@
                         </div>
                         <div class="actions">
                             @if(connection.isActive())
-                                <form method="post" action="/admin/databases/${connection.getId()}/deactivate">
+                                <form method="post" action="/admin/databases/${connection.getId().toString()}/deactivate">
                                     <button class="button" type="submit">Деактивировать</button>
                                 </form>
                             @else
-                                <form method="post" action="/admin/databases/${connection.getId()}/activate">
+                                <form method="post" action="/admin/databases/${connection.getId().toString()}/activate">
                                     <button class="button button--primary" type="submit">Активировать</button>
                                 </form>
                             @endif
