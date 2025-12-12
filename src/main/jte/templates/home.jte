@@ -7,7 +7,7 @@
 @param int totalPages
 @param int totalCount
 @param java.util.Map<Long, Long> siteCounts
-@var DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
+@{ DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"); }
 <!DOCTYPE html>
 <html lang="ru">
 <head>
