@@ -168,6 +168,7 @@ body {
 .form { display: flex; flex-direction: column; gap: 12px; }
 .form__label { display: flex; flex-direction: column; gap: 6px; font-weight: 600; color: var(--text); }
 .form__label--inline { flex-direction: row; align-items: center; gap: 8px; font-weight: 500; }
+.form__label--wrap { flex-wrap: wrap; align-items: flex-start; }
 .form__control {
     padding: 12px;
     border-radius: 10px;
@@ -175,6 +176,7 @@ body {
     background: rgba(255,255,255,0.04);
     color: var(--text);
 }
+.form__control--textarea { resize: vertical; min-height: 96px; }
 
 .form__grid { display: grid; gap: 12px; }
 .form__grid--two { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
@@ -247,6 +249,11 @@ body {
 .badge--gray { background: rgba(148, 163, 184, 0.12); color: #e2e8f0; }
 
 .filters { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.stat { padding: 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,0.03); }
+.stat__value { font-weight: 800; font-size: 28px; }
+.stat__label { color: var(--muted); font-size: 13px; }
 
 @media (max-width: 900px) {
     .table__row { grid-template-columns: repeat(2, 1fr); }

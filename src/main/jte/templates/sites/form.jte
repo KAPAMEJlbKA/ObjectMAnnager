@@ -1,15 +1,115 @@
+@param com.kapamejlbka.objectmanager.domain.customer.Customer customer
+@param com.kapamejlbka.objectmanager.domain.customer.dto.SiteCreateRequest siteForm
+@param boolean isEdit
+@param Long siteId
+@param String error
+@param String flashSuccess
+@param String flashError
 <!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Карточка объекта — скоро</title>
+    <title>${isEdit ? "Редактирование объекта" : "Новый объект"} — Object Manager</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/app.css">
 </head>
-<body class="page page--placeholder">
-<div class="placeholder">
-    <div class="placeholder__label">Форма объекта в разработке</div>
-    <p>Здесь появится новый интерфейс для создания и редактирования объекта.</p>
-</div>
+<body class="page">
+<header class="topbar">
+    <div class="topbar__brand">Object Manager</div>
+    <div class="topbar__actions">
+        <a class="button" href="/customers/${customer.getId()}">К заказчику</a>
+        @if(isEdit && siteId != null)
+            <a class="button" href="/sites/${siteId}">К объекту</a>
+        @endif
+        <a class="button" href="/logout">Выйти</a>
+    </div>
+</header>
+
+<main class="container">
+    <div class="page-heading">
+        <div>
+            <p class="muted">${customer.getName()}</p>
+            <h1>${isEdit ? "Редактирование объекта" : "Создание объекта"}</h1>
+        </div>
+    </div>
+
+    @if(flashSuccess != null)
+        <div class="alert alert--success">${flashSuccess}</div>
+    @endif
+    @if(error != null)
+        <div class="alert alert--error">${error}</div>
+    @endif
+    @if(flashError != null)
+        <div class="alert alert--error">${flashError}</div>
+    @endif
+
+    <section class="card">
+        <div class="card__header">
+            <div>
+                <p class="muted">Данные объекта</p>
+                <h2>${isEdit ? "Обновление информации" : "Основная информация"}</h2>
+            </div>
+        </div>
+
+        <form class="form" method="post" action="${isEdit && siteId != null ? "/sites/" + siteId : "/customers/" + customer.getId() + "/sites"}">
+            <div class="form__grid form__grid--two">
+                <label class="form__label">Название объекта
+                    <input class="form__control" type="text" name="name" value="${siteForm.getName()}" required>
+                </label>
+                <label class="form__label">Полный адрес
+                    <textarea class="form__control form__control--textarea" name="fullAddress" rows="2" placeholder="Город, улица, дом">${siteForm.getFullAddress()}</textarea>
+                </label>
+            </div>
+
+            <label class="form__label">Описание объекта
+                <textarea class="form__control form__control--textarea" name="description" rows="4" placeholder="Характеристики площадки, доступы, этажность">${siteForm.getDescription()}</textarea>
+            </label>
+
+            <div class="form__grid form__grid--two">
+                <label class="form__label">Широта
+                    <input class="form__control" type="number" step="any" name="latitude" value="${siteForm.getLatitude() == null ? "" : siteForm.getLatitude()}">
+                </label>
+                <label class="form__label">Долгота
+                    <input class="form__control" type="number" step="any" name="longitude" value="${siteForm.getLongitude() == null ? "" : siteForm.getLongitude()}">
+                </label>
+            </div>
+
+            <div class="card__header" style="padding: 0; margin-top: 8px;">
+                <div>
+                    <p class="muted">Контакты</p>
+                    <h3>Представители на объекте</h3>
+                </div>
+            </div>
+
+            <label class="form__label form__label--inline form__label--wrap">
+                <input type="checkbox" name="useCustomerContact" value="true" ${siteForm.isUseCustomerContact() ? "checked" : ""}>
+                <span>Использовать контакт заказчика как основной</span>
+            </label>
+
+            <div class="form__grid form__grid--two">
+                <label class="form__label">Контактное лицо
+                    <input class="form__control" type="text" name="contactName" value="${siteForm.getContactName()}">
+                </label>
+                <label class="form__label">Должность/роль
+                    <input class="form__control" type="text" name="contactPosition" value="${siteForm.getContactPosition()}">
+                </label>
+                <label class="form__label">Телефон
+                    <input class="form__control" type="tel" name="contactPhone" value="${siteForm.getContactPhone()}">
+                </label>
+                <label class="form__label">Email
+                    <input class="form__control" type="email" name="contactEmail" value="${siteForm.getContactEmail()}">
+                </label>
+            </div>
+
+            <div class="actions">
+                <button class="button button--primary" type="submit">${isEdit ? "Сохранить" : "Создать"}</button>
+                <a class="button" href="${isEdit && siteId != null ? "/sites/" + siteId : "/customers/" + customer.getId()}">Отмена</a>
+            </div>
+        </form>
+    </section>
+</main>
 </body>
 </html>
