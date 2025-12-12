@@ -6,6 +6,8 @@
 @param int totalPages
 @param int totalCount
 @param java.util.Map<Long, Long> siteCounts
+@import java.time.format.DateTimeFormatter
+@var DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -93,7 +95,7 @@
                     <div class="table__row">
                         <div>
                             <div class="table__title">${customer.getName()}</div>
-                            <div class="muted">Создан: ${customer.getCreatedAt()}</div>
+                            <div class="muted">Создан: ${customer.getCreatedAt().format(dateTimeFormatter)}</div>
                         </div>
 
                         <div>
