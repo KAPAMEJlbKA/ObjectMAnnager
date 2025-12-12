@@ -1,5 +1,7 @@
 @param com.kapamejlbka.objectmanager.domain.customer.Customer customer
 @param java.util.List<com.kapamejlbka.objectmanager.domain.customer.Site> sites
+@param String flashSuccess
+@param String flashError
 @import java.time.format.DateTimeFormatter
 @var DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
 <!DOCTYPE html>
@@ -17,8 +19,9 @@
 <header class="topbar">
     <div class="topbar__brand">Object Manager</div>
     <div class="topbar__actions">
-        <a class="button" href="/">К заказчикам</a>
+        <a class="button" href="/customers">К заказчикам</a>
         <a class="button" href="/customers/${customer.getId()}/sites/new">Новый объект</a>
+        <a class="button button--ghost" href="/customers/${customer.getId()}">Редактировать</a>
         <a class="button" href="/logout">Выйти</a>
     </div>
 </header>
@@ -30,6 +33,13 @@
             <h1>${customer.getName()}</h1>
         </div>
     </div>
+
+    @if(flashSuccess != null)
+        <div class="alert alert--success">${flashSuccess}</div>
+    @endif
+    @if(flashError != null)
+        <div class="alert alert--error">${flashError}</div>
+    @endif
 
     <section class="grid">
         <div class="card">

@@ -23,7 +23,7 @@
 <header class="topbar">
     <div class="topbar__brand">Object Manager</div>
     <div class="topbar__actions">
-        <a class="button" href="/customers/${site.getCustomer().getId()}">К заказчику</a>
+        <a class="button" href="/customers/${site.getCustomer().getId()}/view">К заказчику</a>
         <a class="button" href="/sites/${site.getId()}/edit">Редактировать</a>
         <a class="button" href="/logout">Выйти</a>
     </div>

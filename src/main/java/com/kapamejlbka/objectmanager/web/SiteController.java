@@ -72,7 +72,7 @@ public class SiteController {
             return "sites/form";
         }
         redirectAttributes.addFlashAttribute("flashSuccess", "Объект создан");
-        return "redirect:/customers/" + customerId;
+        return "redirect:/customers/" + customerId + "/view";
     }
 
     @GetMapping("/sites/{id}")
