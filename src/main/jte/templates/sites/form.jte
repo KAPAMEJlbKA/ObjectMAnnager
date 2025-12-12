@@ -20,7 +20,7 @@
 <header class="topbar">
     <div class="topbar__brand">Object Manager</div>
     <div class="topbar__actions">
-        <a class="button" href="/customers/${customer.getId()}">К заказчику</a>
+        <a class="button" href="/customers/${customer.getId()}/view">К заказчику</a>
         @if(isEdit && siteId != null)
             <a class="button" href="/sites/${siteId}">К объекту</a>
         @endif
@@ -106,7 +106,7 @@
 
             <div class="actions">
                 <button class="button button--primary" type="submit">${isEdit ? "Сохранить" : "Создать"}</button>
-                <a class="button" href="${isEdit && siteId != null ? "/sites/" + siteId : "/customers/" + customer.getId()}">Отмена</a>
+                <a class="button" href="${isEdit && siteId != null ? "/sites/" + siteId : "/customers/" + customer.getId() + "/view"}">Отмена</a>
             </div>
         </form>
     </section>
