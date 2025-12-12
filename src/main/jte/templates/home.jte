@@ -1,3 +1,4 @@
+@import java.time.format.DateTimeFormatter
 @param java.util.List<com.kapamejlbka.objectmanager.domain.customer.Customer> customers
 @param String query
 @param String sort
@@ -6,7 +7,6 @@
 @param int totalPages
 @param int totalCount
 @param java.util.Map<Long, Long> siteCounts
-@import java.time.format.DateTimeFormatter
 @var DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
 <!DOCTYPE html>
 <html lang="ru">
