@@ -18,6 +18,7 @@
 @param com.kapamejlbka.objectmanager.domain.material.dto.MaterialNormForm editNormForm
 @param String flashSuccess
 @param String flashError
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -83,10 +84,11 @@
                             <input class="form__control" type="email" name="email" value="${userForm.getEmail()}">
                         </label>
                     </div>
+
                     <div class="form__grid form__grid--two">
                         <div class="form__label">Роли
                             <div class="chips">
-                                @for(role : roles)
+                                @for(com.kapamejlbka.objectmanager.domain.user.AppRole role : roles)
                                     <label class="chip">
                                         <input type="checkbox" name="roles" value="${role.getName()}">
                                         <span>${role.getName()}</span>
@@ -94,11 +96,13 @@
                                 @endfor
                             </div>
                         </div>
+
                         <label class="form__label form__label--inline">
                             <input type="checkbox" name="enabled" value="true" checked>
                             <span>Включен</span>
                         </label>
                     </div>
+
                     <button class="button button--primary" type="submit">Создать</button>
                 </form>
             </div>
@@ -110,6 +114,7 @@
                         <h2>Все пользователи</h2>
                     </div>
                 </div>
+
                 <div class="table">
                     <div class="table__row table__row--head">
                         <div>ID</div>
@@ -118,21 +123,25 @@
                         <div>Статус</div>
                         <div>Действия</div>
                     </div>
-                    @for(user : users)
+
+                    @for(com.kapamejlbka.objectmanager.domain.user.AppUser user : users)
                         <div class="table__row">
                             <div>${user.getId()}</div>
+
                             <div>
                                 <div class="table__title">${user.getUsername()}</div>
                                 <div class="muted">${user.getFullName()}</div>
                                 <div class="muted">${user.getEmail()}</div>
                             </div>
+
                             <div>
                                 <div class="chips">
-                                    @for(role : user.getRoles())
+                                    @for(com.kapamejlbka.objectmanager.domain.user.AppRole role : user.getRoles())
                                         <span class="chip chip--static">${role.getName()}</span>
                                     @endfor
                                 </div>
                             </div>
+
                             <div>
                                 @if(user.isEnabled())
                                     <span class="badge badge--green">Активен</span>
@@ -140,6 +149,7 @@
                                     <span class="badge badge--gray">Заблокирован</span>
                                 @endif
                             </div>
+
                             <div class="actions">
                                 <a class="button button--ghost" href="/admin?tab=users&editUserId=${user.getId()}">Править</a>
                                 <form method="post" action="/admin/users/${user.getId()}/status">
@@ -161,25 +171,30 @@
                         <h2>Пользователь #${editUserForm.getId()}</h2>
                     </div>
                 </div>
+
                 <form class="form" method="post" action="/admin/users/${editUserForm.getId()}">
                     <div class="form__grid form__grid--two">
                         <label class="form__label">Логин
                             <input class="form__control" type="text" name="username" value="${editUserForm.getUsername()}" required>
                         </label>
+
                         <label class="form__label">Новый пароль
                             <input class="form__control" type="password" name="newPassword" placeholder="Оставьте пустым, чтобы не менять">
                         </label>
+
                         <label class="form__label">ФИО
                             <input class="form__control" type="text" name="fullName" value="${editUserForm.getFullName()}">
                         </label>
+
                         <label class="form__label">Email
                             <input class="form__control" type="email" name="email" value="${editUserForm.getEmail()}">
                         </label>
                     </div>
+
                     <div class="form__grid form__grid--two">
                         <div class="form__label">Роли
                             <div class="chips">
-                                @for(role : roles)
+                                @for(com.kapamejlbka.objectmanager.domain.user.AppRole role : roles)
                                     <label class="chip">
                                         <input type="checkbox" name="roles" value="${role.getName()}" checked?="${editUserForm.getRoles().contains(role.getName())}">
                                         <span>${role.getName()}</span>
@@ -187,11 +202,13 @@
                                 @endfor
                             </div>
                         </div>
+
                         <label class="form__label form__label--inline">
                             <input type="checkbox" name="enabled" value="true" checked?="${editUserForm.isEnabled()}">
                             <span>Включен</span>
                         </label>
                     </div>
+
                     <button class="button button--primary" type="submit">Сохранить</button>
                     <a class="button" href="/admin?tab=users">Отмена</a>
                 </form>
@@ -207,16 +224,20 @@
                     <h2>Базовые настройки</h2>
                 </div>
             </div>
+
             <form class="form form--narrow" method="post" action="/admin/settings">
                 <label class="form__label">Стандартная длина сброса шкафа, м
                     <input class="form__control" type="number" step="0.01" name="standardCabinetDropLengthMeters" value="${settings.getStandardCabinetDropLengthMeters()}">
                 </label>
+
                 <label class="form__label">Шаг клипс по горизонтали, м
                     <input class="form__control" type="number" step="0.01" name="defaultHorizontalClipStep" value="${settings.getDefaultHorizontalClipStep()}">
                 </label>
+
                 <label class="form__label">Шаг клипс по вертикали, м
                     <input class="form__control" type="number" step="0.01" name="defaultVerticalClipStep" value="${settings.getDefaultVerticalClipStep()}">
                 </label>
+
                 <button class="button button--primary" type="submit">Сохранить</button>
             </form>
         </section>
@@ -231,28 +252,36 @@
                         <h2>Новый материал</h2>
                     </div>
                 </div>
+
                 <form class="form" method="post" action="/admin/materials">
                     <div class="form__grid form__grid--two">
                         <label class="form__label">Код
                             <input class="form__control" type="text" name="code" value="${materialForm.getCode()}" required>
                         </label>
+
                         <label class="form__label">Название
                             <input class="form__control" type="text" name="name" value="${materialForm.getName()}" required>
                         </label>
+
                         <label class="form__label">Единица
                             <input class="form__control" type="text" name="unit" value="${materialForm.getUnit()}" required>
                         </label>
+
                         <label class="form__label">Категория
                             <select class="form__control" name="category">
-                                @for(category : materialCategories)
-                                    <option value="${category.name()}" ${category.equals(materialForm.getCategory()) ? "selected" : ""}>${category.getDisplayNameRu()}</option>
+                                @for(com.kapamejlbka.objectmanager.domain.material.MaterialCategory category : materialCategories)
+                                    <option value="${category.name()}" selected?="${category.equals(materialForm.getCategory())}">
+                                        ${category.getDisplayNameRu()}
+                                    </option>
                                 @endfor
                             </select>
                         </label>
                     </div>
+
                     <label class="form__label">Комментарий
                         <textarea class="form__control" name="notes" rows="3">${materialForm.getNotes()}</textarea>
                     </label>
+
                     <button class="button button--primary" type="submit">Добавить</button>
                 </form>
             </div>
@@ -263,15 +292,18 @@
                         <p class="muted">Список</p>
                         <h2>Материалы</h2>
                     </div>
+
                     <form class="filters" method="get" action="/admin">
                         <input type="hidden" name="tab" value="materials">
                         <input class="form__control" type="text" name="search" placeholder="Поиск" value="${materialQuery}">
+
                         <select class="form__control" name="category">
                             <option value="">Все категории</option>
-                            @for(category : materialCategories)
-                                <option value="${category.name()}" ${category.equals(materialCategory) ? "selected" : ""}>${category.getDisplayNameRu()}</option>
+                            @for(com.kapamejlbka.objectmanager.domain.material.MaterialCategory category : materialCategories)
+                                <option value="${category.name()}" selected?="${category.equals(materialCategory)}">${category.getDisplayNameRu()}</option>
                             @endfor
                         </select>
+
                         <button class="button" type="submit">Найти</button>
                     </form>
                 </div>
@@ -284,7 +316,8 @@
                         <div>Ед.</div>
                         <div>Действия</div>
                     </div>
-                    @for(material : materials)
+
+                    @for(com.kapamejlbka.objectmanager.domain.material.Material material : materials)
                         <div class="table__row">
                             <div>${material.getCode()}</div>
                             <div>
@@ -315,28 +348,34 @@
                         <h2>${editMaterialForm.getName()}</h2>
                     </div>
                 </div>
+
                 <form class="form" method="post" action="/admin/materials/${editMaterialForm.getId()}">
                     <div class="form__grid form__grid--two">
                         <label class="form__label">Код
                             <input class="form__control" type="text" name="code" value="${editMaterialForm.getCode()}" required>
                         </label>
+
                         <label class="form__label">Название
                             <input class="form__control" type="text" name="name" value="${editMaterialForm.getName()}" required>
                         </label>
+
                         <label class="form__label">Единица
                             <input class="form__control" type="text" name="unit" value="${editMaterialForm.getUnit()}" required>
                         </label>
+
                         <label class="form__label">Категория
                             <select class="form__control" name="category">
-                                @for(category : materialCategories)
-                                    <option value="${category.name()}" ${category.equals(editMaterialForm.getCategory()) ? "selected" : ""}>${category.getDisplayNameRu()}</option>
+                                @for(com.kapamejlbka.objectmanager.domain.material.MaterialCategory category : materialCategories)
+                                    <option value="${category.name()}" selected?="${category.equals(editMaterialForm.getCategory())}">${category.getDisplayNameRu()}</option>
                                 @endfor
                             </select>
                         </label>
                     </div>
+
                     <label class="form__label">Комментарий
                         <textarea class="form__control" name="notes" rows="3">${editMaterialForm.getNotes()}</textarea>
                     </label>
+
                     <button class="button button--primary" type="submit">Сохранить</button>
                     <a class="button" href="/admin?tab=materials">Отмена</a>
                 </form>
@@ -353,27 +392,32 @@
                         <h2>Создать норму</h2>
                     </div>
                 </div>
+
                 <form class="form" method="post" action="/admin/norms">
                     <label class="form__label">Контекст
                         <select class="form__control" name="contextType">
-                            @for(context : normContexts)
-                                <option value="${context.name()}" ${context.equals(normForm.getContextType()) ? "selected" : ""}>${normContextNames.get(context.name())}</option>
+                            @for(com.kapamejlbka.objectmanager.domain.material.MaterialNormContext context : normContexts)
+                                <option value="${context.name()}" selected?="${context.equals(normForm.getContextType())}">${normContextNames.get(context.name())}</option>
                             @endfor
                         </select>
                     </label>
+
                     <label class="form__label">Материал
                         <select class="form__control" name="materialId">
-                            @for(material : normMaterials)
-                                <option value="${material.getId()}" ${material.getId().equals(normForm.getMaterialId()) ? "selected" : ""}>${material.getCode()} — ${material.getName()}</option>
+                            @for(com.kapamejlbka.objectmanager.domain.material.Material material : normMaterials)
+                                <option value="${material.getId()}" selected?="${material.getId().equals(normForm.getMaterialId())}">${material.getCode()} — ${material.getName()}</option>
                             @endfor
                         </select>
                     </label>
+
                     <label class="form__label">Формула
                         <input class="form__control" type="text" name="formula" value="${normForm.getFormula()}" required>
                     </label>
+
                     <label class="form__label">Комментарий
                         <textarea class="form__control" name="description" rows="3">${normForm.getDescription()}</textarea>
                     </label>
+
                     <button class="button button--primary" type="submit">Сохранить</button>
                 </form>
             </div>
@@ -385,6 +429,7 @@
                         <h2>Нормы расхода</h2>
                     </div>
                 </div>
+
                 <div class="table">
                     <div class="table__row table__row--head">
                         <div>Контекст</div>
@@ -392,7 +437,8 @@
                         <div>Формула</div>
                         <div>Действия</div>
                     </div>
-                    @for(norm : norms)
+
+                    @for(com.kapamejlbka.objectmanager.domain.material.MaterialNorm norm : norms)
                         <div class="table__row">
                             <div>
                                 <div class="table__title">${normContextNames.get(norm.getContextType().name())}</div>
@@ -422,27 +468,32 @@
                         <h2>Норма #${editNormForm.getId()}</h2>
                     </div>
                 </div>
+
                 <form class="form" method="post" action="/admin/norms/${editNormForm.getId()}">
                     <label class="form__label">Контекст
                         <select class="form__control" name="contextType">
-                            @for(context : normContexts)
-                                <option value="${context.name()}" ${context.equals(editNormForm.getContextType()) ? "selected" : ""}>${normContextNames.get(context.name())}</option>
+                            @for(com.kapamejlbka.objectmanager.domain.material.MaterialNormContext context : normContexts)
+                                <option value="${context.name()}" selected?="${context.equals(editNormForm.getContextType())}">${normContextNames.get(context.name())}</option>
                             @endfor
                         </select>
                     </label>
+
                     <label class="form__label">Материал
                         <select class="form__control" name="materialId">
-                            @for(material : normMaterials)
-                                <option value="${material.getId()}" ${material.getId().equals(editNormForm.getMaterialId()) ? "selected" : ""}>${material.getCode()} — ${material.getName()}</option>
+                            @for(com.kapamejlbka.objectmanager.domain.material.Material material : normMaterials)
+                                <option value="${material.getId()}" selected?="${material.getId().equals(editNormForm.getMaterialId())}">${material.getCode()} — ${material.getName()}</option>
                             @endfor
                         </select>
                     </label>
+
                     <label class="form__label">Формула
                         <input class="form__control" type="text" name="formula" value="${editNormForm.getFormula()}" required>
                     </label>
+
                     <label class="form__label">Комментарий
                         <textarea class="form__control" name="description" rows="3">${editNormForm.getDescription()}</textarea>
                     </label>
+
                     <button class="button button--primary" type="submit">Сохранить</button>
                     <a class="button" href="/admin?tab=norms">Отмена</a>
                 </form>
