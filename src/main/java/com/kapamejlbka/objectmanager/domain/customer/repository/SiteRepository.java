@@ -7,4 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface SiteRepository extends JpaRepository<Site, Long> {
 
     List<Site> findByCustomerId(Long customerId);
+
+    long countByCustomerId(Long customerId);
 }

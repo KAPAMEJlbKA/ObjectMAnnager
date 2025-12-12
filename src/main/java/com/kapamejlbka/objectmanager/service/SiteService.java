@@ -57,6 +57,10 @@ public class SiteService {
         return siteRepository.findByCustomerId(customerId);
     }
 
+    public long countByCustomer(Long customerId) {
+        return siteRepository.countByCustomerId(customerId);
+    }
+
     @Transactional
     public void delete(Long id) {
         Site site = getById(id);
