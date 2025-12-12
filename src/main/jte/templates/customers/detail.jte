@@ -1,5 +1,7 @@
 @param com.kapamejlbka.objectmanager.domain.customer.Customer customer
 @param java.util.List<com.kapamejlbka.objectmanager.domain.customer.Site> sites
+@import java.time.format.DateTimeFormatter
+@var DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -56,11 +58,11 @@
                 </div>
                 <div>
                     <p class="muted">Создан</p>
-                    <p>${customer.getCreatedAt()}</p>
+                    <p>${customer.getCreatedAt().format(dateTimeFormatter)}</p>
                 </div>
                 <div>
                     <p class="muted">Обновлён</p>
-                    <p>${customer.getUpdatedAt()}</p>
+                    <p>${customer.getUpdatedAt().format(dateTimeFormatter)}</p>
                 </div>
             </div>
 
