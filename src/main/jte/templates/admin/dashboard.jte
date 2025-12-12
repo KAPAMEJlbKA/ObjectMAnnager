@@ -63,7 +63,7 @@
                 </li>
             </ul>
 
-            <div class="tab-content mt-3" data-current-tab='@currentTab'>
+            <div class="tab-content mt-3" data-current-tab="@currentTab">
                 <div class="tab-pane @("users".equals(currentTab) ? "active" : "")">
                     @templates.admin.tabs.users(users = users, roles = roles, userForm = userForm, editUserForm = editUserForm, _csrf = _csrf)
                 </div>
