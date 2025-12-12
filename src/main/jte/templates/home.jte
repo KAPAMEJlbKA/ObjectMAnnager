@@ -47,20 +47,23 @@
             <label class="form__label form__label--grow">Имя или ИНН
                 <input class="form__control" type="text" name="q" placeholder="Название или ИНН" value="${query}">
             </label>
+
             <label class="form__label">Сортировка
                 <select class="form__control" name="sort">
-                    <option value="name" ${"name".equalsIgnoreCase(sort) ? "selected" : ""}>По названию</option>
-                    <option value="updated" ${"updated".equalsIgnoreCase(sort) ? "selected" : ""}>По обновлению</option>
-                    <option value="created" ${"created".equalsIgnoreCase(sort) ? "selected" : ""}>По созданию</option>
+                    <option value="name" selected?="${sort != null && "name".equalsIgnoreCase(sort)}">По названию</option>
+                    <option value="updated" selected?="${sort != null && "updated".equalsIgnoreCase(sort)}">По обновлению</option>
+                    <option value="created" selected?="${sort != null && "created".equalsIgnoreCase(sort)}">По созданию</option>
                 </select>
             </label>
+
             <label class="form__label">На странице
                 <select class="form__control" name="size">
-                    <option value="6" ${pageSize == 6 ? "selected" : ""}>6</option>
-                    <option value="12" ${pageSize == 12 ? "selected" : ""}>12</option>
-                    <option value="24" ${pageSize == 24 ? "selected" : ""}>24</option>
+                    <option value="6" selected?="${pageSize == 6}">6</option>
+                    <option value="12" selected?="${pageSize == 12}">12</option>
+                    <option value="24" selected?="${pageSize == 24}">24</option>
                 </select>
             </label>
+
             <button class="button button--primary" type="submit">Искать</button>
         </form>
     </section>
@@ -73,7 +76,7 @@
             </div>
         </div>
 
-        @if(customers.isEmpty())
+        @if(customers == null || customers.isEmpty())
             <p class="muted">Нет заказчиков по заданным условиям.</p>
         @else
             <div class="table">
@@ -85,20 +88,30 @@
                     <div>Объекты</div>
                     <div>Действия</div>
                 </div>
+
                 @for(com.kapamejlbka.objectmanager.domain.customer.Customer customer : customers)
                     <div class="table__row">
                         <div>
                             <div class="table__title">${customer.getName()}</div>
                             <div class="muted">Создан: ${customer.getCreatedAt()}</div>
                         </div>
+
                         <div>
-                            <div class="table__title">${customer.getContactName() == null || customer.getContactName().isBlank() ? "—" : customer.getContactName()}</div>
-                            <div class="muted">${customer.getContactPhone() == null || customer.getContactPhone().isBlank() ? "" : customer.getContactPhone()}</div>
-                            <div class="muted">${customer.getContactEmail() == null || customer.getContactEmail().isBlank() ? "" : customer.getContactEmail()}</div>
+                            <div class="table__title">
+                                ${customer.getContactName() == null || customer.getContactName().isBlank() ? "—" : customer.getContactName()}
+                            </div>
+                            <div class="muted">
+                                ${customer.getContactPhone() == null || customer.getContactPhone().isBlank() ? "" : customer.getContactPhone()}
+                            </div>
+                            <div class="muted">
+                                ${customer.getContactEmail() == null || customer.getContactEmail().isBlank() ? "" : customer.getContactEmail()}
+                            </div>
                         </div>
+
                         <div>${customer.getTaxNumber() == null || customer.getTaxNumber().isBlank() ? "—" : customer.getTaxNumber()}</div>
                         <div>${customer.getCity() == null || customer.getCity().isBlank() ? "—" : customer.getCity()}</div>
-                        <div>${siteCounts.getOrDefault(customer.getId(), 0L)}</div>
+                        <div>${siteCounts == null ? 0 : siteCounts.getOrDefault(customer.getId(), 0L)}</div>
+
                         <div class="actions">
                             <a class="button button--ghost" href="/customers/${customer.getId()}">Карточка</a>
                             <a class="button" href="/customers/${customer.getId()}/sites/new">Новый объект</a>
@@ -111,11 +124,19 @@
         @if(totalPages > 1)
             <div class="pagination">
                 @if(currentPage > 1)
-                    <a class="button" href="/?page=${currentPage - 1}&size=${pageSize}&sort=${sort}${query != null && !query.isBlank() ? "&q=" + query : ""}">Назад</a>
+                    <a class="button"
+                       href="/?page=${currentPage - 1}&size=${pageSize}&sort=${sort}${query != null && !query.isBlank() ? "&q=" + query : ""}">
+                        Назад
+                    </a>
                 @endif
+
                 <span class="muted">Страница ${currentPage} из ${totalPages}</span>
+
                 @if(currentPage < totalPages)
-                    <a class="button" href="/?page=${currentPage + 1}&size=${pageSize}&sort=${sort}${query != null && !query.isBlank() ? "&q=" + query : ""}">Вперёд</a>
+                    <a class="button"
+                       href="/?page=${currentPage + 1}&size=${pageSize}&sort=${sort}${query != null && !query.isBlank() ? "&q=" + query : ""}">
+                        Вперёд
+                    </a>
                 @endif
             </div>
         @endif
