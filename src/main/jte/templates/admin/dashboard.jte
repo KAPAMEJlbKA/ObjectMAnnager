@@ -181,14 +181,14 @@
                             <div class="chips">
                                 @for(role : roles)
                                     <label class="chip">
-                                        <input type="checkbox" name="roles" value="${role.getName()}" @if(editUserForm.getRoles().contains(role.getName()))checked@endif>
+                                        <input type="checkbox" name="roles" value="${role.getName()}" checked?="${editUserForm.getRoles().contains(role.getName())}">
                                         <span>${role.getName()}</span>
                                     </label>
                                 @endfor
                             </div>
                         </div>
                         <label class="form__label form__label--inline">
-                            <input type="checkbox" name="enabled" value="true" @if(editUserForm.isEnabled())checked@endif>
+                            <input type="checkbox" name="enabled" value="true" checked?="${editUserForm.isEnabled()}">
                             <span>Включен</span>
                         </label>
                     </div>
