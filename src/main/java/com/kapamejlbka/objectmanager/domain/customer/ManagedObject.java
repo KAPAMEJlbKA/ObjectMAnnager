@@ -3,6 +3,8 @@ package com.kapamejlbka.objectmanager.domain.customer;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -49,6 +51,10 @@ public class ManagedObject {
     @Column(name = "longitude")
     private Double longitude;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ManagedObjectStatus status;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
@@ -69,6 +75,7 @@ public class ManagedObject {
 
     public ManagedObject() {
         this.primaryDataVersion = 1;
+        this.status = ManagedObjectStatus.NOT_CALCULATED;
     }
 
     public ManagedObject(String name, String description, String primaryData,
@@ -82,6 +89,7 @@ public class ManagedObject {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = this.createdAt;
         this.primaryDataVersion = 1;
+        this.status = ManagedObjectStatus.NOT_CALCULATED;
     }
 
     public UUID getId() {
@@ -142,6 +150,14 @@ public class ManagedObject {
 
     public void setLongitude(Double longitude) {
         this.longitude = longitude;
+    }
+
+    public ManagedObjectStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ManagedObjectStatus status) {
+        this.status = status;
     }
 
     public LocalDateTime getCreatedAt() {

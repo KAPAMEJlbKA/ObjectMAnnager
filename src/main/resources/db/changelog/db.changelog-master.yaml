@@ -11,3 +11,5 @@ databaseChangeLog:
       file: db/changelog/20241105-0005-add-route-main-material.yaml
   - include:
       file: db/changelog/20241126-0006-align-material-enums.yaml
+  - include:
+      file: db/changelog/20241201-0007-add-managed-object-status.yaml

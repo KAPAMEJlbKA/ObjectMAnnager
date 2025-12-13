@@ -95,6 +95,36 @@
                 </div>
             </div>
         </div>
+
+        <div class="card">
+            <div class="card__header">
+                <div>
+                    <p class="muted">Редактор</p>
+                    <h2>Статус расчётов</h2>
+                </div>
+                <div class="actions">
+                    @if(object.getStatus() != com.kapamejlbka.objectmanager.domain.customer.ManagedObjectStatus.IN_PROGRESS)
+                        <form method="post" action="/objects/${object.getId()}/editor/start">
+                            <button class="button button--ghost" type="submit">Открыть редактор</button>
+                        </form>
+                    @endif
+                    <form method="post" action="/objects/${object.getId()}/calculation/reset" style="margin-left: 8px;">
+                        <button class="button button--ghost" type="submit">Сбросить</button>
+                    </form>
+                    <form method="post" action="/objects/${object.getId()}/calculation/complete" style="margin-left: 8px;">
+                        <button class="button" type="submit">Отметить как рассчитан</button>
+                    </form>
+                </div>
+            </div>
+            <p class="muted">Текущий статус: ${object.getStatus()}</p>
+            @if(object.getStatus() == com.kapamejlbka.objectmanager.domain.customer.ManagedObjectStatus.IN_PROGRESS)
+                <div class="alert alert--error" style="margin-top: 12px;">Редактор уже открыт. Параллельное редактирование запрещено.</div>
+            @elseif(object.getStatus() == com.kapamejlbka.objectmanager.domain.customer.ManagedObjectStatus.CALCULATED)
+                <p class="muted" style="margin-top: 12px;">Последний расчёт успешно завершён.</p>
+            @else
+                <p class="muted" style="margin-top: 12px;">Расчёт ещё не запускался или был сброшен.</p>
+            @endif
+        </div>
     </section>
 
     <section class="card">
