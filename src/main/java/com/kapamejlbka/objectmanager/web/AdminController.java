@@ -6,12 +6,14 @@ import com.kapamejlbka.objectmanager.domain.material.MaterialNorm;
 import com.kapamejlbka.objectmanager.domain.material.MaterialNormContext;
 import com.kapamejlbka.objectmanager.domain.material.dto.MaterialForm;
 import com.kapamejlbka.objectmanager.domain.material.dto.MaterialNormForm;
+import com.kapamejlbka.objectmanager.domain.customer.ProjectCustomer;
 import com.kapamejlbka.objectmanager.domain.settings.dto.CalculationSettingsDto;
 import com.kapamejlbka.objectmanager.domain.user.AppRole;
 import com.kapamejlbka.objectmanager.domain.user.AppUser;
 import com.kapamejlbka.objectmanager.domain.user.dto.UserCreateRequest;
 import com.kapamejlbka.objectmanager.domain.user.dto.UserUpdateRequest;
 import com.kapamejlbka.objectmanager.model.DatabaseConnectionSettings;
+import com.kapamejlbka.objectmanager.service.CustomerAccessService;
 import com.kapamejlbka.objectmanager.service.DatabaseSettingsService;
 import com.kapamejlbka.objectmanager.service.MaterialNormService;
 import com.kapamejlbka.objectmanager.service.MaterialService;
@@ -42,18 +44,21 @@ public class AdminController {
     private final MaterialService materialService;
     private final MaterialNormService materialNormService;
     private final DatabaseSettingsService databaseSettingsService;
+    private final CustomerAccessService customerAccessService;
 
     public AdminController(
             UserService userService,
             SettingsService settingsService,
             MaterialService materialService,
             MaterialNormService materialNormService,
-            DatabaseSettingsService databaseSettingsService) {
+            DatabaseSettingsService databaseSettingsService,
+            CustomerAccessService customerAccessService) {
         this.userService = userService;
         this.settingsService = settingsService;
         this.materialService = materialService;
         this.materialNormService = materialNormService;
         this.databaseSettingsService = databaseSettingsService;
+        this.customerAccessService = customerAccessService;
     }
 
     @GetMapping("/admin")
@@ -64,8 +69,9 @@ public class AdminController {
             @RequestParam(value = "editNormId", required = false) Long editNormId,
             @RequestParam(value = "search", required = false) String search,
             @RequestParam(value = "category", required = false) String category,
+            @RequestParam(value = "customer", required = false) UUID selectedCustomer,
             Model model) {
-        populateDashboardModel(model, tab, editUserId, editMaterialId, editNormId, search, category);
+        populateDashboardModel(model, tab, editUserId, editMaterialId, editNormId, search, category, selectedCustomer);
         return "admin/dashboard";
     }
 
@@ -154,6 +160,42 @@ public class AdminController {
             redirectAttributes.addAttribute("editMaterialId", id);
         }
         redirectAttributes.addAttribute("tab", "materials");
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/customers/{id}/access")
+    public String grantCustomerAccess(
+            @PathVariable("id") UUID customerId,
+            @RequestParam(value = "customerId", required = false) UUID customerIdFromForm,
+            @RequestParam("userId") Long userId,
+            RedirectAttributes redirectAttributes) {
+        try {
+            UUID targetCustomer = customerIdFromForm == null ? customerId : customerIdFromForm;
+            customerAccessService.grantAccess(targetCustomer, userId);
+            redirectAttributes.addFlashAttribute("flashSuccess", "Доступ выдан");
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("flashError", ex.getMessage());
+        }
+        redirectAttributes.addAttribute("tab", "access");
+        redirectAttributes.addAttribute("customer", customerIdFromForm == null ? customerId : customerIdFromForm);
+        return "redirect:/admin";
+    }
+
+    @PostMapping("/admin/customers/{id}/access/revoke")
+    public String revokeCustomerAccess(
+            @PathVariable("id") UUID customerId,
+            @RequestParam(value = "customerId", required = false) UUID customerIdFromForm,
+            @RequestParam("userId") Long userId,
+            RedirectAttributes redirectAttributes) {
+        try {
+            UUID targetCustomer = customerIdFromForm == null ? customerId : customerIdFromForm;
+            customerAccessService.revokeAccess(targetCustomer, userId);
+            redirectAttributes.addFlashAttribute("flashSuccess", "Доступ удалён");
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("flashError", ex.getMessage());
+        }
+        redirectAttributes.addAttribute("tab", "access");
+        redirectAttributes.addAttribute("customer", customerIdFromForm == null ? customerId : customerIdFromForm);
         return "redirect:/admin";
     }
 
@@ -288,7 +330,8 @@ public class AdminController {
             Long editMaterialId,
             Long editNormId,
             String search,
-            String category) {
+            String category,
+            UUID selectedCustomer) {
         String activeTab = (tab == null || tab.isBlank()) ? "users" : tab;
         model.addAttribute("activeTab", activeTab);
 
@@ -366,6 +409,16 @@ public class AdminController {
                 .sorted(Comparator.comparing(DatabaseConnectionSettings::getName, String.CASE_INSENSITIVE_ORDER))
                 .collect(Collectors.toList());
         model.addAttribute("connections", connections);
+
+        List<ProjectCustomer> customers = customerAccessService.findAll().stream()
+                .sorted(Comparator.comparing(ProjectCustomer::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+        UUID effectiveCustomer = selectedCustomer;
+        if (effectiveCustomer == null && !customers.isEmpty()) {
+            effectiveCustomer = customers.get(0).getId();
+        }
+        model.addAttribute("projectCustomers", customers);
+        model.addAttribute("selectedCustomer", effectiveCustomer);
     }
 
     private void normalizeUserForm(UserCreateRequest form) {

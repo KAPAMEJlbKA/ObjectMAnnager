@@ -1,19 +1,26 @@
 package com.kapamejlbka.objectmanager.domain.customer;
 
+import com.kapamejlbka.objectmanager.domain.user.AppUser;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -41,6 +48,17 @@ public class ProjectCustomer {
     private List<String> contactPhones = new ArrayList<>();
 
     private LocalDateTime createdAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private AppUser createdBy;
+
+    @ManyToMany
+    @JoinTable(
+            name = "customer_user_access",
+            joinColumns = @JoinColumn(name = "customer_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private Set<AppUser> owners = new HashSet<>();
 
     @OneToMany(mappedBy = "customer")
     private List<ManagedObject> objects = new ArrayList<>();
@@ -120,6 +138,33 @@ public class ProjectCustomer {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public AppUser getCreatedBy() {
+        return createdBy;
+    }
+
+    public void setCreatedBy(AppUser createdBy) {
+        this.createdBy = createdBy;
+        if (createdBy != null) {
+            addOwner(createdBy);
+        }
+    }
+
+    public Set<AppUser> getOwners() {
+        return Collections.unmodifiableSet(owners);
+    }
+
+    public void addOwner(AppUser owner) {
+        if (owner != null) {
+            owners.add(owner);
+        }
+    }
+
+    public void removeOwner(AppUser owner) {
+        if (owner != null) {
+            owners.remove(owner);
+        }
     }
 
     public List<ManagedObject> getObjects() {

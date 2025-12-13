@@ -29,26 +29,35 @@ public class ManagedObjectService {
     private final ObjectChangeRepository objectChangeRepository;
     private final FileStorageService storageService;
     private final StoredFileRepository storedFileRepository;
+    private final AccessControlService accessControlService;
 
     public ManagedObjectService(
             ManagedObjectRepository managedObjectRepository,
             ProjectCustomerRepository customerRepository,
             ObjectChangeRepository objectChangeRepository,
             FileStorageService storageService,
-            StoredFileRepository storedFileRepository) {
+            StoredFileRepository storedFileRepository,
+            AccessControlService accessControlService) {
         this.managedObjectRepository = managedObjectRepository;
         this.customerRepository = customerRepository;
         this.objectChangeRepository = objectChangeRepository;
         this.storageService = storageService;
         this.storedFileRepository = storedFileRepository;
+        this.accessControlService = accessControlService;
     }
 
-    public List<ManagedObject> listVisibleObjects() {
-        return managedObjectRepository.findAllByDeletionRequestedFalseOrderByCreatedAtDesc();
+    public List<ManagedObject> listVisibleObjects(AppUser requester) {
+        if (accessControlService.isAdmin(requester)) {
+            return managedObjectRepository.findAllByDeletionRequestedFalseOrderByCreatedAtDesc();
+        }
+        return managedObjectRepository.findAllVisibleForUser(requester);
     }
 
-    public List<ManagedObject> listPendingDeletion() {
-        return managedObjectRepository.findAllDeletionRequested();
+    public List<ManagedObject> listPendingDeletion(AppUser requester) {
+        if (accessControlService.isAdmin(requester)) {
+            return managedObjectRepository.findAllDeletionRequested();
+        }
+        return managedObjectRepository.findAllDeletionRequestedForUser(requester);
     }
 
     public ManagedObject getById(UUID id) {
@@ -59,6 +68,7 @@ public class ManagedObjectService {
     @Transactional
     public ManagedObject startEditing(UUID id, AppUser user) {
         ManagedObject managedObject = getById(id);
+        accessControlService.ensureCanEditObject(managedObject, user);
         if (managedObject.getStatus() == ManagedObjectStatus.IN_PROGRESS) {
             throw new IllegalStateException("Объект уже редактируется другим пользователем");
         }
@@ -69,6 +79,7 @@ public class ManagedObjectService {
     @Transactional
     public ManagedObject markCalculated(UUID id, AppUser user) {
         ManagedObject managedObject = getById(id);
+        accessControlService.ensureCanEditObject(managedObject, user);
         updateStatus(managedObject, ManagedObjectStatus.CALCULATED, user);
         return managedObject;
     }
@@ -76,6 +87,7 @@ public class ManagedObjectService {
     @Transactional
     public ManagedObject resetStatus(UUID id, AppUser user) {
         ManagedObject managedObject = getById(id);
+        accessControlService.ensureCanEditObject(managedObject, user);
         updateStatus(managedObject, ManagedObjectStatus.NOT_CALCULATED, user);
         return managedObject;
     }
@@ -89,6 +101,8 @@ public class ManagedObjectService {
         ManagedObject managedObject = new ManagedObject(name, description, null, customer, latitude, longitude);
         managedObject.setCreatedAt(LocalDateTime.now());
         managedObject.setUpdatedAt(LocalDateTime.now());
+        managedObject.setCreatedBy(creator);
+        customer.getOwners().forEach(managedObject::addOwner);
         ManagedObject saved = managedObjectRepository.save(managedObject);
         ObjectChange change = new ObjectChange(ObjectChangeType.CREATED, null, null, null,
                 "Создан объект пользователем " + creator.getUsername());
@@ -103,6 +117,7 @@ public class ManagedObjectService {
                                UUID customerId, Double latitude, Double longitude,
                                AppUser editor) {
         ManagedObject managedObject = getById(id);
+        accessControlService.ensureCanEditObject(managedObject, editor);
         ProjectCustomer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found: " + customerId));
         if (!Objects.equals(managedObject.getName(), name)) {
@@ -143,6 +158,7 @@ public class ManagedObjectService {
     @Transactional
     public ManagedObject updatePrimaryData(UUID id, String primaryData, AppUser editor) {
         ManagedObject managedObject = getById(id);
+        accessControlService.ensureCanEditObject(managedObject, editor);
         if (!Objects.equals(managedObject.getPrimaryData(), primaryData)) {
             recordChange(managedObject, editor, ObjectChangeType.UPDATED,
                     "primaryData", managedObject.getPrimaryData(), primaryData);
@@ -158,6 +174,7 @@ public class ManagedObjectService {
     @Transactional
     public StoredFile addFile(UUID objectId, MultipartFile file, AppUser uploader) {
         ManagedObject managedObject = getById(objectId);
+        accessControlService.ensureCanEditObject(managedObject, uploader);
         StoredFile storedFile = storageService.store(managedObject, file);
         managedObject.addFile(storedFile);
         managedObject.setUpdatedAt(LocalDateTime.now());
@@ -185,6 +202,7 @@ public class ManagedObjectService {
     @Transactional
     public void requestDeletion(UUID objectId, AppUser requester) {
         ManagedObject managedObject = getById(objectId);
+        accessControlService.ensureCanEditObject(managedObject, requester);
         managedObject.setDeletionRequested(true);
         managedObject.setDeletionRequestedAt(LocalDateTime.now());
         managedObject.setDeletionRequestedBy(requester);
@@ -196,6 +214,7 @@ public class ManagedObjectService {
     @Transactional
     public void revokeDeletion(UUID objectId, AppUser requester) {
         ManagedObject managedObject = getById(objectId);
+        accessControlService.ensureCanEditObject(managedObject, requester);
         managedObject.setDeletionRequested(false);
         managedObject.setDeletionRequestedAt(null);
         managedObject.setDeletionRequestedBy(null);
