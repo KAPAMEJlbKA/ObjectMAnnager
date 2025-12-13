@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20241201-0007-add-managed-object-status
+      author: assistant
+      changes:
+        - addColumn:
+            tableName: managed_objects
+            columns:
+              - column:
+                  name: status
+                  type: varchar(32)
+                  defaultValue: "NOT_CALCULATED"
+                  constraints:
+                    nullable: false
+        - addCheckConstraint:
+            tableName: managed_objects
+            constraintName: chk_managed_object_status
+            checkConstraint: "status in ('NOT_CALCULATED','IN_PROGRESS','CALCULATED')"

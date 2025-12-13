@@ -1,6 +1,7 @@
 package com.kapamejlbka.objectmanager.service;
 
 import com.kapamejlbka.objectmanager.domain.customer.ManagedObject;
+import com.kapamejlbka.objectmanager.domain.customer.ManagedObjectStatus;
 import com.kapamejlbka.objectmanager.domain.customer.ObjectChange;
 import com.kapamejlbka.objectmanager.domain.customer.ObjectChangeType;
 import com.kapamejlbka.objectmanager.domain.customer.ProjectCustomer;
@@ -53,6 +54,30 @@ public class ManagedObjectService {
     public ManagedObject getById(UUID id) {
         return managedObjectRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Object not found: " + id));
+    }
+
+    @Transactional
+    public ManagedObject startEditing(UUID id, AppUser user) {
+        ManagedObject managedObject = getById(id);
+        if (managedObject.getStatus() == ManagedObjectStatus.IN_PROGRESS) {
+            throw new IllegalStateException("Объект уже редактируется другим пользователем");
+        }
+        updateStatus(managedObject, ManagedObjectStatus.IN_PROGRESS, user);
+        return managedObject;
+    }
+
+    @Transactional
+    public ManagedObject markCalculated(UUID id, AppUser user) {
+        ManagedObject managedObject = getById(id);
+        updateStatus(managedObject, ManagedObjectStatus.CALCULATED, user);
+        return managedObject;
+    }
+
+    @Transactional
+    public ManagedObject resetStatus(UUID id, AppUser user) {
+        ManagedObject managedObject = getById(id);
+        updateStatus(managedObject, ManagedObjectStatus.NOT_CALCULATED, user);
+        return managedObject;
     }
 
     @Transactional
@@ -124,6 +149,7 @@ public class ManagedObjectService {
             managedObject.setPrimaryData(primaryData);
             managedObject.setPrimaryDataVersion(2);
             managedObject.setUpdatedAt(LocalDateTime.now());
+            updateStatus(managedObject, ManagedObjectStatus.CALCULATED, editor);
             managedObjectRepository.save(managedObject);
         }
         return managedObject;
@@ -184,6 +210,20 @@ public class ManagedObjectService {
         recordChange(managedObject, admin, ObjectChangeType.DELETED, null, null,
                 "Объект \"" + managedObject.getName() + "\" удалён администратором " + admin.getUsername());
         managedObjectRepository.delete(managedObject);
+    }
+
+    private void updateStatus(ManagedObject managedObject, ManagedObjectStatus newStatus, AppUser user) {
+        ManagedObjectStatus previousStatus = managedObject.getStatus();
+        if (previousStatus == newStatus) {
+            return;
+        }
+        managedObject.setStatus(newStatus);
+        managedObject.setUpdatedAt(LocalDateTime.now());
+        managedObjectRepository.save(managedObject);
+        recordChange(managedObject, user, ObjectChangeType.UPDATED,
+                "status",
+                previousStatus == null ? null : previousStatus.name(),
+                newStatus == null ? null : newStatus.name());
     }
 
     private void recordChange(ManagedObject managedObject, AppUser user, ObjectChangeType type,

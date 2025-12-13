@@ -49,6 +49,34 @@ public class ManagedObjectController {
         return "objects/detail";
     }
 
+    @PostMapping("/objects/{id}/editor/start")
+    public String startEditing(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
+        AppUser currentUser = getCurrentUser();
+        try {
+            managedObjectService.startEditing(id, currentUser);
+            redirectAttributes.addFlashAttribute("flashSuccess", "Редактор открыт, объект заблокирован для других пользователей");
+        } catch (IllegalStateException ex) {
+            redirectAttributes.addFlashAttribute("flashError", ex.getMessage());
+        }
+        return "redirect:/objects/" + id;
+    }
+
+    @PostMapping("/objects/{id}/calculation/complete")
+    public String completeCalculation(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
+        AppUser currentUser = getCurrentUser();
+        managedObjectService.markCalculated(id, currentUser);
+        redirectAttributes.addFlashAttribute("flashSuccess", "Статус объекта обновлён на CALCULATED");
+        return "redirect:/objects/" + id;
+    }
+
+    @PostMapping("/objects/{id}/calculation/reset")
+    public String resetCalculation(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
+        AppUser currentUser = getCurrentUser();
+        managedObjectService.resetStatus(id, currentUser);
+        redirectAttributes.addFlashAttribute("flashSuccess", "Статус объекта сброшен на NOT_CALCULATED");
+        return "redirect:/objects/" + id;
+    }
+
     @PostMapping("/objects/{id}/deletion/request")
     public String requestDeletion(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
         ManagedObject managedObject = managedObjectService.getById(id);
