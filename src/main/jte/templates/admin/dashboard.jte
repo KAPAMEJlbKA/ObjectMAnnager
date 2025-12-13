@@ -17,6 +17,8 @@
 @param java.util.Map<String, String> normContextNames
 @param com.kapamejlbka.objectmanager.domain.material.dto.MaterialNormForm editNormForm
 @param java.util.List<com.kapamejlbka.objectmanager.model.DatabaseConnectionSettings> connections
+@param java.util.List<com.kapamejlbka.objectmanager.domain.customer.ProjectCustomer> projectCustomers
+@param java.util.UUID selectedCustomer
 @param String flashSuccess
 @param String flashError
 
@@ -56,6 +58,7 @@
 
     <div class="tabs">
         <a class="tabs__item ${"users".equals(activeTab) ? "tabs__item--active" : ""}" href="/admin?tab=users">Пользователи</a>
+        <a class="tabs__item ${"access".equals(activeTab) ? "tabs__item--active" : ""}" href="/admin?tab=access">Доступ</a>
         <a class="tabs__item ${"settings".equals(activeTab) ? "tabs__item--active" : ""}" href="/admin?tab=settings">Настройки расчётов</a>
         <a class="tabs__item ${"materials".equals(activeTab) ? "tabs__item--active" : ""}" href="/admin?tab=materials">Материалы</a>
         <a class="tabs__item ${"norms".equals(activeTab) ? "tabs__item--active" : ""}" href="/admin?tab=norms">Нормы</a>
@@ -216,6 +219,84 @@
                 </form>
             </section>
         @endif
+    @endif
+
+    @if("access".equals(activeTab))
+        <section class="grid">
+            <div class="card">
+                <div class="card__header">
+                    <div>
+                        <p class="muted">Назначение</p>
+                        <h2>Доступ к заказчикам</h2>
+                    </div>
+                </div>
+
+                @if(projectCustomers.isEmpty())
+                    <p class="muted">Нет заказчиков для назначения доступа.</p>
+                @else
+                    <form class="form" method="post" action="/admin/customers/${selectedCustomer}/access">
+                        <div class="form__grid form__grid--two">
+                            <label class="form__label">Заказчик
+                                <select class="form__control" name="customerId" onchange="location.href='/admin?tab=access&customer=' + this.value">
+                                    @for(com.kapamejlbka.objectmanager.domain.customer.ProjectCustomer customer : projectCustomers)
+                                        <option value="${customer.getId()}" selected?="${customer.getId().equals(selectedCustomer)}">${customer.getName()}</option>
+                                    @endfor
+                                </select>
+                            </label>
+
+                            <label class="form__label">Пользователь
+                                <select class="form__control" name="userId">
+                                    @for(com.kapamejlbka.objectmanager.domain.user.AppUser user : users)
+                                        <option value="${user.getId()}">${user.getUsername()} — ${user.getFullName()}</option>
+                                    @endfor
+                                </select>
+                            </label>
+                        </div>
+                        <button class="button button--primary" type="submit">Выдать доступ</button>
+                    </form>
+                @endif
+            </div>
+
+            <div class="card">
+                <div class="card__header">
+                    <div>
+                        <p class="muted">Список</p>
+                        <h2>Ответственные по заказчикам</h2>
+                    </div>
+                </div>
+
+                <div class="table">
+                    <div class="table__row table__row--head">
+                        <div>Заказчик</div>
+                        <div>Создал</div>
+                        <div>Доступ имеют</div>
+                        <div>Действия</div>
+                    </div>
+
+                    @for(com.kapamejlbka.objectmanager.domain.customer.ProjectCustomer customer : projectCustomers)
+                        <div class="table__row">
+                            <div>${customer.getName()}</div>
+                            <div>${customer.getCreatedBy() == null ? "—" : customer.getCreatedBy().getUsername()}</div>
+                            <div>
+                                <div class="chips">
+                                    @for(com.kapamejlbka.objectmanager.domain.user.AppUser owner : customer.getOwners())
+                                        <span class="chip chip--static">${owner.getUsername()}</span>
+                                    @endfor
+                                </div>
+                            </div>
+                            <div class="actions">
+                                @for(com.kapamejlbka.objectmanager.domain.user.AppUser owner : customer.getOwners())
+                                    <form method="post" action="/admin/customers/${customer.getId()}/access/revoke" style="display: inline-block;">
+                                        <input type="hidden" name="userId" value="${owner.getId()}">
+                                        <button class="button button--ghost" type="submit">Убрать ${owner.getUsername()}</button>
+                                    </form>
+                                @endfor
+                            </div>
+                        </div>
+                    @endfor
+                </div>
+            </div>
+        </section>
     @endif
 
     @if("settings".equals(activeTab))

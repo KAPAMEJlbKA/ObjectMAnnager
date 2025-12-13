@@ -2,14 +2,12 @@ package com.kapamejlbka.objectmanager.web;
 
 import com.kapamejlbka.objectmanager.domain.customer.ManagedObject;
 import com.kapamejlbka.objectmanager.domain.customer.ObjectChange;
-import com.kapamejlbka.objectmanager.domain.customer.ObjectChangeType;
-import com.kapamejlbka.objectmanager.domain.user.AppRole;
 import com.kapamejlbka.objectmanager.domain.user.AppUser;
+import com.kapamejlbka.objectmanager.service.AccessControlService;
 import com.kapamejlbka.objectmanager.service.ManagedObjectService;
 import com.kapamejlbka.objectmanager.service.UserService;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -28,10 +26,13 @@ public class ManagedObjectController {
 
     private final ManagedObjectService managedObjectService;
     private final UserService userService;
+    private final AccessControlService accessControlService;
 
-    public ManagedObjectController(ManagedObjectService managedObjectService, UserService userService) {
+    public ManagedObjectController(ManagedObjectService managedObjectService, UserService userService,
+                                   AccessControlService accessControlService) {
         this.managedObjectService = managedObjectService;
         this.userService = userService;
+        this.accessControlService = accessControlService;
     }
 
     @GetMapping("/objects/{id}")
@@ -39,7 +40,8 @@ public class ManagedObjectController {
         ManagedObject managedObject = managedObjectService.getById(id);
         List<ObjectChange> changes = managedObjectService.getChangeHistory(id);
         AppUser currentUser = getCurrentUser();
-        boolean isAuthor = isAuthor(currentUser, changes);
+        accessControlService.ensureCanViewObject(managedObject, currentUser);
+        boolean isAuthor = isAuthor(currentUser, managedObject);
         model.addAttribute("object", managedObject);
         model.addAttribute("changes", changes);
         model.addAttribute("isAuthor", isAuthor);
@@ -81,7 +83,8 @@ public class ManagedObjectController {
     public String requestDeletion(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
         ManagedObject managedObject = managedObjectService.getById(id);
         AppUser currentUser = getCurrentUser();
-        boolean isAuthor = isAuthor(currentUser, managedObjectService.getChangeHistory(id));
+        accessControlService.ensureCanEditObject(managedObject, currentUser);
+        boolean isAuthor = isAuthor(currentUser, managedObject);
         if (!isAuthor && !isAdmin(currentUser)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Только автор объекта или администратор могут запросить удаление");
@@ -99,7 +102,8 @@ public class ManagedObjectController {
     public String revokeDeletion(@PathVariable("id") UUID id, RedirectAttributes redirectAttributes) {
         ManagedObject managedObject = managedObjectService.getById(id);
         AppUser currentUser = getCurrentUser();
-        boolean isAuthor = isAuthor(currentUser, managedObjectService.getChangeHistory(id));
+        accessControlService.ensureCanEditObject(managedObject, currentUser);
+        boolean isAuthor = isAuthor(currentUser, managedObject);
         boolean canRevoke = canRevoke(managedObject, currentUser, isAuthor);
         if (!canRevoke) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
@@ -134,23 +138,15 @@ public class ManagedObjectController {
         return requestedBy != null && Objects.equals(requestedBy.getId(), currentUser.getId());
     }
 
-    private boolean isAuthor(AppUser currentUser, List<ObjectChange> changes) {
-        Optional<ObjectChange> creation = changes.stream()
-                .filter(change -> change.getChangeType() == ObjectChangeType.CREATED)
-                .reduce((first, second) -> second);
-        if (creation.isEmpty() || creation.get().getUser() == null) {
+    private boolean isAuthor(AppUser currentUser, ManagedObject object) {
+        if (currentUser == null || object.getCreatedBy() == null) {
             return false;
         }
-        return Objects.equals(creation.get().getUser().getId(), currentUser.getId());
+        return Objects.equals(object.getCreatedBy().getId(), currentUser.getId());
     }
 
     private boolean isAdmin(AppUser user) {
-        if (user == null) {
-            return false;
-        }
-        return user.getRoles().stream()
-                .map(AppRole::getName)
-                .anyMatch(role -> "ADMIN".equalsIgnoreCase(role));
+        return accessControlService.isAdmin(user);
     }
 
     private AppUser getCurrentUser() {
