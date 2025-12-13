@@ -151,6 +151,11 @@ public class ManagedObjectService {
         return storageService.loadAsResource(storedFile);
     }
 
+    public List<ObjectChange> getChangeHistory(UUID objectId) {
+        ManagedObject managedObject = getById(objectId);
+        return objectChangeRepository.findAllByManagedObjectOrderByChangedAtDesc(managedObject);
+    }
+
     @Transactional
     public void requestDeletion(UUID objectId, AppUser requester) {
         ManagedObject managedObject = getById(objectId);
