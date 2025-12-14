@@ -68,11 +68,11 @@
                 </div>
                 <div>
                     <p class="muted">Создан</p>
-                    <p>${customer.getCreatedAt().format(dateTimeFormatter)}</p>
+                    <p>${customer.getCreatedAt() == null ? "—" : customer.getCreatedAt().format(dateTimeFormatter)}</p>
                 </div>
                 <div>
                     <p class="muted">Обновлён</p>
-                    <p>${customer.getUpdatedAt().format(dateTimeFormatter)}</p>
+                    <p>${customer.getUpdatedAt() == null ? "—" : customer.getUpdatedAt().format(dateTimeFormatter)}</p>
                 </div>
             </div>
 
@@ -125,7 +125,7 @@
                         <div>Контакты</div>
                         <div>Действия</div>
                     </div>
-                    @for(com.kapamejlbka.objectmanager.domain.customer.Site site : sites)
+                    @for(var site : sites)
                         <div class="table__row">
                             <div class="table__title">${site.getName()}</div>
                             <div>${site.getFullAddress() == null || site.getFullAddress().isBlank() ? "—" : site.getFullAddress()}</div>

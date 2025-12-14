@@ -8,6 +8,7 @@
 @param java.util.List<com.kapamejlbka.objectmanager.domain.customer.SiteAttachment> attachments
 @param String flashSuccess
 @param String flashError
+@import java.time.format.DateTimeFormatter
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -69,7 +70,7 @@
                     <div class="stat__label">Узлы</div>
                 </div>
                 <div class="stat">
-                    <div class="stat__value">${materialItemCount == null ? "—" : materialItemCount}</div>
+                    <div class="stat__value">${materialItemCount == null ? "—" : String.valueOf(materialItemCount)}</div>
                     <div class="stat__label">Материалы</div>
                 </div>
             </div>
@@ -155,15 +156,15 @@
                     <div>Статус</div>
                     <div>Действия</div>
                 </div>
-                @for(com.kapamejlbka.objectmanager.domain.calculation.SystemCalculation calc : calculations)
+                @for(var calc : calculations)
                     <div class="table__row">
                         <div>${calc.getId()}</div>
                         <div>
                             <div class="table__title">${calc.getName()}</div>
                             <div class="muted">${calc.getDescription()}</div>
                         </div>
-                        <div>${calc.getSystemType()}</div>
-                        <div>${calc.getStatus()}</div>
+                        <div>${calc.getSystemType() == null ? "—" : calc.getSystemType().toString()}</div>
+                        <div>${calc.getStatus() == null ? "—" : calc.getStatus().toString()}</div>
                         <div class="actions">
                             <a class="button button--primary" href="/calculations/${calc.getId()}/wizard/step1">Открыть</a>
                         </div>
@@ -183,7 +184,9 @@
         @if(calculationResult == null)
             <p class="muted">Нет выполненного расчёта. Заполните данные, чтобы увидеть материалы.</p>
         @else
-            <p class="muted">Время расчёта: ${calculationResult.executedAt()}</p>
+            <p class="muted">Время расчёта: ${calculationResult.executedAt() == null
+                ? "—"
+                : calculationResult.executedAt().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))}</p>
             <div class="table">
                 <div class="table__row table__row--head">
                     <div>Код</div>
@@ -192,11 +195,11 @@
                     <div>Ед.</div>
                     <div>Кол-во</div>
                 </div>
-                @for(com.kapamejlbka.objectmanager.domain.calcengine.MaterialItemResult item : calculationResult.items())
+                @for(var item : calculationResult.items())
                     <div class="table__row">
                         <div>${item.materialCode()}</div>
                         <div class="table__title">${item.materialName()}</div>
-                        <div>${item.category() != null ? item.category().getName() : ""}</div>
+                        <div>${item.category() == null ? "" : item.category().toString()}</div>
                         <div>${item.unit()}</div>
                         <div>${item.quantity()}</div>
                     </div>
@@ -224,12 +227,12 @@
                     <div>Размер</div>
                     <div>Действия</div>
                 </div>
-                @for(com.kapamejlbka.objectmanager.domain.customer.SiteAttachment attachment : attachments)
+                @for(var attachment : attachments)
                     <div class="table__row">
                         <div>${attachment.getId()}</div>
                         <div>
                             <div class="table__title">${attachment.getFileName()}</div>
-                            <div class="muted">${attachment.getAttachmentType() == null ? "" : attachment.getAttachmentType()}</div>
+                            <div class="muted">${attachment.getAttachmentType() == null ? "" : attachment.getAttachmentType().toString()}</div>
                         </div>
                         <div>${attachment.getContentType() == null ? "—" : attachment.getContentType()}</div>
                         <div>${attachment.getSize() == null ? "—" : attachment.getSize() + " байт"}</div>

@@ -1,3 +1,4 @@
+@import java.time.format.DateTimeFormatter
 @param com.kapamejlbka.objectmanager.domain.customer.ManagedObject object
 @param java.util.List<com.kapamejlbka.objectmanager.domain.customer.ObjectChange> changes
 @param boolean isAuthor
@@ -6,6 +7,7 @@
 @param boolean canDeletePermanently
 @param String flashSuccess
 @param String flashError
+@var DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -68,7 +70,7 @@
             <p class="muted">${object.isDeletionRequested() ? "Запрос на удаление отправлен" : "Удаление не запрошено"}</p>
             @if(object.isDeletionRequested())
                 <p>Инициатор: ${object.getDeletionRequestedBy() == null ? "—" : object.getDeletionRequestedBy().getUsername()}</p>
-                <p>Время: ${object.getDeletionRequestedAt()}</p>
+                <p>Время: ${object.getDeletionRequestedAt() == null ? "—" : object.getDeletionRequestedAt().format(dateTimeFormatter)}</p>
             @endif
             <p class="muted" style="margin-top: 12px;">Мягкое удаление доступно автору объекта, полное — только администратору.</p>
         </div>
@@ -144,9 +146,9 @@
                     <div>Действие</div>
                     <div>Поле</div>
                 </div>
-                @for(com.kapamejlbka.objectmanager.domain.customer.ObjectChange change : changes)
+                @for(var change : changes)
                     <div class="table__row">
-                        <div>${change.getChangedAt()}</div>
+                        <div>${change.getChangedAt() == null ? "—" : change.getChangedAt().format(dateTimeFormatter)}</div>
                         <div>${change.getUser() == null ? "—" : change.getUser().getUsername()}</div>
                         <div>${change.getSummary()}</div>
                         <div>${change.getFieldName() == null ? "—" : change.getFieldName()}</div>

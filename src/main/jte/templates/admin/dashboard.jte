@@ -93,7 +93,7 @@
                     <div class="form__grid form__grid--two">
                         <div class="form__label">Роли
                             <div class="chips">
-                                @for(com.kapamejlbka.objectmanager.domain.user.AppRole role : roles)
+                                @for(var role : roles)
                                     <label class="chip">
                                         <input type="checkbox" name="roles" value="${role.getName()}">
                                         <span>${role.getName()}</span>
@@ -129,7 +129,7 @@
                         <div>Действия</div>
                     </div>
 
-                    @for(com.kapamejlbka.objectmanager.domain.user.AppUser user : users)
+                    @for(var user : users)
                         <div class="table__row">
                             <div>${user.getId()}</div>
 
@@ -141,7 +141,7 @@
 
                             <div>
                                 <div class="chips">
-                                    @for(com.kapamejlbka.objectmanager.domain.user.AppRole role : user.getRoles())
+                                    @for(var role : user.getRoles())
                                         <span class="chip chip--static">${role.getName()}</span>
                                     @endfor
                                 </div>
@@ -199,9 +199,9 @@
                     <div class="form__grid form__grid--two">
                         <div class="form__label">Роли
                             <div class="chips">
-                                @for(com.kapamejlbka.objectmanager.domain.user.AppRole role : roles)
+                                @for(var role : roles)
                                     <label class="chip">
-                                        <input type="checkbox" name="roles" value="${role.getName()}" checked?="${editUserForm.getRoles().contains(role.getName())}">
+                                        <input type="checkbox" name="roles" value="${role.getName()}" ${editUserForm.getRoles().contains(role.getName()) ? "checked" : ""}>
                                         <span>${role.getName()}</span>
                                     </label>
                                 @endfor
@@ -209,7 +209,7 @@
                         </div>
 
                         <label class="form__label form__label--inline">
-                            <input type="checkbox" name="enabled" value="true" checked?="${editUserForm.isEnabled()}">
+                            <input type="checkbox" name="enabled" value="true" ${editUserForm.isEnabled() ? "checked" : ""}>
                             <span>Включен</span>
                         </label>
                     </div>
@@ -238,15 +238,15 @@
                         <div class="form__grid form__grid--two">
                             <label class="form__label">Заказчик
                                 <select class="form__control" name="customerId" onchange="location.href='/admin?tab=access&customer=' + this.value">
-                                    @for(com.kapamejlbka.objectmanager.domain.customer.ProjectCustomer customer : projectCustomers)
-                                        <option value="${customer.getId()}" selected?="${customer.getId().equals(selectedCustomer)}">${customer.getName()}</option>
+                                    @for(var customer : projectCustomers)
+                                        <option value="${customer.getId()}" ${customer.getId().equals(selectedCustomer) ? "selected" : ""}>${customer.getName()}</option>
                                     @endfor
                                 </select>
                             </label>
 
                             <label class="form__label">Пользователь
                                 <select class="form__control" name="userId">
-                                    @for(com.kapamejlbka.objectmanager.domain.user.AppUser user : users)
+                                    @for(var user : users)
                                         <option value="${user.getId()}">${user.getUsername()} — ${user.getFullName()}</option>
                                     @endfor
                                 </select>
@@ -273,19 +273,19 @@
                         <div>Действия</div>
                     </div>
 
-                    @for(com.kapamejlbka.objectmanager.domain.customer.ProjectCustomer customer : projectCustomers)
+                    @for(var customer : projectCustomers)
                         <div class="table__row">
                             <div>${customer.getName()}</div>
                             <div>${customer.getCreatedBy() == null ? "—" : customer.getCreatedBy().getUsername()}</div>
                             <div>
                                 <div class="chips">
-                                    @for(com.kapamejlbka.objectmanager.domain.user.AppUser owner : customer.getOwners())
+                                    @for(var owner : customer.getOwners())
                                         <span class="chip chip--static">${owner.getUsername()}</span>
                                     @endfor
                                 </div>
                             </div>
                             <div class="actions">
-                                @for(com.kapamejlbka.objectmanager.domain.user.AppUser owner : customer.getOwners())
+                                @for(var owner : customer.getOwners())
                                     <form method="post" action="/admin/customers/${customer.getId()}/access/revoke" style="display: inline-block;">
                                         <input type="hidden" name="userId" value="${owner.getId()}">
                                         <button class="button button--ghost" type="submit">Убрать ${owner.getUsername()}</button>
@@ -352,8 +352,8 @@
 
                         <label class="form__label">Категория
                             <select class="form__control" name="category">
-                                @for(com.kapamejlbka.objectmanager.domain.material.MaterialCategory category : materialCategories)
-                                    <option value="${category.name()}" selected?="${category.equals(materialForm.getCategory())}">
+                                @for(var category : materialCategories)
+                                    <option value="${category.name()}" ${category.equals(materialForm.getCategory()) ? "selected" : ""}>
                                         ${category.getDisplayNameRu()}
                                     </option>
                                 @endfor
@@ -382,8 +382,8 @@
 
                         <select class="form__control" name="category">
                             <option value="">Все категории</option>
-                            @for(com.kapamejlbka.objectmanager.domain.material.MaterialCategory category : materialCategories)
-                                <option value="${category.name()}" selected?="${category.equals(materialCategory)}">${category.getDisplayNameRu()}</option>
+                            @for(var category : materialCategories)
+                                <option value="${category.name()}" ${category.equals(materialCategory) ? "selected" : ""}>${category.getDisplayNameRu()}</option>
                             @endfor
                         </select>
 
@@ -400,7 +400,7 @@
                         <div>Действия</div>
                     </div>
 
-                    @for(com.kapamejlbka.objectmanager.domain.material.Material material : materials)
+                    @for(var material : materials)
                         <div class="table__row">
                             <div>${material.getCode()}</div>
                             <div>
@@ -448,8 +448,8 @@
 
                         <label class="form__label">Категория
                             <select class="form__control" name="category">
-                                @for(com.kapamejlbka.objectmanager.domain.material.MaterialCategory category : materialCategories)
-                                    <option value="${category.name()}" selected?="${category.equals(editMaterialForm.getCategory())}">${category.getDisplayNameRu()}</option>
+                                @for(var category : materialCategories)
+                                    <option value="${category.name()}" ${category.equals(editMaterialForm.getCategory()) ? "selected" : ""}>${category.getDisplayNameRu()}</option>
                                 @endfor
                             </select>
                         </label>
@@ -479,16 +479,16 @@
                 <form class="form" method="post" action="/admin/norms">
                     <label class="form__label">Контекст
                         <select class="form__control" name="contextType">
-                            @for(com.kapamejlbka.objectmanager.domain.material.MaterialNormContext context : normContexts)
-                                <option value="${context.name()}" selected?="${context.equals(normForm.getContextType())}">${normContextNames.get(context.name())}</option>
+                            @for(var context : normContexts)
+                                <option value="${context.name()}" ${context.equals(normForm.getContextType()) ? "selected" : ""}>${normContextNames.get(context.name())}</option>
                             @endfor
                         </select>
                     </label>
 
                     <label class="form__label">Материал
                         <select class="form__control" name="materialId">
-                            @for(com.kapamejlbka.objectmanager.domain.material.Material material : normMaterials)
-                                <option value="${material.getId()}" selected?="${material.getId().equals(normForm.getMaterialId())}">${material.getCode()} — ${material.getName()}</option>
+                            @for(var material : normMaterials)
+                                <option value="${material.getId()}" ${material.getId().equals(normForm.getMaterialId()) ? "selected" : ""}>${material.getCode()} — ${material.getName()}</option>
                             @endfor
                         </select>
                     </label>
@@ -521,7 +521,7 @@
                         <div>Действия</div>
                     </div>
 
-                    @for(com.kapamejlbka.objectmanager.domain.material.MaterialNorm norm : norms)
+                    @for(var norm : norms)
                         <div class="table__row">
                             <div>
                                 <div class="table__title">${normContextNames.get(norm.getContextType().name())}</div>
@@ -555,16 +555,16 @@
                 <form class="form" method="post" action="/admin/norms/${editNormForm.getId()}">
                     <label class="form__label">Контекст
                         <select class="form__control" name="contextType">
-                            @for(com.kapamejlbka.objectmanager.domain.material.MaterialNormContext context : normContexts)
-                                <option value="${context.name()}" selected?="${context.equals(editNormForm.getContextType())}">${normContextNames.get(context.name())}</option>
+                            @for(var context : normContexts)
+                                <option value="${context.name()}" ${context.equals(editNormForm.getContextType()) ? "selected" : ""}>${normContextNames.get(context.name())}</option>
                             @endfor
                         </select>
                     </label>
 
                     <label class="form__label">Материал
                         <select class="form__control" name="materialId">
-                            @for(com.kapamejlbka.objectmanager.domain.material.Material material : normMaterials)
-                                <option value="${material.getId()}" selected?="${material.getId().equals(editNormForm.getMaterialId())}">${material.getCode()} — ${material.getName()}</option>
+                            @for(var material : normMaterials)
+                                <option value="${material.getId()}" ${material.getId().equals(editNormForm.getMaterialId()) ? "selected" : ""}>${material.getCode()} — ${material.getName()}</option>
                             @endfor
                         </select>
                     </label>
@@ -655,7 +655,7 @@
                     <div>Действия</div>
                 </div>
 
-                @for(com.kapamejlbka.objectmanager.model.DatabaseConnectionSettings connection : connections)
+                @for(var connection : connections)
                     <div class="table__row">
                         <div class="table__title">${connection.getName()}</div>
                         <div>${connection.getDatabaseType().name()}</div>
