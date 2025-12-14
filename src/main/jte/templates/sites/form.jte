@@ -5,6 +5,30 @@
 @param String error
 @param String flashSuccess
 @param String flashError
+@{
+    var formAction = (isEdit && siteId != null)
+        ? "/sites/" + siteId
+        : "/customers/" + customer.getId() + "/sites";
+
+    // safe values
+    var name = (siteForm != null && siteForm.getName() != null) ? siteForm.getName() : "";
+    var fullAddress = (siteForm != null && siteForm.getFullAddress() != null) ? siteForm.getFullAddress() : "";
+    var description = (siteForm != null && siteForm.getDescription() != null) ? siteForm.getDescription() : "";
+
+    var latitude = (siteForm != null && siteForm.getLatitude() != null) ? String.valueOf(siteForm.getLatitude()) : "";
+    var longitude = (siteForm != null && siteForm.getLongitude() != null) ? String.valueOf(siteForm.getLongitude()) : "";
+
+    var useCustomerContact = (siteForm != null) && siteForm.isUseCustomerContact();
+
+    var contactName = (siteForm != null && siteForm.getContactName() != null) ? siteForm.getContactName() : "";
+    var contactPosition = (siteForm != null && siteForm.getContactPosition() != null) ? siteForm.getContactPosition() : "";
+    var contactPhone = (siteForm != null && siteForm.getContactPhone() != null) ? siteForm.getContactPhone() : "";
+    var contactEmail = (siteForm != null && siteForm.getContactEmail() != null) ? siteForm.getContactEmail() : "";
+
+    var cancelHref = (isEdit && siteId != null)
+        ? "/sites/" + siteId
+        : "/customers/" + customer.getId() + "/view";
+}
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -54,26 +78,26 @@
             </div>
         </div>
 
-        <form class="form" method="post" action="${isEdit && siteId != null ? "/sites/" + siteId : "/customers/" + customer.getId() + "/sites"}">
+        <form class="form" method="post" action="${formAction}">
             <div class="form__grid form__grid--two">
                 <label class="form__label">Название объекта
-                    <input class="form__control" type="text" name="name" value="${siteForm.getName()}" required>
+                    <input class="form__control" type="text" name="name" value="${name}" required>
                 </label>
                 <label class="form__label">Полный адрес
-                    <textarea class="form__control form__control--textarea" name="fullAddress" rows="2" placeholder="Город, улица, дом">${siteForm.getFullAddress()}</textarea>
+                    <textarea class="form__control form__control--textarea" name="fullAddress" rows="2" placeholder="Город, улица, дом">${fullAddress}</textarea>
                 </label>
             </div>
 
             <label class="form__label">Описание объекта
-                <textarea class="form__control form__control--textarea" name="description" rows="4" placeholder="Характеристики площадки, доступы, этажность">${siteForm.getDescription()}</textarea>
+                <textarea class="form__control form__control--textarea" name="description" rows="4" placeholder="Характеристики площадки, доступы, этажность">${description}</textarea>
             </label>
 
             <div class="form__grid form__grid--two">
                 <label class="form__label">Широта
-                    <input class="form__control" type="number" step="any" name="latitude" value="${siteForm.getLatitude() == null ? "" : siteForm.getLatitude()}">
+                    <input class="form__control" type="number" step="any" name="latitude" value="${latitude}">
                 </label>
                 <label class="form__label">Долгота
-                    <input class="form__control" type="number" step="any" name="longitude" value="${siteForm.getLongitude() == null ? "" : siteForm.getLongitude()}">
+                    <input class="form__control" type="number" step="any" name="longitude" value="${longitude}">
                 </label>
             </div>
 
@@ -85,28 +109,28 @@
             </div>
 
             <label class="form__label form__label--inline form__label--wrap">
-                <input type="checkbox" name="useCustomerContact" value="true" ${siteForm.isUseCustomerContact() ? "checked" : ""}>
+                <input type="checkbox" name="useCustomerContact" value="true" ${useCustomerContact ? "checked" : ""}>
                 <span>Использовать контакт заказчика как основной</span>
             </label>
 
             <div class="form__grid form__grid--two">
                 <label class="form__label">Контактное лицо
-                    <input class="form__control" type="text" name="contactName" value="${siteForm.getContactName()}">
+                    <input class="form__control" type="text" name="contactName" value="${contactName}">
                 </label>
                 <label class="form__label">Должность/роль
-                    <input class="form__control" type="text" name="contactPosition" value="${siteForm.getContactPosition()}">
+                    <input class="form__control" type="text" name="contactPosition" value="${contactPosition}">
                 </label>
                 <label class="form__label">Телефон
-                    <input class="form__control" type="tel" name="contactPhone" value="${siteForm.getContactPhone()}">
+                    <input class="form__control" type="tel" name="contactPhone" value="${contactPhone}">
                 </label>
                 <label class="form__label">Email
-                    <input class="form__control" type="email" name="contactEmail" value="${siteForm.getContactEmail()}">
+                    <input class="form__control" type="email" name="contactEmail" value="${contactEmail}">
                 </label>
             </div>
 
             <div class="actions">
                 <button class="button button--primary" type="submit">${isEdit ? "Сохранить" : "Создать"}</button>
-                <a class="button" href="${isEdit && siteId != null ? "/sites/" + siteId : "/customers/" + customer.getId() + "/view"}">Отмена</a>
+                <a class="button" href="${cancelHref}">Отмена</a>
             </div>
         </form>
     </section>
