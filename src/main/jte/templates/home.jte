@@ -52,17 +52,17 @@
 
             <label class="form__label">Сортировка
                 <select class="form__control" name="sort">
-                    <option value="name" selected?="${sort != null && "name".equalsIgnoreCase(sort)}">По названию</option>
-                    <option value="updated" selected?="${sort != null && "updated".equalsIgnoreCase(sort)}">По обновлению</option>
-                    <option value="created" selected?="${sort != null && "created".equalsIgnoreCase(sort)}">По созданию</option>
+                    <option value="name" ${sort != null && "name".equalsIgnoreCase(sort) ? "selected" : ""}>По названию</option>
+                    <option value="updated" ${sort != null && "updated".equalsIgnoreCase(sort) ? "selected" : ""}>По обновлению</option>
+                    <option value="created" ${sort != null && "created".equalsIgnoreCase(sort) ? "selected" : ""}>По созданию</option>
                 </select>
             </label>
 
             <label class="form__label">На странице
                 <select class="form__control" name="size">
-                    <option value="6" selected?="${pageSize == 6}">6</option>
-                    <option value="12" selected?="${pageSize == 12}">12</option>
-                    <option value="24" selected?="${pageSize == 24}">24</option>
+                    <option value="6" ${pageSize == 6 ? "selected" : ""}>6</option>
+                    <option value="12" ${pageSize == 12 ? "selected" : ""}>12</option>
+                    <option value="24" ${pageSize == 24 ? "selected" : ""}>24</option>
                 </select>
             </label>
 
@@ -91,7 +91,7 @@
                     <div>Действия</div>
                 </div>
 
-                @for(com.kapamejlbka.objectmanager.domain.customer.Customer customer : customers)
+                @for(var customer : customers)
                     <div class="table__row">
                         <div>
                             <div class="table__title">${customer.getName()}</div>
@@ -117,7 +117,7 @@
 
                         <div>${customer.getTaxNumber() == null || customer.getTaxNumber().isBlank() ? "—" : customer.getTaxNumber()}</div>
                         <div>${customer.getCity() == null || customer.getCity().isBlank() ? "—" : customer.getCity()}</div>
-                        <div>${siteCounts == null ? 0 : siteCounts.getOrDefault(customer.getId(), 0L)}</div>
+                        <div>${siteCounts == null ? "0" : String.valueOf(siteCounts.getOrDefault(customer.getId(), 0L))}</div>
 
                         <div class="actions">
                             <a class="button button--ghost" href="/customers/${customer.getId()}">Карточка</a>
